@@ -6,7 +6,7 @@ An interactive 3D model of the Solar System, built with [Three.js](https://three
 
 ## What's in it
 
-It opens with a fifty-second cold open: the camera starts inside the Sun's corona, dives to Earth, then pulls back until the whole system is a smudge against the Milky Way. Skip it with `Esc`, replay it with `R`.
+The opening is a choice. **Begin** plays a Star Wars-style title crawl and then a fifty-second flight: the camera starts inside the Sun's corona, dives to Earth, and pulls back until the whole system is a smudge against the Milky Way. **Skip to the system** drops you straight into the model. Either way `Esc` hands over control at any point, and `R` replays the opening later.
 
 - **True scale by default.** Sizes and distances are real, so Earth is a point of light. That is the honest picture, and the opening sequence teaches you how to read it. Press `T` for the compressed, exaggerated view when you want the whole system on one screen.
 - **Real NASA maps of every world.** Blue Marble and Earth-at-Night for Earth, LRO for the Moon, MESSENGER for Mercury, Magellan for Venus, Viking for Mars, Cassini for Jupiter and Saturn, Voyager 2 for Neptune and Triton, New Horizons for Pluto and Charon, plus Io, Europa, Ganymede, Callisto, Titan and Enceladus.
@@ -31,7 +31,7 @@ It opens with a fifty-second cold open: the camera starts inside the Sun's coron
 | `[` `]` | Slower / faster |
 | `N` | Jump to now |
 | `T` | Toggle true scale |
-| `R` | Replay the opening |
+| `R` | Replay the crawl and flight |
 | `C` | Constellation figures |
 | `Space` | Pause time and rotation |
 | `?` | Show all keys |

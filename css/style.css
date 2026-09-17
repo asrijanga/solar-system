@@ -137,3 +137,7 @@ canvas { display: block; }
   #hint { display: none; }
   #settings { width: calc(100vw - 36px); }
 }
+
+/* ---------- lens flare ---------- */
+#flare { position: absolute; inset: 0; pointer-events: none; overflow: hidden; mix-blend-mode: screen; transition: opacity 0.15s; }
+.flare-el { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }

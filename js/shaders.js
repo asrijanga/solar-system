@@ -41,23 +41,32 @@ uniform float uTime; varying vec3 vNormal; varying vec3 vPos; varying vec3 vView
 ${NOISE_GLSL}
 void main(){
   vec3 p = normalize(vPos);
-  float t = uTime * 0.05;
-  // granulation cells: layered noise that slowly boils
-  float n1 = fbm(p * 6.0 + vec3(t, -t*0.7, t*0.3));
-  float n2 = fbm(p * 18.0 - vec3(t*1.3, t*0.4, -t));
-  float n3 = snoise(p * 40.0 + vec3(0.0, t*2.0, 0.0));
-  float g = 0.55 + 0.35 * n1 + 0.18 * n2 + 0.06 * n3;
-  // sunspots: rare dark patches near the equator
-  float spot = smoothstep(0.62, 0.78, fbm(p * 3.0 + vec3(5.0, t*0.2, 1.0))) * (1.0 - smoothstep(0.35, 0.6, abs(p.y)));
-  g = mix(g, g * 0.35, spot);
-  vec3 cold = vec3(0.95, 0.35, 0.05); vec3 hot = vec3(1.0, 0.85, 0.55); vec3 white = vec3(1.0, 0.97, 0.9);
-  vec3 col = mix(cold, hot, smoothstep(0.2, 0.75, g));
-  col = mix(col, white, smoothstep(0.8, 1.05, g));
-  // limb darkening
+  float t = uTime * 0.06;
+  float n1 = fbm(p * 4.0 + vec3(t * 0.5, -t * 0.3, t * 0.2));      // supergranulation
+  float n2 = fbm(p * 14.0 + vec3(-t, t * 0.6, t * 0.4));           // granules
+  float n3 = snoise(p * 36.0 + vec3(t * 1.5, 0.0, -t));            // fine boil
+  float g = 0.5 + 0.30 * n1 + 0.30 * n2 + 0.10 * n3;
+  float ridge = pow(1.0 - abs(snoise(p * 9.0 + vec3(t * 0.3, t * 0.1, 0.0))), 4.0);
+  g += ridge * 0.22;
+  float spot = smoothstep(0.55, 0.8, fbm(p * 2.5 + vec3(3.1, t * 0.15, 0.7))) * (1.0 - smoothstep(0.3, 0.55, abs(p.y)));
+  g = mix(g, g * 0.22, spot);
+  vec3 c1 = vec3(0.55, 0.08, 0.0), c2 = vec3(1.0, 0.36, 0.02), c3 = vec3(1.0, 0.74, 0.20), c4 = vec3(1.0, 0.96, 0.78);
+  vec3 col = mix(c1, c2, smoothstep(0.0, 0.4, g));
+  col = mix(col, c3, smoothstep(0.35, 0.75, g));
+  col = mix(col, c4, smoothstep(0.75, 1.1, g));
   float mu = clamp(dot(normalize(vNormal), normalize(vView)), 0.0, 1.0);
-  float limb = 0.35 + 0.65 * pow(mu, 0.55);
-  col *= limb;
-  gl_FragColor = vec4(col * 1.45, 1.0);
+  col *= 0.22 + 0.78 * pow(mu, 0.6);
+  gl_FragColor = vec4(col * 1.7, 1.0);
+}`;
+
+// Additive glow shell (rendered on the back faces of a larger sphere).
+export const GLOW_FRAG = /* glsl */`
+uniform vec3 uColor; uniform float uPower; uniform float uIntensity;
+varying vec3 vN; varying vec3 vV; varying vec3 vW;
+void main(){
+  float c = clamp(dot(-normalize(vN), normalize(vV)), 0.0, 1.0);
+  float a = pow(c, uPower) * uIntensity;
+  gl_FragColor = vec4(uColor * a, a);
 }`;
 
 export const CORONA_FRAG = /* glsl */`
@@ -67,8 +76,8 @@ void main(){
   vec2 c = vUv - 0.5; float r = length(c) * 2.0;
   float ang = atan(c.y, c.x);
   float streaks = 0.5 + 0.5 * snoise(vec3(ang * 3.0, r * 4.0 - uTime * 0.08, uTime * 0.03));
-  float glow = pow(max(0.0, 1.0 - r), 2.2) * (0.75 + 0.5 * streaks);
-  float halo = exp(-r * 3.2) * 1.6;
+  float glow = pow(max(0.0, 1.0 - r), 2.6) * (0.6 + 0.6 * streaks);
+  float halo = exp(-r * 4.0) * 1.2;
   float a = clamp(glow + halo, 0.0, 1.0);
   a *= smoothstep(1.0, 0.85, r);
   gl_FragColor = vec4(uColor * a * 1.1, a);
@@ -93,14 +102,14 @@ uniform sampler2D uMap; uniform sampler2D uNight; uniform sampler2D uRingMap;
 uniform float uHasNight; uniform float uOcean; uniform float uHasRingShadow;
 uniform vec3 uSunPos; uniform vec3 uAtmoColor; uniform float uAtmo; uniform float uAmbient;
 uniform vec3 uCenter; uniform vec3 uPoleAxis; uniform float uRingInner; uniform float uRingOuter;
-uniform vec3 uCamPos; uniform float uLightScale;
+uniform vec3 uCamPos; uniform float uLightScale; uniform float uWrap; uniform float uSaturation; uniform float uSpecular; uniform float uShininess;
 varying vec2 vUv; varying vec3 vWorldPos; varying vec3 vWorldNormal;
 void main(){
   vec3 N = normalize(vWorldNormal);
   vec3 L = normalize(uSunPos - vWorldPos);
   vec3 V = normalize(uCamPos - vWorldPos);
   float ndl = dot(N, L);
-  float diffuse = clamp(ndl, 0.0, 1.0);
+  float diffuse = clamp((ndl + uWrap) / (1.0 + uWrap), 0.0, 1.0);
   float shadow = 1.0;
   if (uHasRingShadow > 0.5) {
     // Intersect the ray from this point toward the Sun with the ring plane.
@@ -121,7 +130,12 @@ void main(){
   vec3 day = base.rgb;
   // soft terminator
   float twilight = smoothstep(-0.08, 0.25, ndl);
-  vec3 col = day * (diffuse * shadow * uLightScale + uAmbient);
+  day = mix(vec3(dot(day, vec3(0.299, 0.587, 0.114))), day, uSaturation);
+  vec3 col = day * (diffuse * shadow * uLightScale + vec3(0.8, 0.9, 1.15) * uAmbient);
+  if (uSpecular > 0.0) {
+    vec3 H = normalize(L + V);
+    col += vec3(1.0, 0.97, 0.9) * pow(max(dot(N, H), 0.0), uShininess) * uSpecular * diffuse * shadow;
+  }
   if (uHasNight > 0.5) {
     vec3 night = texture2D(uNight, vUv).rgb;
     float nightMix = 1.0 - smoothstep(-0.12, 0.12, ndl);
@@ -152,9 +166,11 @@ varying vec3 vN; varying vec3 vV; varying vec3 vW;
 void main(){
   vec3 L = normalize(uSunPos - vW);
   float lit = clamp(dot(vN, L) * 1.2 + 0.35, 0.0, 1.0);
-  float fres = pow(1.0 - clamp(dot(vN, vV), 0.0, 1.0), 4.0);
-  float a = fres * lit * uIntensity;
-  gl_FragColor = vec4(uColor * a * 1.6, a);
+  // Rendered on the back faces of a shell just outside the planet: c is 0 at the shell's
+  // silhouette and rises toward the planet's limb, so the glow hugs the limb and fades outward.
+  float c = clamp(dot(-vN, vV), 0.0, 1.0);
+  float a = pow(clamp(c / 0.34, 0.0, 1.0), 1.6) * lit * uIntensity;
+  gl_FragColor = vec4(uColor * a * 1.5, a);
 }`;
 
 export const RING_VERT = /* glsl */`
@@ -182,7 +198,7 @@ void main(){
   float facing = abs(cosSun);
   // lit side vs. back-lit transmission through the ring particles
   float sameSide = step(0.0, cosSun * cosView);
-  float lit = mix(0.45 * (1.0 - ring.a * 0.5), 1.0, sameSide) * (0.7 + 0.3 * facing);
+  float lit = mix(0.5 * (1.0 - ring.a * 0.5), 1.0, sameSide) * (0.78 + 0.22 * facing);
   vec3 col = ring.rgb * (lit * shadow * uLightScale + 0.03);
   gl_FragColor = vec4(col, ring.a);
 }`;
@@ -219,7 +235,7 @@ uniform vec3 uColor; varying float vAlpha;
 void main(){
   vec2 c = gl_PointCoord - 0.5; float d = length(c);
   if (d > 0.5) discard;
-  float a = smoothstep(0.5, 0.15, d) * 0.55 * vAlpha;
+  float a = smoothstep(0.5, 0.15, d) * 0.4 * vAlpha;
   gl_FragColor = vec4(uColor, a);
 }`;
 
@@ -252,3 +268,33 @@ void main(){ vColor = aColor; vec4 mv = modelViewMatrix * vec4(position,1.0); gl
 export const STAR_FRAG = /* glsl */`
 varying vec3 vColor;
 void main(){ vec2 c = gl_PointCoord - 0.5; float d = length(c); if (d > 0.5) discard; float a = smoothstep(0.5, 0.05, d); gl_FragColor = vec4(vColor * a, a); }`;
+
+// Orbit trail: the line brightens just behind the moving body and fades around the orbit.
+export const TRAIL_VERT = /* glsl */`
+attribute float aT; varying float vT;
+void main(){ vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+export const TRAIL_FRAG = /* glsl */`
+uniform vec3 uColor; uniform float uHead; uniform float uBase; uniform float uTrail; uniform float uFade;
+varying float vT;
+void main(){
+  float f = fract(uHead - vT + 1.0);
+  float a = (uBase + uTrail * pow(1.0 - f, 3.0)) * uFade;
+  gl_FragColor = vec4(uColor * (0.7 + 0.6 * pow(1.0 - f, 3.0)), a);
+}`;
+
+// Final pass: vignette and a whisper of film grain.
+export const VIGNETTE_SHADER = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uStrength: { value: 1.1 }, uGrain: { value: 0.018 } },
+  vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+uniform sampler2D tDiffuse; uniform float uTime; uniform float uStrength; uniform float uGrain; varying vec2 vUv;
+float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233)) + uTime) * 43758.5453); }
+void main(){
+  vec4 c = texture2D(tDiffuse, vUv);
+  vec2 d = (vUv - 0.5) * vec2(1.0, 0.85);
+  float v = 1.0 - smoothstep(0.35, 1.25, length(d) * uStrength);
+  c.rgb *= 0.55 + 0.45 * v;
+  c.rgb += (hash(vUv * 1400.0) - 0.5) * uGrain;
+  gl_FragColor = c;
+}`
+};

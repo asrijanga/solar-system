@@ -1,37 +1,52 @@
-// Cinematic score, generated live with the Web Audio API.
+// Lofi soundtrack, generated live with the Web Audio API.
 //
-// Six layers stacked the way an orchestral cue is built:
-//   sub      - felt more than heard, the floor of the piece
-//   organ    - a drawbar-style harmonic stack, the spine
-//   strings   - detuned saws with slow bows and vibrato
-//   choir    - saws shaped by vowel formant filters
-//   shimmer  - high bell tones two octaves up, drenched in reverb
-//   riser    - filtered noise that lifts into a chord change
+// A slow boom-bap beat under a Rhodes electric piano, the way a late-night
+// study stream sounds. Nothing is sampled; every part is synthesised:
 //
-// A single `intensity` value (0..1) opens and closes these layers, so the
-// intro cinematic can crescendo into the reveal and settle afterwards.
-// Nothing is sampled: every visit is a slightly different performance.
+//   rhodes  - FM electric piano, a sine carrier bent by a sine modulator whose
+//             index decays fast, which is what gives a Rhodes its bell attack
+//   bass    - round triangle upright, roots and passing notes
+//   drums   - synthesised kick, dusty snare and closed hats, played with swing
+//   pad     - a soft filtered bed that opens up underneath
+//   vinyl   - looping crackle and hiss, always present
+//   tape    - wow and flutter from a delay line whose time is modulated, so the
+//             whole thing drifts slightly out of tune like a worn cassette
+//
+// Timing uses the standard lookahead pattern: a coarse timer wakes up often and
+// schedules notes slightly ahead on the audio clock, so nothing is at the mercy
+// of setTimeout jitter.
+//
+// A single `intensity` value (0..1) arranges the track. Low is just keys, bass
+// and crackle; the drums walk in around a third of the way up; the top is the
+// full kit. The opening cinematic drives it, so the beat drops in as the camera
+// pulls away from Earth.
 
-// i - VI - III - VII in D minor, with a lift at the end of the cycle.
-// Each entry is [root, third, fifth] in Hz, plus a weight for the drum hit.
+const midi = m => 440 * Math.pow(2, (m - 69) / 12);
+
+// I - vi - ii - V twice through, the standard lofi turnaround, with seventh and
+// ninth voicings. `bass` is the root; `voicing` is the right hand.
 const PROGRESSION = [
-  { name: 'Dm', tones: [73.416, 87.307, 110.000], accent: 1.0 },
-  { name: 'Bb', tones: [58.270, 73.416, 87.307], accent: 0.6 },
-  { name: 'F',  tones: [87.307, 110.000, 130.813], accent: 0.7 },
-  { name: 'C',  tones: [65.406, 82.407, 98.000], accent: 0.6 },
-  { name: 'Dm', tones: [73.416, 87.307, 110.000], accent: 1.0 },
-  { name: 'Bb', tones: [58.270, 73.416, 87.307], accent: 0.6 },
-  { name: 'Gm', tones: [48.999, 58.270, 73.416], accent: 0.8 },
-  { name: 'A',  tones: [55.000, 69.296, 82.407], accent: 0.9 },
+  { name: 'Fmaj7', bass: 41, voicing: [53, 57, 60, 64, 67] },
+  { name: 'Em7',   bass: 40, voicing: [52, 55, 59, 62] },
+  { name: 'Dm9',   bass: 38, voicing: [50, 53, 57, 60, 64] },
+  { name: 'G7',    bass: 43, voicing: [50, 55, 59, 65] },
+  { name: 'Cmaj9', bass: 36, voicing: [52, 55, 59, 62, 64] },
+  { name: 'Am7',   bass: 33, voicing: [48, 52, 55, 60] },
+  { name: 'Dm7',   bass: 38, voicing: [50, 53, 57, 60] },
+  { name: 'G13',   bass: 43, voicing: [53, 57, 59, 64] },
 ];
 
-// Drawbar registration: harmonic number -> relative level.
-const ORGAN_PARTIALS = [[1, 1.0], [2, 0.52], [3, 0.30], [4, 0.22], [6, 0.11], [8, 0.07]];
-// "Ah" vowel formants: [frequency, Q, gain]
-const FORMANTS = [[800, 9, 1.0], [1150, 11, 0.7], [2900, 13, 0.32]];
+// C major pentatonic, for the sparse lead phrases and the selection chime.
+const LEAD_NOTES = [72, 74, 76, 79, 81, 84, 86];
 
-const CHORD_SECONDS = 13.5;   // one chord
-const CROSSFADE = 5.5;        // overlap between chords
+const BPM = 74;
+const STEPS_PER_BAR = 16;          // sixteenth notes
+const SWING = 0.30;                // how far the offbeat eighth is pushed, in sixteenths
+
+// Step positions within a bar.
+const KICK = [0, 10];
+const SNARE = [4, 12];
+const HAT = [0, 2, 4, 6, 8, 10, 12, 14];
 
 export class Soundtrack {
   constructor() {
@@ -39,9 +54,10 @@ export class Soundtrack {
     this.playing = false;
     this.volume = 0.55;
     this.intensity = 0.4;
-    this._timers = [];
     this._stops = [];
-    this._chordIndex = 0;
+    this._timer = null;
+    this._step = 0;
+    this._nextTime = 0;
   }
 
   // ---------------------------------------------------------------- lifecycle
@@ -50,12 +66,20 @@ export class Soundtrack {
     if (this.ctx.state === 'suspended') await this.ctx.resume();
     if (this.playing) return;
     this.playing = true;
+
     const t = this.ctx.currentTime;
     this.master.gain.cancelScheduledValues(t);
     this.master.gain.setValueAtTime(0.0001, t);
-    this.master.gain.exponentialRampToValueAtTime(Math.max(0.0001, this.volume), t + 6);
-    this._chordIndex = 0;
-    this._nextChord();
+    this.master.gain.exponentialRampToValueAtTime(Math.max(0.0001, this.volume), t + 4);
+
+    this._vinyl.start();
+    this._step = 0;
+    this._nextTime = t + 0.35;
+    this._lookahead = 0.35;
+    this._lastSchedule = 0;
+    this.setIntensity(this.intensity, 0.1);
+    this._schedule();
+    this._timer = setInterval(() => this._schedule(), 60);
   }
 
   stop() {
@@ -64,10 +88,9 @@ export class Soundtrack {
     const t = this.ctx.currentTime;
     this.master.gain.cancelScheduledValues(t);
     this.master.gain.setValueAtTime(this.master.gain.value, t);
-    this.master.gain.exponentialRampToValueAtTime(0.0001, t + 3);
-    this._timers.forEach(clearTimeout);
-    this._timers = [];
-    setTimeout(() => { if (!this.playing) this._killVoices(); }, 3200);
+    this.master.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+    clearInterval(this._timer); this._timer = null;
+    setTimeout(() => { if (!this.playing) { this._vinyl.stop(); this._killVoices(); } }, 2400);
   }
 
   toggle() { this.playing ? this.stop() : this.start(); return this.playing; }
@@ -77,7 +100,7 @@ export class Soundtrack {
     if (this.ctx && this.playing) this.master.gain.setTargetAtTime(Math.max(0.0001, v), this.ctx.currentTime, 0.15);
   }
 
-  /** Open or close the arrangement. 0 = sparse and distant, 1 = full and close. */
+  /** Arrange the track. 0 = keys and crackle only, 1 = the full kit. */
   setIntensity(v, seconds = 8) {
     this.intensity = Math.max(0, Math.min(1, v));
     if (!this.ctx) return;
@@ -87,12 +110,14 @@ export class Soundtrack {
       param.setValueAtTime(param.value, t);
       param.linearRampToValueAtTime(value, t + seconds);
     };
-    ramp(this.bus.organ.gain, 0.20 + 0.55 * i);
-    ramp(this.bus.strings.gain, Math.max(0, i - 0.12) * 0.85);
-    ramp(this.bus.choir.gain, Math.pow(Math.max(0, i - 0.30) / 0.7, 1.4) * 0.75);
-    ramp(this.bus.shimmer.gain, 0.25 + 0.75 * i);
-    ramp(this.bus.sub.gain, 0.45 + 0.55 * i);
-    ramp(this.tone.frequency, 620 + 3600 * Math.pow(i, 0.75));
+    // the beat fades in over the lower third rather than switching on
+    const beat = Math.max(0, Math.min(1, (i - 0.30) / 0.30));
+    ramp(this.bus.drums.gain, beat * 1.0);
+    ramp(this.bus.rhodes.gain, 1.30 + 0.55 * i);
+    ramp(this.bus.bass.gain, 0.30 + 0.28 * i);
+    ramp(this.bus.pad.gain, 0.08 + 0.30 * i);
+    ramp(this.tone.frequency, 1900 + 4200 * Math.pow(i, 0.7));
+    this._beatMix = beat;
   }
 
   // ------------------------------------------------------------------- graph
@@ -102,263 +127,361 @@ export class Soundtrack {
 
     this.master = ctx.createGain();
     this.master.gain.value = 0.0001;
-
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -20; comp.knee.value = 24; comp.ratio.value = 3.5;
-    comp.attack.value = 0.06; comp.release.value = 0.9;
-    comp.connect(this.master);
     this.master.connect(ctx.destination);
 
-    // Big hall: long, dark, slow-building tail.
-    const hall = ctx.createConvolver();
-    hall.buffer = this._impulse(8.5, 2.6, 0.12);
-    const hallWet = ctx.createGain(); hallWet.gain.value = 0.85;
-    hall.connect(hallWet); hallWet.connect(comp);
+    // Glue compression, then a little tape saturation to round the peaks off.
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 22; comp.ratio.value = 3;
+    comp.attack.value = 0.012; comp.release.value = 0.22;
 
-    const dry = ctx.createGain(); dry.gain.value = 0.62;
-    dry.connect(comp);
+    const sat = ctx.createWaveShaper();
+    sat.curve = this._saturation(1.9);
+    sat.oversample = '2x';
+    comp.connect(sat); sat.connect(this.master);
 
-    // Everything tonal passes through one slow tone filter, opened by intensity.
+    // Lofi means band limited: roll the top off and clear the sub mud.
     this.tone = ctx.createBiquadFilter();
-    this.tone.type = 'lowpass';
-    this.tone.frequency.value = 1400;
-    this.tone.Q.value = 0.5;
-    this.tone.connect(dry); this.tone.connect(hall);
+    this.tone.type = 'lowpass'; this.tone.frequency.value = 3600; this.tone.Q.value = 0.4;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 46;
+    this.tone.connect(hp); hp.connect(comp);
 
-    // A gentle drift so the timbre is never static.
-    const drift = ctx.createOscillator(); drift.frequency.value = 0.021;
-    const driftAmt = ctx.createGain(); driftAmt.gain.value = 420;
-    drift.connect(driftAmt); driftAmt.connect(this.tone.frequency); drift.start();
-    this._track(drift);
+    // Small warm room. Nothing like the cathedral the old score used.
+    const room = ctx.createConvolver();
+    room.buffer = this._impulse(1.9, 3.2);
+    const roomWet = ctx.createGain(); roomWet.gain.value = 0.32;
+    room.connect(roomWet); roomWet.connect(this.tone);
+    this._room = room;
 
-    // Per-layer busses so intensity can open them independently.
+    // Tape wow and flutter: a short delay whose time wanders, so pitch drifts.
+    const wobble = ctx.createDelay(0.1);
+    wobble.delayTime.value = 0.011;
+    const wow = ctx.createOscillator(); wow.frequency.value = 0.27;
+    const wowAmt = ctx.createGain(); wowAmt.gain.value = 0.0032;
+    wow.connect(wowAmt); wowAmt.connect(wobble.delayTime); wow.start(); this._track(wow);
+    const flutter = ctx.createOscillator(); flutter.frequency.value = 6.1;
+    const flutAmt = ctx.createGain(); flutAmt.gain.value = 0.00035;
+    flutter.connect(flutAmt); flutAmt.connect(wobble.delayTime); flutter.start(); this._track(flutter);
+    wobble.connect(this.tone);
+    this._wobble = wobble;
+
+    // The kick ducks the melodic side a touch, the way a lofi mix breathes.
+    this.duck = ctx.createGain(); this.duck.gain.value = 1;
+    this.duck.connect(wobble);
+
     const mk = (gain, dest) => { const g = ctx.createGain(); g.gain.value = gain; g.connect(dest); return g; };
     this.bus = {
-      sub: mk(0.7, dry),              // sub skips the reverb so it stays tight
-      organ: mk(0.45, this.tone),
-      strings: mk(0.4, this.tone),
-      choir: mk(0.3, this.tone),
-      shimmer: mk(0.5, hall),         // shimmer is pure reverb
-      drum: mk(0.9, dry),
+      rhodes: mk(1.5, this.duck),
+      bass: mk(0.4, this.duck),      // bass is ducked too, but it skips the reverb below
+      pad: mk(0.2, this.duck),
+      drums: mk(0.0, this.tone),     // drums stay dry and out of the duck
+      vinyl: mk(0.9, this.tone),
     };
-    this.bus.shimmerDry = mk(0.18, dry);
+    // send keys and pad to the room
+    this.bus.rhodes.connect(room);
+    this.bus.pad.connect(room);
+
+    this._vinyl = this._makeVinyl();
   }
 
-  _impulse(seconds, decay, predelay = 0) {
-    const rate = this.ctx.sampleRate;
-    const len = Math.floor(rate * seconds);
-    const pre = Math.floor(rate * predelay);
+  _saturation(amount) {
+    const n = 1024, curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * 2 - 1;
+      curve[i] = Math.tanh(x * amount) / Math.tanh(amount);
+    }
+    return curve;
+  }
+
+  _impulse(seconds, decay) {
+    const rate = this.ctx.sampleRate, len = Math.floor(rate * seconds);
     const buf = this.ctx.createBuffer(2, len, rate);
     for (let c = 0; c < 2; c++) {
       const d = buf.getChannelData(c);
-      for (let i = pre; i < len; i++) {
-        const x = (i - pre) / (len - pre);
-        // slight build then long decay reads as a large hall rather than a room
-        const env = Math.pow(1 - x, decay) * Math.min(1, x * 14);
-        d[i] = (Math.random() * 2 - 1) * env;
+      for (let i = 0; i < len; i++) {
+        const x = i / len;
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - x, decay);
       }
     }
     return buf;
   }
 
-  /** Keep a handle on a source only until it finishes, so long sessions do not accumulate nodes. */
+  /** Looping surface noise: steady hiss plus sparse decaying pops. */
+  _makeVinyl() {
+    const ctx = this.ctx, seconds = 4.5, rate = ctx.sampleRate;
+    const len = Math.floor(rate * seconds);
+    const buf = ctx.createBuffer(2, len, rate);
+    for (let c = 0; c < 2; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.010;
+      const pops = Math.floor(seconds * 34);
+      for (let k = 0; k < pops; k++) {
+        const at = Math.floor(Math.random() * (len - 400));
+        const amp = 0.04 + Math.pow(Math.random(), 2) * 0.5;
+        const dur = 25 + Math.floor(Math.random() * 130);
+        for (let j = 0; j < dur; j++) d[at + j] += (Math.random() * 2 - 1) * amp * Math.pow(1 - j / dur, 3);
+      }
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1100;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7200;
+    const g = ctx.createGain(); g.gain.value = 0.5;
+    src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(this.bus.vinyl);
+    let started = false;
+    return {
+      start: () => { if (!started) { src.start(); started = true; } },
+      stop: () => { try { src.stop(); } catch (e) {} },
+    };
+  }
+
   _track(node) {
     this._stops.push(node);
     node.onended = () => { this._stops = this._stops.filter(x => x !== node); };
     return node;
   }
 
-  _pan(value) {
+  _pan(v) {
     if (!this.ctx.createStereoPanner) return null;
-    const p = this.ctx.createStereoPanner(); p.pan.value = value; return p;
+    const p = this.ctx.createStereoPanner(); p.pan.value = v; return p;
   }
 
   // ------------------------------------------------------------------ voices
-  /** Shared slow swell envelope. */
-  _env(peak, attack, hold, release) {
-    const ctx = this.ctx, t = ctx.currentTime;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + attack);
-    g.gain.setValueAtTime(Math.max(0.0002, peak), t + attack + hold);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + hold + release);
-    const total = attack + hold + release;
-    this._timers.push(setTimeout(() => { try { g.disconnect(); } catch (e) {} }, (total + 0.6) * 1000));
-    return { g, total };
+  /**
+   * FM electric piano. The modulator runs at the carrier frequency and its index
+   * collapses within a few hundred milliseconds, which is what makes a Rhodes
+   * chime on the attack and turn to a soft sine as it rings out.
+   */
+  _rhodes(note, time, dur, velocity, pan = 0, bus = null) {
+    const ctx = this.ctx, f = midi(note);
+    const carrier = ctx.createOscillator(); carrier.type = 'sine'; carrier.frequency.value = f;
+    const mod = ctx.createOscillator(); mod.type = 'sine'; mod.frequency.value = f * 2;
+    const modGain = ctx.createGain();
+    modGain.gain.setValueAtTime(f * (1.4 + velocity * 1.9), time);
+    modGain.gain.exponentialRampToValueAtTime(f * 0.04, time + 0.28);
+    mod.connect(modGain); modGain.connect(carrier.frequency);
+
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(0.0001, time);
+    amp.gain.exponentialRampToValueAtTime(velocity, time + 0.011);
+    amp.gain.exponentialRampToValueAtTime(velocity * 0.30, time + 0.45);
+    amp.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    carrier.connect(amp);
+
+    const p = this._pan(pan);
+    const dest = bus || this.bus.rhodes;
+    if (p) { amp.connect(p); p.connect(dest); } else amp.connect(dest);
+
+    carrier.start(time); carrier.stop(time + dur + 0.1);
+    mod.start(time); mod.stop(time + dur + 0.1);
+    this._track(carrier); this._track(mod);
   }
 
-  _osc(type, freq, detune, dest, gain, total) {
-    const ctx = this.ctx, t = ctx.currentTime;
-    const o = ctx.createOscillator();
-    o.type = type; o.frequency.value = freq; o.detune.value = detune;
-    const g = ctx.createGain(); g.gain.value = gain;
-    o.connect(g); g.connect(dest);
-    o.start(t); o.stop(t + total + 0.2);
-    this._track(o);
-    return o;
+  _bass(note, time, dur, velocity) {
+    const ctx = this.ctx, f = midi(note);
+    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+    const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = f / 2;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 760; lp.Q.value = 1.0;
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(0.0001, time);
+    amp.gain.exponentialRampToValueAtTime(velocity, time + 0.05);
+    amp.gain.exponentialRampToValueAtTime(velocity * 0.5, time + dur * 0.6);
+    amp.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    const sub = ctx.createGain(); sub.gain.value = 0.30;
+    o.connect(lp); o2.connect(sub); sub.connect(lp); lp.connect(amp); amp.connect(this.bus.bass);
+    o.start(time); o.stop(time + dur + 0.1); o2.start(time); o2.stop(time + dur + 0.1);
+    this._track(o); this._track(o2);
   }
 
-  _sub(root, dur) {
-    const { g, total } = this._env(0.32, 5, dur - 8, 7);
-    g.connect(this.bus.sub);
-    this._osc('sine', root / 2, 0, g, 1.0, total);
-    this._osc('sine', root, 0, g, 0.35, total);
-  }
-
-  _organ(tones, dur) {
-    for (let ti = 0; ti < tones.length; ti++) {
-      const f = tones[ti];
-      const { g, total } = this._env(ti === 0 ? 0.13 : 0.085, 4.5, dur - 9, 7.5);
-      const pan = this._pan((ti - 1) * 0.28);
-      if (pan) { g.connect(pan); pan.connect(this.bus.organ); } else g.connect(this.bus.organ);
-      for (const [harmonic, level] of ORGAN_PARTIALS) {
-        // the octave above the root carries the "cathedral" weight
-        this._osc('sine', f * harmonic, (Math.random() - 0.5) * 6, g, level, total);
-      }
-      this._osc('sine', f * 2, 3, g, 0.4, total);
-    }
-  }
-
-  _strings(tones, dur) {
+  _pad(notes, time, dur) {
     const ctx = this.ctx;
-    for (let ti = 0; ti < tones.length; ti++) {
-      const f = tones[ti] * 2; // strings sit an octave above the organ
-      const { g, total } = this._env(0.055, 7, dur - 12, 8);
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1500; lp.Q.value = 0.7;
-      const pan = this._pan((Math.random() - 0.5) * 0.9);
-      g.connect(lp);
-      if (pan) { lp.connect(pan); pan.connect(this.bus.strings); } else lp.connect(this.bus.strings);
-      // three players, never quite in tune with each other
-      for (const cents of [-7, 0, 9]) {
-        const o = this._osc('sawtooth', f, cents + (Math.random() - 0.5) * 5, g, 0.33, total);
-        const vib = ctx.createOscillator(); vib.frequency.value = 4.4 + Math.random() * 1.4;
-        const vibAmt = ctx.createGain(); vibAmt.gain.value = 4 + Math.random() * 3;
-        vib.connect(vibAmt); vibAmt.connect(o.detune); vib.start();
-        vib.stop(ctx.currentTime + total + 0.2);
-        this._track(vib);
+    for (const n of notes) {
+      const f = midi(n);
+      const amp = ctx.createGain();
+      amp.gain.setValueAtTime(0.0001, time);
+      amp.gain.exponentialRampToValueAtTime(0.024, time + dur * 0.4);
+      amp.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1300; lp.Q.value = 0.6;
+      const p = this._pan((Math.random() - 0.5) * 1.2);
+      for (const cents of [-8, 7]) {
+        const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = cents;
+        o.connect(lp); o.start(time); o.stop(time + dur + 0.1); this._track(o);
       }
+      lp.connect(amp);
+      if (p) { amp.connect(p); p.connect(this.bus.pad); } else amp.connect(this.bus.pad);
     }
   }
 
-  _choir(tones, dur) {
-    const ctx = this.ctx;
-    for (let ti = 0; ti < tones.length; ti++) {
-      const f = tones[ti] * 4; // voices sing high above the bass
-      const { g, total } = this._env(0.05, 8, dur - 13, 8);
-      const pan = this._pan((ti - 1) * 0.5);
-      const out = ctx.createGain(); out.gain.value = 1;
-      if (pan) { out.connect(pan); pan.connect(this.bus.choir); } else out.connect(this.bus.choir);
-      // one source, three formant bands -> a vowel rather than a buzz
-      for (const [freq, q, level] of FORMANTS) {
-        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q;
-        const lg = ctx.createGain(); lg.gain.value = level;
-        g.connect(bp); bp.connect(lg); lg.connect(out);
-      }
-      for (const cents of [-6, 5]) this._osc('sawtooth', f, cents, g, 0.5, total);
-      // breath: the vowel opens slightly as the note blooms
-      const shift = ctx.createOscillator(); shift.frequency.value = 0.07;
-      const shiftAmt = ctx.createGain(); shiftAmt.gain.value = 55;
-      shift.connect(shiftAmt); shift.start(); shift.stop(ctx.currentTime + total + 0.2);
-      this._track(shift);
-    }
-  }
-
-  _shimmer(tones, dur) {
-    // Bell tones drifting two octaves above the chord, scattered through the bar.
-    const count = 3 + Math.round(this.intensity * 4);
-    for (let i = 0; i < count; i++) {
-      const delay = Math.random() * (dur - 6);
-      this._timers.push(setTimeout(() => {
-        if (!this.playing) return;
-        const f = tones[Math.floor(Math.random() * tones.length)] * (Math.random() < 0.45 ? 8 : 4);
-        const { g, total } = this._env(0.06 + Math.random() * 0.05, 1.6, 0.4, 5 + Math.random() * 4);
-        const pan = this._pan((Math.random() - 0.5) * 1.5);
-        if (pan) { g.connect(pan); pan.connect(this.bus.shimmer); pan.connect(this.bus.shimmerDry); }
-        else { g.connect(this.bus.shimmer); g.connect(this.bus.shimmerDry); }
-        this._osc('sine', f, 0, g, 1.0, total);
-        this._osc('sine', f * 2.004, 0, g, 0.18, total);
-      }, delay * 1000));
-    }
-  }
-
-  _drum(accent) {
-    const ctx = this.ctx, t = ctx.currentTime;
-    const level = 0.22 * accent * Math.pow(this.intensity, 1.3);
-    if (level < 0.012) return;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(level, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
-    g.connect(this.bus.drum);
-    const o = ctx.createOscillator(); o.type = 'sine';
-    o.frequency.setValueAtTime(92, t);
-    o.frequency.exponentialRampToValueAtTime(34, t + 1.1);
-    o.connect(g); o.start(t); o.stop(t + 2.7);
-    this._track(o);
-  }
-
-  _riser(dur) {
-    // Noise that lifts into the next chord. Only once the piece has opened up.
-    if (this.intensity < 0.45) return;
-    const ctx = this.ctx, t = ctx.currentTime;
-    const len = Math.min(dur, 7);
-    const buf = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate);
+  _noise(seconds) {
+    const ctx = this.ctx, len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     const src = ctx.createBufferSource(); src.buffer = buf;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2.2;
-    bp.frequency.setValueAtTime(260, t);
-    bp.frequency.exponentialRampToValueAtTime(5200, t + len);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.035 * this.intensity, t + len * 0.92);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-    src.connect(bp); bp.connect(g); g.connect(this.bus.strings);
-    src.start(t); src.stop(t + len + 0.1);
-    this._track(src);
+    return src;
   }
 
-  // ------------------------------------------------------------------ driver
-  _nextChord() {
+  _kick(time, velocity) {
+    const ctx = this.ctx;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(124, time);
+    o.frequency.exponentialRampToValueAtTime(43, time + 0.11);
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(velocity, time);
+    amp.gain.exponentialRampToValueAtTime(0.0001, time + 0.42);
+    o.connect(amp); amp.connect(this.bus.drums);
+    o.start(time); o.stop(time + 0.45); this._track(o);
+
+    // duck the keys so the kick has room
+    const d = this.duck.gain;
+    d.cancelScheduledValues(time);
+    d.setValueAtTime(1, time);
+    d.linearRampToValueAtTime(1 - 0.22 * this._beatMix, time + 0.02);
+    d.linearRampToValueAtTime(1, time + 0.30);
+  }
+
+  _snare(time, velocity) {
+    const ctx = this.ctx;
+    const src = this._noise(0.25);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1750; bp.Q.value = 0.8;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(velocity * 0.7, time);
+    amp.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
+    src.connect(bp); bp.connect(lp); lp.connect(amp);
+    amp.connect(this.bus.drums); amp.connect(this._room);
+    src.start(time); src.stop(time + 0.25); this._track(src);
+
+    // a little body under the noise
+    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = 188;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(velocity * 0.32, time);
+    og.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
+    o.connect(og); og.connect(this.bus.drums);
+    o.start(time); o.stop(time + 0.14); this._track(o);
+  }
+
+  _hat(time, velocity) {
+    const ctx = this.ctx;
+    const src = this._noise(0.09);
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 6800;
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(velocity * 0.18, time);
+    amp.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+    src.connect(hp); hp.connect(amp);
+    const p = this._pan(0.15);
+    if (p) { amp.connect(p); p.connect(this.bus.drums); } else amp.connect(this.bus.drums);
+    src.start(time); src.stop(time + 0.09); this._track(src);
+  }
+
+  // ---------------------------------------------------------------- scheduler
+  //
+  // Lookahead scheduling: a coarse timer wakes up and commits notes onto the audio
+  // clock a little way ahead, so the groove does not inherit setTimeout's jitter.
+  //
+  // The horizon has to be longer than the main thread can stall for. This page
+  // renders a heavy WebGL scene, and on a slow GPU a single frame can block the
+  // thread for longer than a fixed 0.3s horizon, at which point every missed step
+  // gets committed at once and the beat collapses into mush. So the horizon tracks
+  // the observed stall length, and anything that still slips into the past is
+  // skipped rather than dumped on the downbeat.
+  get _sixteenth() { return 60 / BPM / 4; }
+
+  _schedule() {
     if (!this.playing) return;
-    const chord = PROGRESSION[this._chordIndex % PROGRESSION.length];
-    const dur = CHORD_SECONDS + Math.random() * 2;
+    const now = this.ctx.currentTime;
 
-    this._sub(chord.tones[0], dur);
-    this._organ(chord.tones, dur);
-    this._drum(chord.accent);
-    if (this.intensity > 0.12) this._strings(chord.tones, dur);
-    if (this.intensity > 0.30) this._choir(chord.tones, dur);
-    this._shimmer(chord.tones, dur);
+    if (this._lastSchedule) {
+      const gap = now - this._lastSchedule;
+      const want = Math.min(2.0, Math.max(0.35, gap * 3));
+      // grow the horizon immediately when the thread stalls, relax it slowly after
+      this._lookahead = Math.max(want, (this._lookahead || 0.35) * 0.95);
+    }
+    this._lastSchedule = now;
 
-    const next = dur - CROSSFADE;
-    // the riser arrives just before the next chord lands
-    this._timers.push(setTimeout(() => { if (this.playing) this._riser(CROSSFADE); }, Math.max(0, (next - 4)) * 1000));
-    this._chordIndex++;
-    this._timers.push(setTimeout(() => this._nextChord(), next * 1000));
+    // Realign if the grid has fallen behind: skip the missed steps instead of
+    // scheduling them in the past, where they would all fire simultaneously.
+    if (this._nextTime < now) {
+      const missed = Math.ceil((now - this._nextTime) / this._sixteenth);
+      this._step += missed;
+      this._nextTime += missed * this._sixteenth;
+    }
+
+    const ahead = now + (this._lookahead || 0.35);
+    while (this._nextTime < ahead) {
+      this._scheduleStep(this._step, this._nextTime);
+      this._step++;
+      this._nextTime += this._sixteenth;
+    }
+  }
+
+  _scheduleStep(step, time) {
+    const inBar = step % STEPS_PER_BAR;
+    const bar = Math.floor(step / STEPS_PER_BAR) % PROGRESSION.length;
+    const chord = PROGRESSION[bar];
+    const i = this.intensity;
+    const beat = this._beatMix ?? 0;
+    // swing: push the offbeat eighth late
+    const swung = time + (inBar % 4 === 2 ? SWING * this._sixteenth : 0);
+    const human = () => (Math.random() - 0.5) * 0.012;
+    const barDur = this._sixteenth * STEPS_PER_BAR;
+
+    // ---- chord and bass, at the top of each bar
+    if (inBar === 0) {
+      chord.voicing.forEach((n, k) => {
+        // roll the voicing slightly, like a hand rather than a grid
+        const t = time + k * 0.018 + human();
+        this._rhodes(n, t, barDur * 1.15, 0.115 + Math.random() * 0.035, (k - 2) * 0.16);
+      });
+      this._bass(chord.bass, time + human(), barDur * 0.55, 0.22);
+      this._pad(chord.voicing.slice(0, 3), time, barDur * 1.3);
+    }
+    // a syncopated second chord stab, the lazy push that makes it feel lofi
+    if (inBar === 11 && Math.random() < 0.75) {
+      chord.voicing.forEach((n, k) => this._rhodes(n, swung + k * 0.012 + human(), barDur * 0.5, 0.065, (k - 2) * 0.16));
+    }
+    // walking note to the next bar
+    if (inBar === 12) {
+      const next = PROGRESSION[(bar + 1) % PROGRESSION.length].bass;
+      this._bass(chord.bass, time + human(), this._sixteenth * 3, 0.15);
+      if (Math.random() < 0.6) this._bass(next - 1, time + this._sixteenth * 2 + human(), this._sixteenth * 2, 0.12);
+    }
+
+    // ---- drums
+    if (beat > 0.01) {
+      if (KICK.includes(inBar) || (inBar === 6 && bar % 2 === 1)) this._kick(time + human(), (0.62 + Math.random() * 0.12) * beat);
+      if (SNARE.includes(inBar)) this._snare(swung + human(), (0.5 + Math.random() * 0.1) * beat);
+      // a fill at the end of every fourth bar
+      if (bar % 4 === 3 && inBar === 14) this._snare(swung + human(), 0.34 * beat);
+      if (HAT.includes(inBar)) {
+        const accent = inBar % 4 === 0 ? 1 : 0.62;      // downbeats louder
+        this._hat(swung + human(), accent * (0.55 + Math.random() * 0.35) * beat);
+      }
+    }
+
+    // ---- sparse lead phrase, only once the track is open
+    if (i > 0.55 && inBar === 8 && Math.random() < 0.3) {
+      const n = LEAD_NOTES[Math.floor(Math.random() * LEAD_NOTES.length)];
+      this._rhodes(n, swung + human(), barDur * 0.7, 0.10, (Math.random() - 0.5) * 0.9);
+      if (Math.random() < 0.5) {
+        const m = LEAD_NOTES[Math.floor(Math.random() * LEAD_NOTES.length)];
+        this._rhodes(m, swung + this._sixteenth * 3, barDur * 0.6, 0.08, (Math.random() - 0.5) * 0.9);
+      }
+    }
   }
 
   _killVoices() {
-    this._stops.forEach(o => { try { o.stop(); } catch (e) {} });
+    this._stops.forEach(n => { try { n.stop(); } catch (e) {} });
     this._stops = [];
   }
 
-  /** Soft mallet note when a world is selected; tuned to the current key. */
+  /** Soft Rhodes note when a world is selected, in the key of the track. */
   chime(freq = 587.33) {
     if (!this.ctx || !this.playing) return;
-    const ctx = this.ctx, t = ctx.currentTime;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.085, t + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 3.2);
-    g.connect(this.bus.shimmer); g.connect(this.bus.shimmerDry);
-    for (const [mult, level] of [[1, 1], [2.01, 0.3], [3.01, 0.12]]) {
-      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq * mult;
-      const og = ctx.createGain(); og.gain.value = level;
-      o.connect(og); og.connect(g); o.start(t); o.stop(t + 3.3);
-      this._track(o);
-    }
+    const note = 69 + 12 * Math.log2(freq / 440);
+    this._rhodes(note, this.ctx.currentTime + 0.01, 2.6, 0.13, 0);
   }
 }
 
-// D minor scale degrees, so selection chimes always land in key.
-export const CHIME_SCALE = [587.33, 659.26, 698.46, 783.99, 880.00, 932.33, 1046.50, 1174.66];
+// C major pentatonic, so selection chimes always sit inside the progression.
+export const CHIME_SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];

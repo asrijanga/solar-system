@@ -6,7 +6,7 @@ An interactive 3D model of the Solar System, built with [Three.js](https://three
 
 ## What's in it
 
-The opening is a choice. **Begin** plays a Star Wars-style title crawl and then a fifty-second flight: the camera starts inside the Sun's corona, dives to Earth, and pulls back until the whole system is a smudge against the Milky Way. **Skip to the system** drops you straight into the model. Either way `Esc` hands over control at any point, and `R` replays the opening later.
+An intro card explains what you are looking at, then **Enter the system** takes you straight in. **Watch the flight first** plays an optional fifty-second camera move instead: it starts inside the Sun's corona, dives to Earth, and pulls back until the whole system is a smudge against the Milky Way. `Esc` leaves the flight at any point, and `R` replays it later.
 
 - **True scale, and only true scale.** Sizes and distances are real, with no exaggeration and no compression anywhere in the model. A world that is a speck is drawn as a speck, and the space between them is the space that is actually there. That is the honest picture, and the opening sequence teaches you how to read it. Glowing markers keep the planets findable, and orbit lines are available on `O` when you want the geometry.
 - **Real NASA maps of every world.** Blue Marble and Earth-at-Night for Earth, LRO for the Moon, MESSENGER for Mercury, Magellan for Venus, Viking for Mars, Cassini for Jupiter and Saturn, Voyager 2 for Neptune and Triton, New Horizons for Pluto and Charon, plus Io, Europa, Ganymede, Callisto, Titan and Enceladus.
@@ -31,7 +31,7 @@ The opening is a choice. **Begin** plays a Star Wars-style title crawl and then 
 | `[` `]` | Slower / faster |
 | `N` | Jump to now |
 | `O` | Orbit lines |
-| `R` | Replay the crawl and flight |
+| `R` | Replay the flight |
 | `C` | Constellation figures |
 | `Space` | Pause time and rotation |
 | `?` | Show all keys |

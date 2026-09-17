@@ -21,11 +21,19 @@ canvas { display: block; }
 .label.hidden { opacity: 0; }
 
 /* ---------- splash ---------- */
-#splash { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(8,12,30,0.95), rgba(1,2,8,0.995)); transition: opacity 1.2s ease; }
+#splash { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(ellipse at center, rgba(3,5,14,0.72), rgba(1,2,8,0.93)); transition: opacity 1.2s ease; }
 #splash.fade { opacity: 0; pointer-events: none; }
-.splash-inner { text-align: center; max-width: 620px; padding: 32px; }
+.splash-inner {
+  text-align: center; max-width: 560px; width: 100%;
+  padding: 44px 44px 34px;
+  background: rgba(10, 14, 28, 0.86);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+}
 .splash-inner h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(38px, 7vw, 74px); letter-spacing: 0.08em; margin: 0 0 8px; color: #fff; }
-.splash-inner .sub { color: var(--muted); font-size: 14px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 36px; }
+.splash-inner .sub { color: var(--muted); font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 26px; }
 .splash-inner p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
 #launch { font-family: var(--font-body); font-size: 14px; letter-spacing: 0.24em; text-transform: uppercase; color: #fff; background: transparent; border: 1px solid rgba(255,255,255,0.45); padding: 14px 40px; border-radius: 999px; cursor: pointer; transition: all 0.3s; }
 #launch:hover { background: rgba(255,255,255,0.12); border-color: #fff; box-shadow: 0 0 40px rgba(127,178,255,0.35); }
@@ -33,6 +41,7 @@ canvas { display: block; }
 #loadbar { height: 2px; background: rgba(255,255,255,0.1); margin: 28px auto 0; width: 260px; border-radius: 2px; overflow: hidden; }
 #loadbar > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #fff); transition: width 0.3s; }
 #loadtext { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-top: 10px; min-height: 1.2em; }
+#loading.done { display: none; }
 
 /* ---------- HUD ---------- */
 .hud { position: fixed; z-index: 10; font-size: 12px; }
@@ -187,85 +196,19 @@ body.cinematic #bars { opacity: 1; }
 @media (max-width: 720px) {
   #caption { bottom: 20vh; }
   #caption span { font-size: 19px; }
-  /* top right on phones: at the bottom it lands on the crawl's last lines */
+  /* top right on phones: the bottom is where the flight captions sit */
   #skip { top: 14px; right: 14px; bottom: auto; padding: 8px 14px; }
 }
 
-/* ---------- opening crawl ---------- */
-#crawl {
-  position: fixed; inset: 0; z-index: 40;
-  background: rgba(0, 0, 0, 0.9);
-  display: none; overflow: hidden;
-  opacity: 1; transition: opacity 1.2s ease;
-}
-#crawl.show, #crawl.fading { display: block; }
-#crawl.fading { opacity: 0; pointer-events: none; }
-
-/* The gradient that swallows the text sits on the untransformed overlay, so it
-   stays square to the screen while the crawl itself is tilted. */
-#crawl::after {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 56%;
-  background: linear-gradient(to bottom, #000 22%, rgba(0,0,0,0.8) 48%, rgba(0,0,0,0) 100%);
-  pointer-events: none; z-index: 3;
-}
-
-.crawl-preamble {
-  position: absolute; top: 44%; left: 50%; z-index: 4;
-  transform: translate(-50%, -50%);
-  width: min(620px, 84vw);
-  color: #4bd5ee;
-  font-family: var(--font-body);
-  font-size: clamp(17px, 2.3vw, 30px);
-  line-height: 1.55; letter-spacing: 0.01em; text-align: center;
-  opacity: 0;
-}
-#crawl.running .crawl-preamble { animation: crawl-preamble 5s ease forwards; }
-@keyframes crawl-preamble {
-  0% { opacity: 0; } 24% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; }
-}
-
-.crawl-stage { position: absolute; inset: 0; perspective: 400px; overflow: hidden; }
-
-/* Transform order matters here. CSS applies the list right to left, so rotateX
-   tilts the block in its own space first, and the two translates then move the
-   already-tilted block in the parent's frame. Putting the translate first instead
-   would slide it along the tilted plane and straight at the camera, where
-   perspective magnifies it to several times its width before it ever recedes. */
-.crawl-text {
-  position: absolute; top: 0; left: 50%;
-  width: min(740px, 82vw);
-  margin-left: calc(min(740px, 82vw) / -2);
-  transform-origin: 50% 100%;
-  transform: translateY(88vh) translateZ(0) rotateX(22deg);
-  color: #ffc93c;
-  font-family: 'Oswald', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 500;
-  font-size: clamp(19px, 2.4vw, 32px);
-  line-height: 1.45; text-align: justify;
-  text-shadow: 0 0 22px rgba(255, 170, 40, 0.3);
-  opacity: 0;
-}
-#crawl.running .crawl-text { animation: crawl-move 27s linear 4.2s forwards; }
-@keyframes crawl-move {
-  0%   { transform: translateY(88vh) translateZ(0) rotateX(22deg); opacity: 1; }
-  58%  { opacity: 1; }
-  100% { transform: translateY(-235%) translateZ(-1450px) rotateX(22deg); opacity: 0; }
-}
-.crawl-text h2 {
-  font-size: 1.7em; font-weight: 600; margin: 0 0 0.75em;
-  text-align: center; text-transform: uppercase; letter-spacing: 0.14em;
-}
-.crawl-text p { margin: 0 0 1.05em; }
-
 /* ---------- splash choice ---------- */
 .splash-actions { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
-#launch-skip.ghost {
+#launch-flight.ghost {
   background: transparent; border: none; color: var(--muted);
   font-family: var(--font-body); font-size: 11px; letter-spacing: 0.22em;
   text-transform: uppercase; padding: 14px 12px; cursor: pointer; transition: color 0.25s;
 }
-#launch-skip.ghost:hover { color: #fff; }
-#launch-skip:disabled { opacity: 0.3; cursor: wait; }
+#launch-flight.ghost:hover { color: #fff; }
+#launch-flight:disabled { opacity: 0.3; cursor: wait; }
 .splash-note { margin-top: 16px; font-size: 11px; line-height: 1.6; color: rgba(152, 163, 194, 0.72); }
 .splash-note kbd {
   font-family: var(--font-body); border: 1px solid var(--panel-border);
@@ -273,12 +216,14 @@ body.cinematic #bars { opacity: 1; }
 }
 
 @media (max-width: 720px) {
-  .crawl-text { font-size: 17px; width: 86vw; margin-left: -43vw; }
-  .crawl-preamble { font-size: 16px; }
-  .crawl-stage { perspective: 320px; }
 }
 
 /* Keep the HUD out of the way until the viewer has actually started. */
 body.pre-launch #topbar,
 body.pre-launch #bottombar,
 body.pre-launch #labelroot { opacity: 0; pointer-events: none; }
+
+@media (max-width: 720px) {
+  .splash-inner { padding: 30px 22px 26px; }
+  .splash-actions { flex-direction: column; gap: 4px; }
+}

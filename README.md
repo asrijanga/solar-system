@@ -19,7 +19,7 @@ It opens with a fifty-second cold open: the camera starts inside the Sun's coron
 - **21,000 asteroids, Kuiper belt objects and Jupiter trojans** orbiting on the GPU.
 - **Click any world** for facts, live distances and light-travel times, your weight and age there, and the NASA source of its imagery.
 - **Calm rotation.** Rotation periods here span 762x, from Phobos at 7.6 hours to Venus at 5832, so no single clock rate suits them all: fast enough for Venus to move and Jupiter is a blur. Spin is therefore decoupled from the simulation clock and every period is compressed into a narrow band, anchored on the slowest body. Venus turns once every seven minutes instead of forty-six hours, Jupiter every two, and the order is preserved. Orbital positions of the planets are untouched and stay truthful, and the panels still report real day lengths. Turn it off in settings for literal spin tied to the clock.
-- **A score composed live** with the Web Audio API: sub bass, a drawbar organ stack, bowed strings, formant choir, shimmer and risers, opened and closed by a single intensity value that crescendos through the opening. Nothing is sampled, so no two visits sound the same.
+- **A lofi soundtrack, played live.** A slow swung boom-bap beat under a Rhodes electric piano, with upright bass, a soft pad, tape wow and flutter, and vinyl crackle. Nothing is sampled: the Rhodes is FM synthesis, the drums are synthesised, and the crackle is generated noise. A single intensity value arranges it, so the beat walks in as the opening pulls away from Earth. 74 BPM, an eight-bar turnaround, and enough randomness in timing, velocity and fills that it never loops identically.
 
 ## Controls
 

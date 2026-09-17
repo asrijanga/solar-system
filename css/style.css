@@ -114,8 +114,19 @@ canvas { display: block; }
 #tip { position: fixed; z-index: 15; pointer-events: none; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; opacity: 0; transition: opacity 0.15s; transform: translate(12px, -50%); }
 
 @media (max-width: 720px) {
-  #brand { font-size: 16px; }
-  #clock .date { font-size: 16px; }
+  #topbar { padding: 10px 12px; }
+  #brand { font-size: 15px; letter-spacing: 0.08em; white-space: nowrap; }
+  #brand small { display: none; }
+  #clock .date { font-size: 13px; white-space: nowrap; }
+  #clock .speed { display: none; }
+  .iconbtn { width: 32px; height: 32px; margin-left: 5px; font-size: 13px; }
+  #timectl { width: calc(100vw - 28px); justify-content: space-between; padding: 6px 10px; }
+  #timectl input[type=range] { width: auto; flex: 1; min-width: 60px; }
+  #timectl .lbl { min-width: 0; font-size: 9px; }
+  #timectl button { padding: 4px 4px; font-size: 12px; }
+  #panel { max-height: 50vh; }
+  #panel .head { padding: 14px 18px 8px; }
+  #panel .body { padding: 12px 18px 18px; }
   #panel { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 62vh; border-radius: 18px 18px 0 0; transform: translateY(120%); }
   #panel.open { transform: translateY(0); }
   #panel .head h2 { font-size: 30px; }

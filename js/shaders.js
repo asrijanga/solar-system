@@ -28,6 +28,8 @@ float fbm(vec3 p){ float f=0.0; float a=0.5; for(int i=0;i<5;i++){ f+=a*snoise(p
 `;
 
 export const SUN_VERT = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_vertex>
 varying vec3 vNormal; varying vec3 vPos; varying vec3 vView;
 void main(){
   vNormal = normalize(normalMatrix * normal);
@@ -35,11 +37,17 @@ void main(){
   vec4 mv = modelViewMatrix * vec4(position,1.0);
   vView = -mv.xyz;
   gl_Position = projectionMatrix * mv;
+#include <logdepthbuf_vertex>
+
 }`;
 export const SUN_FRAG = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_fragment>
 uniform float uTime; varying vec3 vNormal; varying vec3 vPos; varying vec3 vView;
 ${NOISE_GLSL}
 void main(){
+#include <logdepthbuf_fragment>
+
   vec3 p = normalize(vPos);
   float t = uTime * 0.06;
   float n1 = fbm(p * 4.0 + vec3(t * 0.5, -t * 0.3, t * 0.2));      // supergranulation
@@ -89,6 +97,8 @@ void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(p
 // Planet: Lambert shading from the Sun with optional night lights, ocean glint,
 // atmospheric rim scatter and analytic ring shadow.
 export const PLANET_VERT = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_vertex>
 varying vec2 vUv; varying vec3 vWorldPos; varying vec3 vWorldNormal;
 void main(){
   vUv = uv;
@@ -96,8 +106,16 @@ void main(){
   vWorldPos = wp.xyz;
   vWorldNormal = normalize(mat3(modelMatrix) * normal);
   gl_Position = projectionMatrix * viewMatrix * wp;
+#include <logdepthbuf_vertex>
+
+#include <logdepthbuf_vertex>
+
+#include <logdepthbuf_vertex>
+
 }`;
 export const PLANET_FRAG = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_fragment>
 uniform sampler2D uMap; uniform sampler2D uNight; uniform sampler2D uRingMap;
 uniform float uHasNight; uniform float uOcean; uniform float uHasRingShadow;
 uniform vec3 uSunPos; uniform vec3 uAtmoColor; uniform float uAtmo; uniform float uAmbient;
@@ -105,6 +123,8 @@ uniform vec3 uCenter; uniform vec3 uPoleAxis; uniform float uRingInner; uniform 
 uniform vec3 uCamPos; uniform float uLightScale; uniform float uWrap; uniform float uSaturation; uniform float uSpecular; uniform float uShininess;
 varying vec2 vUv; varying vec3 vWorldPos; varying vec3 vWorldNormal;
 void main(){
+#include <logdepthbuf_fragment>
+
   vec3 N = normalize(vWorldNormal);
   vec3 L = normalize(uSunPos - vWorldPos);
   vec3 V = normalize(uCamPos - vWorldPos);
@@ -154,6 +174,8 @@ void main(){
 }`;
 
 export const ATMO_VERT = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_vertex>
 varying vec3 vN; varying vec3 vV; varying vec3 vW;
 void main(){
   vec4 wp = modelMatrix * vec4(position,1.0);
@@ -161,9 +183,13 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 export const ATMO_FRAG = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_fragment>
 uniform vec3 uColor; uniform vec3 uSunPos; uniform float uIntensity;
 varying vec3 vN; varying vec3 vV; varying vec3 vW;
 void main(){
+#include <logdepthbuf_fragment>
+
   vec3 L = normalize(uSunPos - vW);
   float lit = clamp(dot(vN, L) * 1.2 + 0.35, 0.0, 1.0);
   // Rendered on the back faces of a shell just outside the planet: c is 0 at the shell's
@@ -174,6 +200,8 @@ void main(){
 }`;
 
 export const RING_VERT = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_vertex>
 varying vec3 vWorldPos; varying float vR;
 uniform float uInner; uniform float uOuter;
 void main(){
@@ -183,9 +211,13 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 export const RING_FRAG = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_fragment>
 uniform sampler2D uRingMap; uniform vec3 uSunPos; uniform vec3 uCenter; uniform float uPlanetRadius; uniform vec3 uPoleAxis; uniform float uLightScale; uniform vec3 uCamPos;
 varying vec3 vWorldPos; varying float vR;
 void main(){
+#include <logdepthbuf_fragment>
+
   vec4 ring = texture2D(uRingMap, vec2(clamp(vR, 0.0, 1.0), 0.5));
   if (ring.a < 0.01) discard;
   vec3 L = normalize(uSunPos - vWorldPos);
@@ -263,11 +295,31 @@ void main(){
 }`;
 
 export const STAR_VERT = /* glsl */`
-attribute float aSize; attribute vec3 aColor; uniform float uPixelRatio; varying vec3 vColor;
-void main(){ vColor = aColor; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = aSize * uPixelRatio; gl_Position = projectionMatrix * mv; }`;
+attribute float aSize; attribute vec3 aColor; attribute float aPhase;
+uniform float uPixelRatio; uniform float uTime;
+varying vec3 vColor; varying float vTwinkle;
+void main(){
+  vColor = aColor;
+  // two detuned sines so the scintillation never falls into an obvious rhythm
+  float tw = sin(uTime * 1.7 + aPhase * 6.283) * 0.5 + sin(uTime * 0.63 + aPhase * 12.1) * 0.5;
+  vTwinkle = 0.72 + 0.28 * tw;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  gl_PointSize = aSize * uPixelRatio * (0.85 + 0.15 * tw);
+  gl_Position = projectionMatrix * mv;
+}`;
 export const STAR_FRAG = /* glsl */`
-varying vec3 vColor;
-void main(){ vec2 c = gl_PointCoord - 0.5; float d = length(c); if (d > 0.5) discard; float a = smoothstep(0.5, 0.05, d); gl_FragColor = vec4(vColor * a, a); }`;
+varying vec3 vColor; varying float vTwinkle;
+void main(){
+  vec2 c = gl_PointCoord - 0.5;
+  float d = length(c);
+  if (d > 0.5) discard;
+  float core = smoothstep(0.5, 0.0, d);
+  // faint cross spikes read as a lens diffracting a true point source
+  float spike = max(0.0, 1.0 - abs(c.x) * 26.0) + max(0.0, 1.0 - abs(c.y) * 26.0);
+  spike *= smoothstep(0.5, 0.12, d) * 0.35;
+  float a = clamp(core * core + spike, 0.0, 1.0) * vTwinkle;
+  gl_FragColor = vec4(vColor * a, a);
+}`;
 
 // Orbit trail: the line brightens just behind the moving body and fades around the orbit.
 export const TRAIL_VERT = /* glsl */`

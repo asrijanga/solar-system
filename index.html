@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Solar System — an interactive 3D model with real NASA imagery</title>
-  <meta name="description" content="An interactive 3D model of the Solar System built with Three.js, real NASA planet maps, live Sun imagery, accurate planet positions for today's date, and a generative ambient soundtrack." />
+  <title>Solar System — the real thing, at real scale</title>
+  <meta name="description" content="An interactive 3D model of the Solar System at true scale, built from real NASA photography, with live planet positions, a live picture of the Sun, and a score composed as you watch." />
+  <meta property="og:title" content="Solar System — the real thing, at real scale" />
+  <meta property="og:description" content="Real NASA imagery. Real positions, tonight. Nothing exaggerated." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='34' fill='%23ffb347'/><circle cx='50' cy='50' r='46' fill='none' stroke='%237fb2ff' stroke-width='3' opacity='.6'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,8 +28,9 @@
   <div id="splash">
     <div class="splash-inner">
       <h1>Solar System</h1>
-      <div class="sub">A living model, built from NASA data</div>
-      <p>Real NASA maps of every world. Planets placed where they truly are today, from JPL orbital elements. A live picture of the Sun. A soundtrack composed as you watch. Put on headphones.</p>
+      <div class="sub">Real imagery · true scale · live positions</div>
+      <p>Every world here was photographed, not painted. Every planet sits where it actually is tonight. And nothing is exaggerated: at true scale, the Earth you live on is a single point of light.</p>
+      <p class="quiet">Fifty seconds, with sound. Headphones if you have them.</p>
       <button id="launch" disabled>Preparing…</button>
       <div id="loadbar"><div></div></div>
       <div id="loadtext">Loading NASA imagery</div>
@@ -38,6 +41,7 @@
     <div id="brand">Solar System<small>Real NASA imagery · live positions</small></div>
     <div id="clock"><div class="date">—</div><div class="speed">—</div></div>
     <div id="toolbar">
+      <button class="iconbtn" id="btn-replay" title="Replay the opening (R)">↻</button>
       <button class="iconbtn" id="btn-music" title="Music (M)">♪</button>
       <button class="iconbtn" id="btn-settings" title="Settings">⚙</button>
       <button class="iconbtn" id="btn-full" title="Fullscreen (F)">⛶</button>
@@ -51,7 +55,8 @@
     <label>Asteroid & Kuiper belts <input type="checkbox" id="opt-belts" checked /></label>
     <label>Moons <input type="checkbox" id="opt-moons" checked /></label>
     <label>Bloom glow <input type="checkbox" id="opt-bloom" checked /></label>
-    <label>True scale <input type="checkbox" id="opt-truescale" /></label>
+    <label>Constellations <input type="checkbox" id="opt-constellations" /></label>
+    <label>True scale <input type="checkbox" id="opt-truescale" checked /></label>
     <div class="sub">Planet size exaggeration</div>
     <label><span>×1 – ×60</span><input type="range" id="opt-size" min="1" max="60" step="1" value="45" /></label>
     <div class="sub">Music volume</div>
@@ -68,7 +73,7 @@
   </div>
 
   <div id="bottombar" class="hud">
-    <div id="hint">Click a world · drag to orbit · scroll to zoom · keys 0–9 jump · space pauses</div>
+    <div id="hint">Click a world · drag to orbit · scroll to zoom · keys 0–9 jump · ? for all keys</div>
     <div id="planetnav"></div>
     <div id="timectl">
       <button id="t-back" title="Slower">◀◀</button>
@@ -79,6 +84,10 @@
       <button id="t-now" title="Jump to now">Now</button>
     </div>
   </div>
+
+  <div id="bars"></div>
+  <div id="caption"></div>
+  <button id="skip">Skip intro</button>
 
   <div id="toast"></div>
   <div id="tip"></div>

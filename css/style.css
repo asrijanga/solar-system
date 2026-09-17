@@ -141,3 +141,51 @@ canvas { display: block; }
 /* ---------- lens flare ---------- */
 #flare { position: absolute; inset: 0; pointer-events: none; overflow: hidden; mix-blend-mode: screen; transition: opacity 0.15s; }
 .flare-el { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
+
+/* ---------- cinematic opening ---------- */
+#topbar, #bottombar, #labelroot { transition: opacity 1.3s ease; }
+body.cinematic #topbar,
+body.cinematic #bottombar,
+body.cinematic #labelroot,
+body.cinematic #panel { opacity: 0; pointer-events: none; }
+
+/* soft letterbox: gradients rather than hard bars, so it frames without cropping */
+#bars { position: fixed; inset: 0; z-index: 24; pointer-events: none; opacity: 0; transition: opacity 1.4s ease; }
+body.cinematic #bars { opacity: 1; }
+#bars::before, #bars::after { content: ''; position: absolute; left: 0; right: 0; height: 16vh; }
+#bars::before { top: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.75), rgba(0,0,0,0)); }
+#bars::after { bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0)); }
+
+#caption { position: fixed; left: 0; right: 0; bottom: 16vh; z-index: 25; text-align: center; pointer-events: none; padding: 0 28px; }
+#caption span {
+  display: inline-block;
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(21px, 3.3vw, 42px); line-height: 1.38; letter-spacing: 0.015em;
+  color: #fff; text-shadow: 0 2px 30px rgba(0,0,0,0.95), 0 0 80px rgba(0,0,0,0.85);
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 1.5s ease, transform 2s cubic-bezier(.16,.8,.24,1);
+}
+#caption.show span { opacity: 1; transform: translateY(0); }
+#caption em {
+  font-style: normal; display: block; margin-top: 14px;
+  font-family: var(--font-body); font-size: 11px; letter-spacing: 0.3em;
+  text-transform: uppercase; color: var(--accent-2);
+}
+
+#skip {
+  position: fixed; bottom: 30px; right: 26px; z-index: 30;
+  background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff;
+  font-family: var(--font-body); font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+  padding: 10px 20px; border-radius: 999px; cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity 0.6s ease, background 0.25s, border-color 0.25s;
+}
+#skip.show { opacity: 0.5; pointer-events: auto; }
+#skip:hover { opacity: 1; background: rgba(255,255,255,0.1); border-color: #fff; }
+
+.splash-inner p.quiet { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(152,163,194,0.75); margin-top: -8px; }
+
+@media (max-width: 720px) {
+  #caption { bottom: 20vh; }
+  #caption span { font-size: 19px; }
+  #skip { bottom: 88px; right: 14px; padding: 8px 14px; }
+}

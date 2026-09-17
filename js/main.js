@@ -4,6 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { SUN, PLANETS, COMETS, KEYBOARD_ORDER, AU_KM, C_KM_S } from './data.js';
 import { planetPosition, cometPosition, orbitPath, cometPath, dateToJD, jdToDate, J2000_JD } from './orbits.js';
@@ -22,7 +23,7 @@ const state = {
   jd: dateToJD(new Date()),
   speedExp: 6,               // slider value; seconds of sim time per real second = 10^(0.85*exp)
   paused: false,
-  sizeSlider: 30,            // 1..60 -> planet exaggeration
+  sizeSlider: 45,            // 1..60 -> planet exaggeration
   trueScale: false,
   scaleMix: 0,               // 0 = visual, 1 = true scale (animated)
   showOrbits: true, showLabels: true, showBelts: true, showMoons: true, bloom: true,
@@ -62,8 +63,8 @@ const container = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.0;
 container.appendChild(renderer.domElement);
 
 const labelRenderer = new CSS2DRenderer();
@@ -81,11 +82,14 @@ controls.enableDamping = true; controls.dampingFactor = 0.06;
 controls.minDistance = 0.002; controls.maxDistance = 60000;
 controls.enablePan = false;
 
-const composer = new EffectComposer(renderer);
+const composerTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+const composer = new EffectComposer(renderer, composerTarget);
 composer.addPass(new RenderPass(scene, camera));
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.45, 0.6, 1.0);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.7, 1.0);
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
+const vignettePass = new ShaderPass(SH.VIGNETTE_SHADER);
+composer.addPass(vignettePass);
 
 // ------------------------------------------------------------------ loading
 const manager = new THREE.LoadingManager();
@@ -106,7 +110,7 @@ const skyGroup = new THREE.Group();
 {
   const maxTex = renderer.capabilities.maxTextureSize;
   const skyTex = tex(maxTex >= 8192 ? 'stars_8k.jpg' : 'stars_4k.jpg');
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(90000, 64, 32), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, color: new THREE.Color(1.5, 1.5, 1.5), depthWrite: false, fog: false }));
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(90000, 64, 32), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, color: new THREE.Color(0.8, 0.82, 0.9), depthWrite: false, fog: false }));
   sky.rotation.x = THREE.MathUtils.degToRad(-23.44); // equatorial map -> ecliptic frame
   sky.rotation.y = Math.PI;
   skyGroup.add(sky);
@@ -138,6 +142,50 @@ sunGroup.add(sunMesh);
 const coronaMat = new THREE.ShaderMaterial({ vertexShader: SH.SPRITE_VERT, fragmentShader: SH.CORONA_FRAG, uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(1.0, 0.72, 0.35) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
 const corona = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), coronaMat);
 sunGroup.add(corona);
+const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), new THREE.ShaderMaterial({ vertexShader: SH.ATMO_VERT, fragmentShader: SH.GLOW_FRAG, uniforms: { uColor: { value: new THREE.Color(1.0, 0.55, 0.15) }, uPower: { value: 2.2 }, uIntensity: { value: 1.4 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide }));
+sunGroup.add(sunGlow);
+function flareTexture(size, stops) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2); stops.forEach(([o, col]) => grad.addColorStop(o, col));
+  g.fillStyle = grad; g.fillRect(0, 0, size, size); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+// Lens flare drawn as DOM layers (works with the multisampled composer): a soft glow on the Sun
+// plus ghosts mirrored through the screen centre, fading with angle, edge distance and occlusion.
+const flareLayer = document.createElement('div'); flareLayer.id = 'flare'; document.getElementById('labels').appendChild(flareLayer);
+const flareElems = [
+  { k: 1.0, size: 900, css: 'radial-gradient(circle, rgba(255,240,215,0.95) 0%, rgba(255,205,140,0.35) 12%, rgba(255,150,70,0.08) 32%, rgba(255,120,50,0) 62%)' },
+  { k: 1.0, size: 260, css: 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,230,200,0.25) 30%, rgba(255,230,200,0) 70%)' },
+  { k: -0.35, size: 70, css: 'radial-gradient(circle, rgba(170,205,255,0) 60%, rgba(170,205,255,0.35) 78%, rgba(170,205,255,0) 92%)' },
+  { k: -0.62, size: 34, css: 'radial-gradient(circle, rgba(255,215,170,0.4) 0%, rgba(255,215,170,0.1) 45%, rgba(255,215,170,0) 70%)' },
+  { k: 0.45, size: 120, css: 'radial-gradient(circle, rgba(170,205,255,0) 62%, rgba(170,205,255,0.22) 80%, rgba(170,205,255,0) 92%)' },
+  { k: 1.55, size: 200, css: 'radial-gradient(circle, rgba(255,190,120,0) 55%, rgba(255,190,120,0.16) 78%, rgba(255,190,120,0) 92%)' },
+  { k: 2.1, size: 60, css: 'radial-gradient(circle, rgba(255,240,220,0.35) 0%, rgba(255,240,220,0.08) 50%, rgba(255,240,220,0) 70%)' },
+].map(e => { const d = document.createElement('div'); d.className = 'flare-el'; d.style.width = d.style.height = e.size + 'px'; d.style.background = e.css; flareLayer.appendChild(d); return { ...e, el: d }; });
+function updateFlare() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const v = tmpV.set(0, 0, 0).project(camera);
+  let vis = v.z < 1 ? 1 : 0;
+  const sx = (v.x + 1) / 2 * w, sy = (1 - v.y) / 2 * h;
+  if (vis) {
+    const edge = Math.min(sx / w, 1 - sx / w, sy / h, 1 - sy / h);
+    vis *= THREE.MathUtils.clamp(edge / 0.18 + 0.15, 0, 1);
+    // occlusion by a planet in front of the Sun
+    const dSun = camera.position.length();
+    for (const p of PLANETS) {
+      const b = byId.get(p.id); const pv = tmpV2.copy(b.pos).project(camera); if (pv.z > 1) continue;
+      const px = (pv.x + 1) / 2 * w, py = (1 - pv.y) / 2 * h; const dist = camera.position.distanceTo(b.pos);
+      const pr = b.radius / (dist * _fovTan()) * (h / 2);
+      if (dist < dSun && Math.hypot(px - sx, py - sy) < pr) { vis = 0; break; }
+    }
+    // dim a little when very close to the Sun (the shader glow takes over)
+    vis *= THREE.MathUtils.clamp(dSun / (sunBody.radius * 3) - 0.2, 0, 1);
+  }
+  flareLayer.style.opacity = (vis * 0.9).toFixed(3);
+  if (!vis) return;
+  const cx = w / 2, cy = h / 2;
+  for (const e of flareElems) { const x = cx + (sx - cx) * e.k, y = cy + (sy - cy) * e.k; e.el.style.transform = `translate(${(x - e.size / 2).toFixed(1)}px, ${(y - e.size / 2).toFixed(1)}px)`; }
+}
+const haloTexture = flareTexture(128, [[0, 'rgba(255,255,255,1)'], [0.18, 'rgba(255,255,255,0.7)'], [0.45, 'rgba(255,255,255,0.12)'], [1, 'rgba(255,255,255,0)']]);
 scene.add(sunGroup);
 const sunBody = { id: 'sun', data: SUN, group: sunGroup, mesh: sunMesh, isSun: true, radius: 1, pos: new THREE.Vector3() };
 bodies.push(sunBody); byId.set('sun', sunBody);
@@ -200,7 +248,8 @@ function planetMaterial(opts) {
     uHasNight: { value: opts.night ? 1 : 0 }, uOcean: { value: opts.ocean ? 1 : 0 }, uHasRingShadow: { value: opts.ringShadow ? 1 : 0 },
     uSunPos: { value: new THREE.Vector3() }, uAtmoColor: { value: new THREE.Color(opts.atmoColor ?? 0xffffff) }, uAtmo: { value: opts.atmo ?? 0 },
     uAmbient: { value: 0.035 }, uCenter: { value: new THREE.Vector3() }, uPoleAxis: { value: new THREE.Vector3(0, 1, 0) },
-    uRingInner: { value: 1 }, uRingOuter: { value: 2 }, uCamPos: { value: new THREE.Vector3() }, uLightScale: { value: 1.15 },
+    uRingInner: { value: 1 }, uRingOuter: { value: 2 }, uCamPos: { value: new THREE.Vector3() }, uLightScale: { value: 1.25 },
+    uWrap: { value: opts.wrap ?? 0.05 }, uSaturation: { value: opts.saturation ?? 1.12 }, uSpecular: { value: opts.specular ?? 0.12 }, uShininess: { value: opts.shininess ?? 24 },
   };
   return new THREE.ShaderMaterial({ vertexShader: SH.PLANET_VERT, fragmentShader: SH.PLANET_FRAG, uniforms: u });
 }
@@ -231,7 +280,7 @@ for (const p of PLANETS) {
   const tilt = new THREE.Group(); group.add(tilt);       // axial tilt
   tilt.quaternion.copy(tiltQuaternion(p.axialTilt, p.id === 'uranus' ? 258 : 90));
   const map = p.procedural === 'uranus' ? makeUranusTexture() : tex(p.texture);
-  const mat = planetMaterial({ map, night: p.nightTexture ? tex(p.nightTexture) : null, ocean: p.id === 'earth', ringShadow: !!p.rings && !p.rings.faint, atmoColor: p.atmosphere?.color, atmo: p.atmosphere ? p.atmosphere.intensity * 0.6 : 0.08 });
+  const mat = planetMaterial({ map, night: p.nightTexture ? tex(p.nightTexture) : null, ocean: p.id === 'earth', ringShadow: !!p.rings && !p.rings.faint, atmoColor: p.atmosphere?.color, atmo: p.atmosphere ? p.atmosphere.intensity * 0.6 : 0.08, wrap: p.atmosphere ? 0.12 : 0.03, specular: p.type === 'terrestrial' ? 0.08 : 0.2, shininess: p.type === 'terrestrial' ? 16 : 40, saturation: ({ saturn: 0.88, earth: 1.12, mars: 1.15, jupiter: 1.08 })[p.id] ?? 1.04 });
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), mat);
   if (p.oblateness) mesh.scale.y = 1 - p.oblateness;
   tilt.add(mesh);
@@ -240,7 +289,7 @@ for (const p of PLANETS) {
     const cm = new THREE.MeshStandardMaterial({ color: 0xffffff, alphaMap: tex(p.cloudsTexture, false), transparent: true, depthWrite: false, roughness: 1, metalness: 0 });
     body.clouds = new THREE.Mesh(new THREE.SphereGeometry(1.008, 96, 64), cm); tilt.add(body.clouds);
   }
-  if (p.atmosphere) { body.atmo = makeAtmosphere(1.045, p.atmosphere.color, p.atmosphere.intensity); tilt.add(body.atmo); }
+  if (p.atmosphere) { body.atmo = makeAtmosphere(1.06, p.atmosphere.color, p.atmosphere.intensity * 0.9); tilt.add(body.atmo); }
   if (p.rings) {
     const ringTex = p.rings.faint ? makeUranusRingTexture() : saturnRingTex;
     const rm = new THREE.ShaderMaterial({ vertexShader: SH.RING_VERT, fragmentShader: SH.RING_FRAG, uniforms: { uRingMap: { value: ringTex }, uSunPos: { value: new THREE.Vector3() }, uCenter: { value: new THREE.Vector3() }, uPlanetRadius: { value: 1 }, uPoleAxis: { value: new THREE.Vector3(0, 1, 0) }, uInner: { value: 1 }, uOuter: { value: 2 }, uLightScale: { value: 1.2 }, uCamPos: { value: new THREE.Vector3() } }, transparent: true, side: THREE.DoubleSide, depthWrite: false });
@@ -251,8 +300,11 @@ for (const p of PLANETS) {
   }
   // orbit line
   const og = new THREE.BufferGeometry(); og.setAttribute('position', new THREE.BufferAttribute(new Float32Array(361 * 3), 3));
-  body.orbit = new THREE.Line(og, new THREE.LineBasicMaterial({ color: p.color, transparent: true, opacity: 0.28 }));
+  const tArr = new Float32Array(361); for (let k = 0; k <= 360; k++) tArr[k] = k / 360; og.setAttribute('aT', new THREE.BufferAttribute(tArr, 1));
+  body.orbit = new THREE.Line(og, new THREE.ShaderMaterial({ vertexShader: SH.TRAIL_VERT, fragmentShader: SH.TRAIL_FRAG, uniforms: { uColor: { value: new THREE.Color(p.color) }, uHead: { value: 0 }, uBase: { value: 0.14 }, uTrail: { value: 0.75 }, uFade: { value: 1 } }, transparent: true, depthWrite: false }));
   body.orbitPathAU = orbitPath(p.elements, state.jd, 360);
+  body.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture, color: p.color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false }));
+  body.halo.scale.setScalar(0.03); group.add(body.halo);
   orbitGroup.add(body.orbit);
   body.label = makeLabel(p.name, 'planet', group, body);
   scene.add(group); bodies.push(body); byId.set(p.id, body);
@@ -296,7 +348,8 @@ for (const c of COMETS) {
   const tm = new THREE.ShaderMaterial({ vertexShader: SH.TAIL_VERT, fragmentShader: SH.TAIL_FRAG, uniforms: { uHead: { value: new THREE.Vector3() }, uDir: { value: new THREE.Vector3(1, 0, 0) }, uLength: { value: 10 }, uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() }, uWidth: { value: 1 }, uColor: { value: new THREE.Color(0x9fd0ff) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   const tail = new THREE.Points(tg, tm); tail.frustumCulled = false; scene.add(tail);
   const og = new THREE.BufferGeometry(); og.setAttribute('position', new THREE.BufferAttribute(new Float32Array(721 * 3), 3));
-  const orbit = new THREE.Line(og, new THREE.LineBasicMaterial({ color: c.color, transparent: true, opacity: 0.2 })); orbitGroup.add(orbit);
+  const tArr = new Float32Array(721); for (let k = 0; k <= 720; k++) tArr[k] = k / 720; og.setAttribute('aT', new THREE.BufferAttribute(tArr, 1));
+  const orbit = new THREE.Line(og, new THREE.ShaderMaterial({ vertexShader: SH.TRAIL_VERT, fragmentShader: SH.TRAIL_FRAG, uniforms: { uColor: { value: new THREE.Color(c.color) }, uHead: { value: 0 }, uBase: { value: 0.1 }, uTrail: { value: 0.7 }, uFade: { value: 1 } }, transparent: true, depthWrite: false })); orbitGroup.add(orbit);
   const body = { id: c.id, data: c, group, mesh: nucleus, glow, tail, orbit, orbitPathAU: cometPath(c, 720), isComet: true, radius: 1, pos: new THREE.Vector3() };
   body.label = makeLabel(c.name, 'comet', group, body);
   scene.add(group); comets.push(body); bodies.push(body); byId.set(c.id, body);
@@ -320,9 +373,9 @@ function makeBelt(count, aMin, aMax, inclDeg, color, sizeMul) {
   const m = new THREE.ShaderMaterial({ vertexShader: SH.BELT_VERT, fragmentShader: SH.BELT_FRAG, uniforms: { uDays: { value: 0 }, uMix: { value: 0 }, uAuScale: { value: AU_SCALE }, uPixelRatio: { value: renderer.getPixelRatio() }, uColor: { value: new THREE.Color(color) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   const pts = new THREE.Points(g, m); pts.frustumCulled = false; scene.add(pts); belts.push(pts); return pts;
 }
-makeBelt(9000, 2.1, 3.35, 12, 0xc9b79a, 1.0);   // main asteroid belt
-makeBelt(12000, 30, 50, 10, 0x8fb4d9, 0.8);     // Kuiper belt
-makeBelt(600, 5.05, 5.35, 8, 0xd4c2a3, 0.9);    // Jupiter trojans (approximate: spread along the orbit)
+makeBelt(9000, 2.1, 3.35, 12, 0xc9b79a, 0.7);   // main asteroid belt
+makeBelt(12000, 30, 50, 10, 0x8fb4d9, 0.5);     // Kuiper belt
+makeBelt(600, 5.05, 5.35, 8, 0xd4c2a3, 0.6);    // Jupiter trojans (approximate: spread along the orbit)
 
 // ------------------------------------------------------------------ helpers
 const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
@@ -335,14 +388,25 @@ function updateOrbitLine(body) {
   body.orbit.geometry.computeBoundingSphere();
 }
 let lastMix = -1;
+const _fovTan = () => Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+function updateHalo(b) {
+  // Glowing marker that keeps a planet visible when it is only a few pixels wide, fading as you approach.
+  const dist = camera.position.distanceTo(b.pos);
+  const px = b.radius / (dist * _fovTan()) * (window.innerHeight / 2);
+  const o = THREE.MathUtils.clamp((14 - px) / 10, 0, 1);
+  b.halo.material.opacity = o * 0.85; b.halo.visible = o > 0.01;
+}
 
 function updateWorld(dtSim) {
   const jd = state.jd;
   const hours = jdHoursSinceJ2000(jd);
   const mixChanged = Math.abs(state.scaleMix - lastMix) > 1e-6 || state._sizeDirty;
+  // orbit lines fade away while the camera is close to a world
+  let orbitFade = 1;
+  if (state.follow && !state.follow.isSun) { const f = state.follow.isMoon ? state.follow.parent : state.follow; const d = camera.position.distanceTo(f.pos); orbitFade = THREE.MathUtils.clamp((d / (f.radius * 10) - 0.6), 0.12, 1); }
   // sun
   const sunR = bodyRadiusScene(SUN.radiusKm, true);
-  sunBody.radius = sunR; sunMesh.scale.setScalar(sunR); corona.scale.setScalar(sunR * 4.2);
+  sunBody.radius = sunR; sunMesh.scale.setScalar(sunR); corona.scale.setScalar(sunR * 5.0); sunGlow.scale.setScalar(sunR * 1.22);
   sunMesh.rotation.y = 2 * Math.PI * hours / SUN.rotationHours;
   corona.quaternion.copy(camera.quaternion);
   // planets
@@ -354,7 +418,7 @@ function updateWorld(dtSim) {
     const r = bodyRadiusScene(p.radiusKm); b.radius = r;
     b.mesh.scale.set(r, r * (1 - (p.oblateness || 0)), r);
     if (b.clouds) { b.clouds.scale.setScalar(r * 1.008); b.clouds.rotation.y = 2 * Math.PI * hours / (p.rotationHours * 0.96); }
-    if (b.atmo) b.atmo.scale.setScalar(r * 1.04);
+    if (b.atmo) b.atmo.scale.setScalar(r * 1.06);
     // spin (Earth is aligned so the sub-solar longitude matches UTC time)
     if (p.id === 'earth') {
       const sunDir = tmpV.copy(b.pos).negate().normalize();
@@ -371,6 +435,9 @@ function updateWorld(dtSim) {
       b.tilt.getWorldQuaternion(tmpQ); u.uPoleAxis.value.set(0, 1, 0).applyQuaternion(tmpQ);
       const pu = b.mat.uniforms; pu.uCenter.value.copy(b.pos); pu.uPoleAxis.value.copy(u.uPoleAxis.value); pu.uRingInner.value = ri; pu.uRingOuter.value = ro;
     }
+    b.orbit.material.uniforms.uHead.value = posAU.phase;
+    b.orbit.material.uniforms.uFade.value = orbitFade;
+    updateHalo(b);
     if (mixChanged) updateOrbitLine(b);
     // moons
     for (const m of b.moons) {
@@ -392,6 +459,7 @@ function updateWorld(dtSim) {
     c.glow.scale.setScalar(nr * (6 + 40 * activity)); c.glow.material.opacity = 0.35 + 0.65 * activity;
     const u = c.tail.material.uniforms; u.uHead.value.copy(c.pos); u.uDir.value.copy(c.pos).normalize(); u.uLength.value = (0.4 + 0.6 * state.scaleMix + 0.0) * AU_SCALE * 0.6 * activity * (1 - 0.45 * state.scaleMix) + 0.3; u.uWidth.value = 0.12 * u.uLength.value; u.uTime.value = clock.elapsedTime;
     c.tail.visible = activity > 0.02;
+    c.orbit.material.uniforms.uHead.value = posAU.phase; c.orbit.material.uniforms.uFade.value = orbitFade;
     if (mixChanged) updateOrbitLine(c);
   }
   for (const b of belts) { b.material.uniforms.uDays.value = jd - J2000_JD; b.material.uniforms.uMix.value = state.scaleMix; }
@@ -402,7 +470,7 @@ function updateWorld(dtSim) {
     if (b.atmo) b.atmo.material.uniforms.uSunPos.value.set(0, 0, 0);
     if (b.ring) b.ring.material.uniforms.uCamPos.value.copy(camera.position);
   }
-  sunMat.uniforms.uTime.value = clock.elapsedTime; coronaMat.uniforms.uTime.value = clock.elapsedTime;
+  sunMat.uniforms.uTime.value = clock.elapsedTime; coronaMat.uniforms.uTime.value = clock.elapsedTime; vignettePass.uniforms.uTime.value = clock.elapsedTime % 100;
 }
 
 // ------------------------------------------------------------------ camera / selection
@@ -422,7 +490,12 @@ function selectBody(body, { fly: doFly = true } = {}) {
     fly.body = body; fly.active = true; fly.t = 0;
     fly.fromOff.copy(camera.position).sub(controls.target); fly.fromTarget.copy(controls.target);
     const dir = camera.position.clone().sub(target); if (dir.lengthSq() < 1e-8) dir.set(1, 0.4, 1);
-    dir.normalize(); dir.y = Math.max(dir.y, 0.18); dir.normalize();
+    dir.normalize();
+    if (!body.isSun) { // approach from the sunlit side so the world is never seen as a dark disc
+      const sunward = target.clone().negate().normalize();
+      dir.multiplyScalar(0.35).addScaledVector(sunward, 0.75).normalize();
+    }
+    dir.y = Math.max(dir.y, 0.18); dir.normalize();
     fly.toOff.copy(dir.multiplyScalar(viewDistance(body)));
   }
 }
@@ -624,7 +697,7 @@ document.getElementById('launch').addEventListener('click', () => {
   setMusic(true);
   // intro: sweep in from far away
   fly.body = sunBody; fly.active = true; fly.t = 0; fly.dur = 4.5;
-  fly.fromOff.set(0, 900, 1800); fly.fromTarget.set(0, 0, 0); fly.toOff.set(0, 190, 520);
+  fly.fromOff.set(-300, 700, 1700); fly.fromTarget.set(0, 0, 0); fly.toOff.set(-90, 150, 470);
   setTimeout(() => { fly.dur = 1.8; const h = location.hash.slice(1); if (h && byId.has(h)) selectBody(byId.get(h)); else toast('Tip: press 3 for Earth, T for true scale, H for Halley\'s Comet'); }, 4700);
 });
 
@@ -639,7 +712,7 @@ function refreshClock() {
 // ------------------------------------------------------------------ resize
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); bloomPass.setSize(window.innerWidth, window.innerHeight); labelRenderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // ------------------------------------------------------------------ label visibility
@@ -648,7 +721,7 @@ function updateLabels() {
   for (const b of bodies) {
     const el = b.label.element;
     if (b.isMoon) {
-      const parentDist = camPos.distanceTo(b.parent.pos); const show = state.showMoons && parentDist < b.parent.radius * 60 && state.scaleMix < 0.5;
+      const parentDist = camPos.distanceTo(b.parent.pos); const show = state.showMoons && parentDist < b.parent.radius * 22 && state.scaleMix < 0.5;
       el.classList.toggle('hidden', !show);
     } else if (b.isComet) {
       el.classList.toggle('hidden', false);
@@ -670,7 +743,7 @@ function animate() {
   const targetMix = state.trueScale ? 1 : 0; state.scaleMix += (targetMix - state.scaleMix) * Math.min(1, dt * 2.2); if (Math.abs(state.scaleMix - targetMix) < 0.0005) state.scaleMix = targetMix;
   updateWorld(dt);
   updateCamera(rawDt);
-  updateLabels();
+  updateLabels(); updateFlare();
   acc += dt; if (acc > 0.5) { acc = 0; refreshClock(); if (state.selected) updateLiveStats(state.selected); }
   composer.render();
   labelRenderer.render(scene, camera);

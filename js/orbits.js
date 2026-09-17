@@ -26,7 +26,7 @@ export function planetPosition(el, jd) {
   let M = ((L - lp) % 360 + 540) % 360 - 180;
   const E = solveKepler(M * DEG, e);
   const xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
-  return perifocalToEcliptic(xp, yp, w, W, i);
+  const r = perifocalToEcliptic(xp, yp, w, W, i); r.phase = ((E % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / (2 * Math.PI); return r;
 }
 
 /** Position for a comet given classic elements and time of perihelion (JD). */
@@ -35,7 +35,7 @@ export function cometPosition(c, jd) {
   let M = ((n * (jd - c.perihelionJD)) % 360 + 360) % 360;
   const E = solveKepler(M * DEG, c.e);
   const xp = c.a * (Math.cos(E) - c.e), yp = c.a * Math.sqrt(1 - c.e * c.e) * Math.sin(E);
-  return perifocalToEcliptic(xp, yp, c.argPeri * DEG, c.longNode * DEG, c.i * DEG);
+  const r = perifocalToEcliptic(xp, yp, c.argPeri * DEG, c.longNode * DEG, c.i * DEG); r.phase = ((E % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / (2 * Math.PI); return r;
 }
 
 function perifocalToEcliptic(xp, yp, w, W, i) {

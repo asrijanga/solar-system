@@ -22,11 +22,14 @@ const clock = new THREE.Clock();
 // ------------------------------------------------------------------ state
 const state = {
   jd: dateToJD(new Date()),
-  speedExp: 6,               // slider value; seconds of sim time per real second = 10^(0.85*exp)
+  speedExp: 5.4,             // slider value; seconds of sim time per real second = 10^(0.85*exp)
   paused: false,
   sizeSlider: 45,            // 1..60 -> planet exaggeration
   trueScale: true,           // the model opens at real sizes and distances
   scaleMix: 1,               // 0 = visual, 1 = true scale (animated)
+  calmRotation: true,        // spin on a compressed clock instead of the simulation clock
+  spinClock: 0,              // seconds of real time since the spin clock started
+  spinEpochJD: 0,            // date the calm spin was last synchronised to
   orbitIntro: 1,             // orbit lines stay dark through the opening shots
   showOrbits: true, showLabels: true, showBelts: true, showMoons: true, bloom: true,
   selected: null,            // body record
@@ -423,6 +426,43 @@ makeBelt(600, 5.05, 5.35, 8, 0xd4c2a3, 0.6);    // Jupiter trojans (approximate:
 const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
 function jdHoursSinceJ2000(jd) { return (jd - J2000_JD) * 24; }
 
+// ---------------------------------------------------------------- calm rotation
+//
+// Rotation periods in this model span 762x, from Phobos at 7.6 hours to Venus at
+// 5832. Tie spin to the simulation clock and no single rate works: run it fast
+// enough for Venus to move and Jupiter becomes a blur; slow enough for Jupiter and
+// everything else is frozen. At the old default the Earth turned 1.5 times a
+// second, which read as a glitch rather than a planet.
+//
+// So spin is decoupled from the simulation clock and every period is compressed
+// into a narrow, calm band by a fourth-power-ish root. Ordering is preserved
+// (Jupiter still visibly outruns Venus) and the band is anchored on the SLOWEST
+// body: Venus completes a turn in about seven minutes instead of forty-six hours,
+// so even it reads as turning. Orbital positions of the planets are untouched and
+// stay truthful; the panels keep reporting real day lengths.
+const SPIN_SLOWEST_TURN = 415;   // seconds for the slowest body to turn once
+const SPIN_FASTEST_TURN = 110;   // seconds for the fastest body to turn once
+const SPIN_PERIODS = (() => {
+  const all = [Math.abs(SUN.rotationHours)];
+  for (const p of PLANETS) {
+    all.push(Math.abs(p.rotationHours));
+    for (const sat of (p.satellites || [])) all.push(Math.abs(sat.periodDays) * 24);
+  }
+  return { min: Math.min(...all), max: Math.max(...all) };
+})();
+// exponent that maps the real period range onto the chosen visual range
+const SPIN_EXP = Math.log(SPIN_SLOWEST_TURN / SPIN_FASTEST_TURN) / Math.log(SPIN_PERIODS.max / SPIN_PERIODS.min);
+
+/** Seconds of real time for one visible turn of a body whose true period is `hours`. */
+function visualTurnSeconds(hours) {
+  return SPIN_FASTEST_TURN * Math.pow(Math.abs(hours) / SPIN_PERIODS.min, SPIN_EXP);
+}
+/** Current spin angle for a body, signed so retrograde worlds still turn backwards. */
+function calmSpin(hours) {
+  return Math.sign(hours || 1) * 2 * Math.PI * state.spinClock / visualTurnSeconds(hours);
+}
+function syncSpinEpoch() { state.spinEpochJD = state.jd; state.spinClock = 0; }
+
 function updateOrbitLine(body) {
   const arr = body.orbit.geometry.attributes.position.array;
   for (let k = 0; k < body.orbitPathAU.length; k++) { toScene(body.orbitPathAU[k], tmpV); arr[k * 3] = tmpV.x; arr[k * 3 + 1] = tmpV.y; arr[k * 3 + 2] = tmpV.z; }
@@ -453,7 +493,7 @@ function updateWorld(dtSim) {
   // sun
   const sunR = bodyRadiusScene(SUN.radiusKm, true);
   sunBody.radius = sunR; sunMesh.scale.setScalar(sunR); corona.scale.setScalar(sunR * 5.0); sunGlow.scale.setScalar(sunR * 1.22);
-  sunMesh.rotation.y = 2 * Math.PI * hours / SUN.rotationHours;
+  sunMesh.rotation.y = state.calmRotation ? calmSpin(SUN.rotationHours) : 2 * Math.PI * hours / SUN.rotationHours;
   corona.quaternion.copy(camera.quaternion);
   // planets
   for (const p of PLANETS) {
@@ -463,16 +503,21 @@ function updateWorld(dtSim) {
     b.pos.copy(b.group.position); b.posAU = posAU;
     const r = bodyRadiusScene(p.radiusKm); b.radius = r;
     b.mesh.scale.set(r, r * (1 - (p.oblateness || 0)), r);
-    if (b.clouds) { b.clouds.scale.setScalar(r * 1.008); b.clouds.rotation.y = 2 * Math.PI * hours / (p.rotationHours * 0.96); }
+    // clouds run slightly ahead of the surface so the weather visibly drifts
+    if (b.clouds) { b.clouds.scale.setScalar(r * 1.008); b.clouds.rotation.y = state.calmRotation ? calmSpin(p.rotationHours) * 1.07 : 2 * Math.PI * hours / (p.rotationHours * 0.96); }
     if (b.atmo) b.atmo.scale.setScalar(r * 1.06);
     // spin (Earth is aligned so the sub-solar longitude matches UTC time)
     if (p.id === 'earth') {
       const sunDir = tmpV.copy(b.pos).negate().normalize();
       const alpha = Math.atan2(-sunDir.z, sunDir.x);
-      const date = jdToDate(jd); const utcH = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+      // The terminator is set from real UTC, so the daylit face is correct on arrival.
+      // Under calm rotation it then drifts on the compressed clock rather than the
+      // simulation clock, which is what used to spin it into a blur.
+      const anchor = state.calmRotation ? jdToDate(state.spinEpochJD) : jdToDate(jd);
+      const utcH = anchor.getUTCHours() + anchor.getUTCMinutes() / 60 + anchor.getUTCSeconds() / 3600;
       const subsolar = THREE.MathUtils.degToRad((12 - utcH) * 15);
-      b.mesh.rotation.y = alpha - subsolar;
-    } else b.mesh.rotation.y = 2 * Math.PI * hours / p.rotationHours;
+      b.mesh.rotation.y = alpha - subsolar + (state.calmRotation ? calmSpin(p.rotationHours) : 0);
+    } else b.mesh.rotation.y = state.calmRotation ? calmSpin(p.rotationHours) : 2 * Math.PI * hours / p.rotationHours;
     // ring
     if (b.ring) {
       const ri = r * b.ringInnerRatio, ro = r * b.ringOuterRatio;
@@ -488,10 +533,10 @@ function updateWorld(dtSim) {
     // moons
     for (const m of b.moons) {
       const s = m.data; const d = moonDistanceScene(s, p); const mr = bodyRadiusScene(s.radiusKm); m.radius = mr;
-      const ang = m.phase + 2 * Math.PI * (jd - J2000_JD) / s.periodDays;
+      const ang = m.phase + (state.calmRotation ? calmSpin(s.periodDays * 24) : 2 * Math.PI * (jd - J2000_JD) / s.periodDays);
       m.holder.position.set(Math.cos(ang) * d, 0, -Math.sin(ang) * d);
       m.mesh.scale.setScalar(mr); if (m.atmo) m.atmo.scale.setScalar(1.05);
-      m.mesh.rotation.y = s.tidallyLocked !== false ? ang + Math.PI : 2 * Math.PI * hours / 24;
+      m.mesh.rotation.y = s.tidallyLocked !== false ? ang + Math.PI : (state.calmRotation ? calmSpin(24) : 2 * Math.PI * hours / 24);
       m.orbit.scale.setScalar(d); m.orbitRadius = d;
       m.holder.getWorldPosition(m.pos);
     }
@@ -692,7 +737,7 @@ speedSlider.addEventListener('input', e => { state.speedExp = parseFloat(e.targe
 pauseBtn.addEventListener('click', () => { state.paused = !state.paused; refreshSpeedUI(); });
 document.getElementById('t-back').addEventListener('click', () => { state.speedExp = Math.max(0, state.speedExp - 1); state.paused = false; refreshSpeedUI(); });
 document.getElementById('t-fwd').addEventListener('click', () => { state.speedExp = Math.min(10, state.speedExp + 1); state.paused = false; refreshSpeedUI(); });
-document.getElementById('t-now').addEventListener('click', () => { state.jd = dateToJD(new Date()); toast('Jumped to the present moment'); });
+document.getElementById('t-now').addEventListener('click', () => { state.jd = dateToJD(new Date()); syncSpinEpoch(); toast('Jumped to the present moment'); });
 refreshSpeedUI();
 
 const settings = document.getElementById('settings');
@@ -705,6 +750,11 @@ bind('opt-belts', v => { state.showBelts = v; belts.forEach(b => b.visible = v);
 bind('opt-moons', v => { state.showMoons = v; for (const b of bodies) if (b.isMoon) b.pivot.visible = v; });
 bind('opt-bloom', v => { state.bloom = v; bloomPass.enabled = v; });
 bind('opt-constellations', v => { if (constellations) constellations.visible = v; });
+bind('opt-calm', v => {
+  state.calmRotation = v;
+  if (v) syncSpinEpoch();
+  toast(v ? 'Calm rotation: every world turns on a slow, even clock.' : 'True rotation: spin follows the simulation clock, so fast worlds blur at high speed.');
+});
 bind('opt-truescale', v => { setTrueScale(v); });
 document.getElementById('opt-size').addEventListener('input', e => {
   state.sizeSlider = parseFloat(e.target.value); state._sizeDirty = true;
@@ -840,7 +890,11 @@ let acc = 0;
 function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); const dt = Math.min(rawDt, 0.1);
-  if (!state.paused) state.jd += dt * speedSeconds() / 86400;
+  // The spin clock uses its own, more generous clamp: the simulation delta is held
+  // to 0.1s to stop a backgrounded tab jumping the date, but that would also stall
+  // rotation on a device dropping frames. 0.25s keeps spin smooth under load while
+  // still absorbing a tab switch.
+  if (!state.paused) { state.jd += dt * speedSeconds() / 86400; state.spinClock += Math.min(rawDt, 0.25); }
   // orbit lines are held back while the camera is still inside the Sun's glow
   const orbitTarget = (cinematic.active && cinematic.step <= 1) ? 0.0 : 1;
   state.orbitIntro += (orbitTarget - state.orbitIntro) * Math.min(1, rawDt * 1.1);
@@ -856,4 +910,5 @@ function animate() {
   labelRenderer.render(scene, camera);
 }
 window.__ss = { state, bodies, byId, camera, controls, renderer, scene, fly, selectBody, cinematic, runCinematic, soundtrack };
+syncSpinEpoch();
 updateWorld(0); refreshClock(); animate();

@@ -8,7 +8,8 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { SUN, PLANETS, COMETS, KEYBOARD_ORDER, AU_KM, C_KM_S } from './data.js';
 import { planetPosition, cometPosition, orbitPath, cometPath, dateToJD, jdToDate, J2000_JD } from './orbits.js';
-import { Soundtrack } from './audio.js';
+import { Soundtrack, CHIME_SCALE } from './audio.js';
+import { Cinematic } from './tour.js';
 import * as SH from './shaders.js';
 
 // ------------------------------------------------------------------ constants
@@ -24,8 +25,9 @@ const state = {
   speedExp: 6,               // slider value; seconds of sim time per real second = 10^(0.85*exp)
   paused: false,
   sizeSlider: 45,            // 1..60 -> planet exaggeration
-  trueScale: false,
-  scaleMix: 0,               // 0 = visual, 1 = true scale (animated)
+  trueScale: true,           // the model opens at real sizes and distances
+  scaleMix: 1,               // 0 = visual, 1 = true scale (animated)
+  orbitIntro: 1,             // orbit lines stay dark through the opening shots
   showOrbits: true, showLabels: true, showBelts: true, showMoons: true, bloom: true,
   selected: null,            // body record
   follow: null,
@@ -69,6 +71,7 @@ container.appendChild(renderer.domElement);
 
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.id = 'labelroot';
 labelRenderer.domElement.style.position = 'absolute';
 labelRenderer.domElement.style.top = '0';
 labelRenderer.domElement.style.pointerEvents = 'none';
@@ -107,6 +110,7 @@ manager.onLoad = () => { loadbar.style.width = '100%'; loadtext.textContent = 'R
 
 // ------------------------------------------------------------------ sky (Milky Way)
 const skyGroup = new THREE.Group();
+let starMat = null, constellations = null;
 {
   const maxTex = renderer.capabilities.maxTextureSize;
   const skyTex = tex(maxTex >= 8192 ? 'stars_8k.jpg' : 'stars_4k.jpg');
@@ -115,17 +119,21 @@ const skyGroup = new THREE.Group();
   sky.rotation.y = Math.PI;
   skyGroup.add(sky);
   // extra sparkle: a few thousand point stars with colour temperature variation
-  const n = 4000, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), size = new Float32Array(n);
+  const n = 4000, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), size = new Float32Array(n), phase = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const u = Math.random(), v = Math.random(), th = 2 * Math.PI * u, ph = Math.acos(2 * v - 1), R = 80000;
     pos.set([R * Math.sin(ph) * Math.cos(th), R * Math.cos(ph), R * Math.sin(ph) * Math.sin(th)], i * 3);
     const t = Math.random(); const c = t < 0.15 ? [0.7, 0.8, 1.0] : t < 0.7 ? [1, 1, 1] : t < 0.9 ? [1, 0.9, 0.75] : [1, 0.75, 0.6];
-    col.set(c, i * 3); size[i] = 0.8 + Math.pow(Math.random(), 4) * 4.5;
+    col.set(c, i * 3); size[i] = 0.9 + Math.pow(Math.random(), 4) * 5.5; phase[i] = Math.random();
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aColor', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
-  const m = new THREE.ShaderMaterial({ vertexShader: SH.STAR_VERT, fragmentShader: SH.STAR_FRAG, uniforms: { uPixelRatio: { value: renderer.getPixelRatio() } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-  skyGroup.add(new THREE.Points(g, m));
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aColor', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(size, 1)); g.setAttribute('aPhase', new THREE.BufferAttribute(phase, 1));
+  starMat = new THREE.ShaderMaterial({ vertexShader: SH.STAR_VERT, fragmentShader: SH.STAR_FRAG, uniforms: { uPixelRatio: { value: renderer.getPixelRatio() }, uTime: { value: 0 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  skyGroup.add(new THREE.Points(g, starMat));
+  // NASA constellation figures, drawn on the same celestial sphere. Off by default.
+  constellations = new THREE.Mesh(new THREE.SphereGeometry(89000, 64, 32), new THREE.MeshBasicMaterial({ map: tex('constellations.jpg'), side: THREE.BackSide, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, color: new THREE.Color(0.40, 0.60, 1.0) }));
+  constellations.rotation.copy(sky.rotation); constellations.visible = false;
+  skyGroup.add(constellations);
 }
 scene.add(skyGroup);
 
@@ -161,6 +169,7 @@ const flareElems = [
   { k: 1.55, size: 200, css: 'radial-gradient(circle, rgba(255,190,120,0) 55%, rgba(255,190,120,0.16) 78%, rgba(255,190,120,0) 92%)' },
   { k: 2.1, size: 60, css: 'radial-gradient(circle, rgba(255,240,220,0.35) 0%, rgba(255,240,220,0.08) 50%, rgba(255,240,220,0) 70%)' },
 ].map(e => { const d = document.createElement('div'); d.className = 'flare-el'; d.style.width = d.style.height = e.size + 'px'; d.style.background = e.css; flareLayer.appendChild(d); return { ...e, el: d }; });
+let flareScale = 1;
 function updateFlare() {
   const w = window.innerWidth, h = window.innerHeight;
   const v = tmpV.set(0, 0, 0).project(camera);
@@ -179,13 +188,44 @@ function updateFlare() {
     }
     // dim a little when very close to the Sun (the shader glow takes over)
     vis *= THREE.MathUtils.clamp(dSun / (sunBody.radius * 3) - 0.2, 0, 1);
+    // and shrink with the disc, so from Neptune it is a brilliant star rather than a blob
+    flareScale = THREE.MathUtils.clamp(0.30 + apparentPx(sunBody.radius, dSun) * 0.014, 0.30, 1.5);
   }
   flareLayer.style.opacity = (vis * 0.9).toFixed(3);
   if (!vis) return;
   const cx = w / 2, cy = h / 2;
-  for (const e of flareElems) { const x = cx + (sx - cx) * e.k, y = cy + (sy - cy) * e.k; e.el.style.transform = `translate(${(x - e.size / 2).toFixed(1)}px, ${(y - e.size / 2).toFixed(1)}px)`; }
+  for (const e of flareElems) {
+    const x = cx + (sx - cx) * e.k, y = cy + (sy - cy) * e.k;
+    e.el.style.transform = `translate(${(x - e.size / 2).toFixed(1)}px, ${(y - e.size / 2).toFixed(1)}px) scale(${flareScale.toFixed(3)})`;
+  }
 }
-const haloTexture = flareTexture(128, [[0, 'rgba(255,255,255,1)'], [0.18, 'rgba(255,255,255,0.7)'], [0.45, 'rgba(255,255,255,0.12)'], [1, 'rgba(255,255,255,0)']]);
+// Marker sprite for bodies too small to resolve: a bright core, a soft bloom and
+// four faint diffraction spikes, so a planet at true scale reads as a jewel rather
+// than a dot. Drawn once and tinted per planet.
+const haloTexture = (() => {
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d'), m = S / 2;
+  const bloom = g.createRadialGradient(m, m, 0, m, m, m);
+  bloom.addColorStop(0, 'rgba(255,255,255,1)');
+  bloom.addColorStop(0.06, 'rgba(255,255,255,0.85)');
+  bloom.addColorStop(0.16, 'rgba(255,255,255,0.32)');
+  bloom.addColorStop(0.40, 'rgba(255,255,255,0.07)');
+  bloom.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = bloom; g.fillRect(0, 0, S, S);
+  g.globalCompositeOperation = 'lighter';
+  for (const angle of [0, Math.PI / 2]) {
+    g.save(); g.translate(m, m); g.rotate(angle);
+    const spike = g.createLinearGradient(-m, 0, m, 0);
+    spike.addColorStop(0, 'rgba(255,255,255,0)');
+    spike.addColorStop(0.42, 'rgba(255,255,255,0.20)');
+    spike.addColorStop(0.5, 'rgba(255,255,255,0.75)');
+    spike.addColorStop(0.58, 'rgba(255,255,255,0.20)');
+    spike.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = spike; g.fillRect(-m, -1.5, S, 3);
+    g.restore();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
 scene.add(sunGroup);
 const sunBody = { id: 'sun', data: SUN, group: sunGroup, mesh: sunMesh, isSun: true, radius: 1, pos: new THREE.Vector3() };
 bodies.push(sunBody); byId.set('sun', sunBody);
@@ -304,7 +344,9 @@ for (const p of PLANETS) {
   body.orbit = new THREE.Line(og, new THREE.ShaderMaterial({ vertexShader: SH.TRAIL_VERT, fragmentShader: SH.TRAIL_FRAG, uniforms: { uColor: { value: new THREE.Color(p.color) }, uHead: { value: 0 }, uBase: { value: 0.14 }, uTrail: { value: 0.75 }, uFade: { value: 1 } }, transparent: true, depthWrite: false }));
   body.orbitPathAU = orbitPath(p.elements, state.jd, 360);
   body.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture, color: p.color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false }));
-  body.halo.scale.setScalar(0.03); group.add(body.halo);
+  // bigger worlds get a slightly brighter marker, the way brighter stars look larger
+  body.haloScale = 0.026 + 0.020 * Math.pow(p.radiusKm / 69911, 0.35);
+  body.halo.scale.setScalar(body.haloScale); group.add(body.halo);
   orbitGroup.add(body.orbit);
   body.label = makeLabel(p.name, 'planet', group, body);
   scene.add(group); bodies.push(body); byId.set(p.id, body);
@@ -389,12 +431,16 @@ function updateOrbitLine(body) {
 }
 let lastMix = -1;
 const _fovTan = () => Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+function apparentPx(radius, dist) { return radius / (dist * _fovTan()) * (window.innerHeight / 2); }
 function updateHalo(b) {
-  // Glowing marker that keeps a planet visible when it is only a few pixels wide, fading as you approach.
+  // Glowing marker that keeps a world visible when it is only a pixel or two wide.
+  // It fades AND shrinks as the disc grows, so the handover feels like focusing.
   const dist = camera.position.distanceTo(b.pos);
-  const px = b.radius / (dist * _fovTan()) * (window.innerHeight / 2);
-  const o = THREE.MathUtils.clamp((14 - px) / 10, 0, 1);
-  b.halo.material.opacity = o * 0.85; b.halo.visible = o > 0.01;
+  const px = apparentPx(b.radius, dist);
+  const o = THREE.MathUtils.clamp((16 - px) / 11, 0, 1);
+  b.halo.material.opacity = o * 0.95;
+  b.halo.scale.setScalar(b.haloScale * (0.55 + 0.45 * o));
+  b.halo.visible = o > 0.01;
 }
 
 function updateWorld(dtSim) {
@@ -402,8 +448,8 @@ function updateWorld(dtSim) {
   const hours = jdHoursSinceJ2000(jd);
   const mixChanged = Math.abs(state.scaleMix - lastMix) > 1e-6 || state._sizeDirty;
   // orbit lines fade away while the camera is close to a world
-  let orbitFade = 1;
-  if (state.follow && !state.follow.isSun) { const f = state.follow.isMoon ? state.follow.parent : state.follow; const d = camera.position.distanceTo(f.pos); orbitFade = THREE.MathUtils.clamp((d / (f.radius * 10) - 0.6), 0.12, 1); }
+  let orbitFade = state.orbitIntro;
+  if (state.follow && !state.follow.isSun) { const f = state.follow.isMoon ? state.follow.parent : state.follow; const d = camera.position.distanceTo(f.pos); orbitFade *= THREE.MathUtils.clamp((d / (f.radius * 10) - 0.6), 0.12, 1); }
   // sun
   const sunR = bodyRadiusScene(SUN.radiusKm, true);
   sunBody.radius = sunR; sunMesh.scale.setScalar(sunR); corona.scale.setScalar(sunR * 5.0); sunGlow.scale.setScalar(sunR * 1.22);
@@ -446,7 +492,7 @@ function updateWorld(dtSim) {
       m.holder.position.set(Math.cos(ang) * d, 0, -Math.sin(ang) * d);
       m.mesh.scale.setScalar(mr); if (m.atmo) m.atmo.scale.setScalar(1.05);
       m.mesh.rotation.y = s.tidallyLocked !== false ? ang + Math.PI : 2 * Math.PI * hours / 24;
-      m.orbit.scale.setScalar(d);
+      m.orbit.scale.setScalar(d); m.orbitRadius = d;
       m.holder.getWorldPosition(m.pos);
     }
   }
@@ -483,7 +529,8 @@ function selectBody(body, { fly: doFly = true } = {}) {
   state.selected = body; state.follow = body;
   document.querySelectorAll('#planetnav button').forEach(b => b.classList.toggle('active', b.dataset.id === body.id || (body.isMoon && b.dataset.id === body.parent.id)));
   showPanel(body);
-  soundtrack.chime(body.isSun ? 220 : body.isMoon ? 1320 : 660 + (PLANETS.findIndex(p => p.id === body.id)) * 55);
+  const degree = body.isSun ? 0 : body.isMoon ? 6 : Math.max(0, PLANETS.findIndex(p => p.id === body.id)) % CHIME_SCALE.length;
+  soundtrack.chime(CHIME_SCALE[degree] * (body.isSun ? 0.5 : 1));
   location.hash = body.id;
   if (doFly) {
     const target = worldPos(body).clone();
@@ -657,12 +704,17 @@ bind('opt-labels', v => { state.showLabels = v; labelRenderer.domElement.style.d
 bind('opt-belts', v => { state.showBelts = v; belts.forEach(b => b.visible = v); });
 bind('opt-moons', v => { state.showMoons = v; for (const b of bodies) if (b.isMoon) b.pivot.visible = v; });
 bind('opt-bloom', v => { state.bloom = v; bloomPass.enabled = v; });
+bind('opt-constellations', v => { if (constellations) constellations.visible = v; });
 bind('opt-truescale', v => { setTrueScale(v); });
-document.getElementById('opt-size').addEventListener('input', e => { state.sizeSlider = parseFloat(e.target.value); state._sizeDirty = true; });
+document.getElementById('opt-size').addEventListener('input', e => {
+  state.sizeSlider = parseFloat(e.target.value); state._sizeDirty = true;
+  // exaggerating sizes only means something once true scale is off
+  if (state.trueScale) setTrueScale(false);
+});
 document.getElementById('opt-volume').addEventListener('input', e => soundtrack.setVolume(parseFloat(e.target.value)));
 function setTrueScale(v) {
   state.trueScale = v; document.getElementById('opt-truescale').checked = v;
-  toast(v ? 'True scale: every distance and size is real. Earth is now a speck. Use the navigation to find it.' : 'Visual scale: distances compressed and planets enlarged so you can see them.');
+  toast(v ? 'True scale. Every size and distance is real, and the planets are specks. That is the honest picture.' : 'Visual scale. Distances compressed and planets enlarged, so the whole system fits on screen.');
   if (state.follow) { const b = state.follow; setTimeout(() => selectBody(b), 1200); }
 }
 
@@ -689,17 +741,38 @@ window.addEventListener('keydown', e => {
   else if (k.toLowerCase() === 't') setTrueScale(!state.trueScale);
   else if (k.toLowerCase() === 'h') selectBody(byId.get('halley'));
   else if (k.toLowerCase() === 'n') document.getElementById('t-now').click();
+  else if (k.toLowerCase() === 'r') { deselect(); runCinematic(); }
+  else if (k.toLowerCase() === 'c') { const cb = document.getElementById('opt-constellations'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
+  else if (k === '?') toast('0-9 worlds · H Halley · R replay the opening · T scale · C constellations · Space pause · [ ] speed · N now · M music · F fullscreen', 7000);
 });
+
+// ------------------------------------------------------------------ cinematic
+const cinematic = new Cinematic({
+  camera, controls, byId, sunBody, AU_SCALE, soundtrack,
+  onEnd: (skipped) => {
+    document.body.classList.remove('cinematic');
+    followOffset.copy(camera.position).sub(controls.target);
+    if (!skipped) toast('Click any world. Press T for visual scale, H for Halley\'s Comet, ? for the keys.', 6000);
+  },
+});
+function runCinematic() {
+  state.follow = null; fly.active = false; state.orbitIntro = 0;
+  document.body.classList.add('cinematic');
+  // start the camera at the Sun so the first frame is already inside the glow
+  camera.position.set(0, sunBody.radius * 0.8, sunBody.radius * 2.6);
+  controls.target.set(0, 0, 0);
+  cinematic.start();
+}
 
 // splash / launch
 document.getElementById('launch').addEventListener('click', () => {
   document.getElementById('splash').classList.add('fade');
   setMusic(true);
-  // intro: sweep in from far away
-  fly.body = sunBody; fly.active = true; fly.t = 0; fly.dur = 4.5;
-  fly.fromOff.set(-300, 700, 1700); fly.fromTarget.set(0, 0, 0); fly.toOff.set(-90, 150, 470);
-  setTimeout(() => { fly.dur = 1.8; const h = location.hash.slice(1); if (h && byId.has(h)) selectBody(byId.get(h)); else toast('Tip: press 3 for Earth, T for true scale, H for Halley\'s Comet'); }, 4700);
+  const h = location.hash.slice(1);
+  if (h && byId.has(h)) { soundtrack.setIntensity(0.58, 8); selectBody(byId.get(h)); }
+  else runCinematic();
 });
+document.getElementById('btn-replay').addEventListener('click', () => { deselect(); runCinematic(); });
 
 // clock display
 const clockDate = document.querySelector('#clock .date'), clockSpeed = document.querySelector('#clock .speed');
@@ -717,19 +790,48 @@ window.addEventListener('resize', () => {
 
 // ------------------------------------------------------------------ label visibility
 function updateLabels() {
-  const camPos = camera.position;
+  const camPos = camera.position, w = window.innerWidth, h = window.innerHeight;
+  const candidates = [];
   for (const b of bodies) {
     const el = b.label.element;
+    let show = true, priority = 0;
     if (b.isMoon) {
-      const parentDist = camPos.distanceTo(b.parent.pos); const show = state.showMoons && parentDist < b.parent.radius * 22 && state.scaleMix < 0.5;
-      el.classList.toggle('hidden', !show);
+      // show once the moon's orbit fills a useful part of the frame (works at any scale)
+      const parentDist = camPos.distanceTo(b.parent.pos);
+      show = state.showMoons && parentDist < (b.orbitRadius || b.parent.radius * 4) * 9;
+      priority = 10;
     } else if (b.isComet) {
-      el.classList.toggle('hidden', false);
+      priority = 30;
+    } else if (b.isSun) {
+      priority = 80;
     } else {
       // hide when the camera is very close to the body (label would overlap the surface)
-      const dist = camPos.distanceTo(b.pos); el.classList.toggle('hidden', dist < b.radius * 2.2);
+      show = camPos.distanceTo(b.pos) >= b.radius * 2.2;
+      priority = 40 + Math.min(20, (b.data.radiusKm || 1) / 4000);
     }
+    if (state.selected === b) priority = 200;
     el.classList.toggle('sel', state.selected === b);
+    if (!show) { el.classList.add('hidden'); continue; }
+    // project to the screen so overlapping labels can be thinned out
+    const wp = worldPos(b).clone().project(camera);
+    if (wp.z > 1) { el.classList.add('hidden'); continue; }
+    const x = (wp.x + 1) / 2 * w, y = (1 - wp.y) / 2 * h;
+    if (x < -120 || x > w + 120 || y < -60 || y > h + 60) { el.classList.add('hidden'); continue; }
+    const tw = el.offsetWidth || (el.textContent.length * 7 + 10);
+    const th = el.offsetHeight || 14;
+    candidates.push({ el, priority, x, y: y - th * 1.6, hw: tw / 2 + 5, hh: th / 2 + 4 });
+  }
+  // Greedy declutter: keep the most important label in any cluster, drop the rest.
+  // Without this the inner planets stack into an unreadable pile at system scale.
+  candidates.sort((a, b) => b.priority - a.priority);
+  const placed = [];
+  for (const c of candidates) {
+    let clash = false;
+    for (const p of placed) {
+      if (Math.abs(c.x - p.x) < c.hw + p.hw && Math.abs(c.y - p.y) < c.hh + p.hh) { clash = true; break; }
+    }
+    c.el.classList.toggle('hidden', clash);
+    if (!clash) placed.push(c);
   }
 }
 
@@ -739,14 +841,19 @@ function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); const dt = Math.min(rawDt, 0.1);
   if (!state.paused) state.jd += dt * speedSeconds() / 86400;
+  // orbit lines are held back while the camera is still inside the Sun's glow
+  const orbitTarget = (cinematic.active && cinematic.step <= 1) ? 0.0 : 1;
+  state.orbitIntro += (orbitTarget - state.orbitIntro) * Math.min(1, rawDt * 1.1);
   // animate scale mix
   const targetMix = state.trueScale ? 1 : 0; state.scaleMix += (targetMix - state.scaleMix) * Math.min(1, dt * 2.2); if (Math.abs(state.scaleMix - targetMix) < 0.0005) state.scaleMix = targetMix;
   updateWorld(dt);
-  updateCamera(rawDt);
+  if (!cinematic.update(rawDt)) updateCamera(rawDt);
+  else { const d = camera.position.distanceTo(controls.target); camera.near = Math.max(0.0002, d * 0.001); camera.far = 400000; camera.updateProjectionMatrix(); controls.update(); }
+  if (starMat) starMat.uniforms.uTime.value = clock.elapsedTime;
   updateLabels(); updateFlare();
   acc += dt; if (acc > 0.5) { acc = 0; refreshClock(); if (state.selected) updateLiveStats(state.selected); }
   composer.render();
   labelRenderer.render(scene, camera);
 }
-window.__ss = { state, bodies, byId, camera, controls, renderer, scene, fly, selectBody };
+window.__ss = { state, bodies, byId, camera, controls, renderer, scene, fly, selectBody, cinematic, runCinematic, soundtrack };
 updateWorld(0); refreshClock(); animate();

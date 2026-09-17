@@ -6,17 +6,19 @@ An interactive 3D model of the Solar System, built with [Three.js](https://three
 
 ## What's in it
 
-- **Real NASA maps of every world.** Blue Marble and Earth-at-Night for Earth, LRO for the Moon, MESSENGER for Mercury, Magellan for Venus, Viking for Mars, Cassini for Jupiter and Saturn, Voyager 2 for Neptune and Triton, New Horizons for Pluto and Charon, and Galileo/Cassini mosaics for Io, Europa, Ganymede, Callisto, Titan and Enceladus.
-- **The Milky Way backdrop** is NASA's Tycho-2 all-sky map (8k on desktop, 4k on mobile).
-- **Planets are where they really are.** Positions are computed from JPL's Keplerian elements for the current date, and the simulation clock can be scrubbed from real time up to 22 years per second.
-- **A live Sun.** The Sun's info panel shows NASA Solar Dynamics Observatory's latest extreme-ultraviolet image, refreshed every time you open it.
-- **Earth's day and night.** City lights fade in across the terminator, oceans glint in the sunlight, clouds drift over the surface, and Earth is rotated so the sub-solar longitude matches UTC time.
-- **Saturn's rings at true radii.** The C, B and A rings, the Cassini Division, and the Encke and Keeler gaps are built from their real distances. The planet casts a shadow on the rings and the rings cast a shadow on the planet.
-- **Halley's Comet** on its real retrograde orbit, growing a tail as it approaches the Sun.
-- **Asteroid belt, Kuiper belt and Jupiter trojans**, 21,000 bodies orbiting on the GPU.
-- **True-scale mode** (press `T`) shows the real sizes and distances. Earth becomes a speck.
+It opens with a fifty-second cold open: the camera starts inside the Sun's corona, dives to Earth, then pulls back until the whole system is a smudge against the Milky Way. Skip it with `Esc`, replay it with `R`.
+
+- **True scale by default.** Sizes and distances are real, so Earth is a point of light. That is the honest picture, and the opening sequence teaches you how to read it. Press `T` for the compressed, exaggerated view when you want the whole system on one screen.
+- **Real NASA maps of every world.** Blue Marble and Earth-at-Night for Earth, LRO for the Moon, MESSENGER for Mercury, Magellan for Venus, Viking for Mars, Cassini for Jupiter and Saturn, Voyager 2 for Neptune and Triton, New Horizons for Pluto and Charon, plus Io, Europa, Ganymede, Callisto, Titan and Enceladus.
+- **The Milky Way backdrop** is NASA's Tycho-2 all-sky map, with NASA's constellation figures available as an overlay (`C`).
+- **Planets are where they really are.** Positions come from JPL's Keplerian elements for the current date, and the clock runs from real time up to 22 years per second.
+- **A live Sun.** The Sun's panel shows NASA Solar Dynamics Observatory's latest extreme-ultraviolet image.
+- **Earth's day and night.** City lights fade across the terminator, oceans glint, clouds drift, and Earth is rotated so the sub-solar longitude matches UTC.
+- **Saturn's rings at true radii**, with the Cassini Division and Encke gap, the planet shadowing the rings and the rings shadowing the planet.
+- **Halley's Comet** on its real retrograde orbit, growing a tail as it nears the Sun.
+- **21,000 asteroids, Kuiper belt objects and Jupiter trojans** orbiting on the GPU.
 - **Click any world** for facts, live distances and light-travel times, your weight and age there, and the NASA source of its imagery.
-- **A generative ambient soundtrack** composed live with the Web Audio API, so no two visits sound the same.
+- **A score composed live** with the Web Audio API: sub bass, a drawbar organ stack, bowed strings, formant choir, shimmer and risers, opened and closed by a single intensity value that crescendos through the opening. Nothing is sampled, so no two visits sound the same.
 
 ## Controls
 
@@ -28,6 +30,9 @@ An interactive 3D model of the Solar System, built with [Three.js](https://three
 | `[` `]` | Slower / faster |
 | `N` | Jump to now |
 | `T` | Toggle true scale |
+| `R` | Replay the opening |
+| `C` | Constellation figures |
+| `?` | Show all keys |
 | `M` | Music on / off |
 | `F` | Fullscreen |
 | `Esc` | Close panel and stop following |

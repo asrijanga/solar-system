@@ -10,6 +10,7 @@ import { SUN, PLANETS, COMETS, KEYBOARD_ORDER, AU_KM, C_KM_S } from './data.js';
 import { planetPosition, cometPosition, orbitPath, cometPath, dateToJD, jdToDate, J2000_JD } from './orbits.js';
 import { Soundtrack, CHIME_SCALE } from './audio.js';
 import { Cinematic } from './tour.js';
+import { playCrawl } from './crawl.js';
 import * as SH from './shaders.js';
 
 // ------------------------------------------------------------------ constants
@@ -109,7 +110,11 @@ function tex(name, srgb = true) {
 }
 const loadbar = document.querySelector('#loadbar > div'), loadtext = document.getElementById('loadtext');
 manager.onProgress = (url, loaded, total) => { loadbar.style.width = `${Math.round(100 * loaded / total)}%`; loadtext.textContent = `Loading NASA imagery ${loaded}/${total}`; };
-manager.onLoad = () => { loadbar.style.width = '100%'; loadtext.textContent = 'Ready'; const b = document.getElementById('launch'); b.disabled = false; b.textContent = 'Launch'; };
+manager.onLoad = () => {
+  loadbar.style.width = '100%'; loadtext.textContent = 'Ready';
+  const b = document.getElementById('launch'); b.disabled = false; b.textContent = 'Begin';
+  document.getElementById('launch-skip').disabled = false;
+};
 
 // ------------------------------------------------------------------ sky (Milky Way)
 const skyGroup = new THREE.Group();
@@ -791,7 +796,7 @@ window.addEventListener('keydown', e => {
   else if (k.toLowerCase() === 't') setTrueScale(!state.trueScale);
   else if (k.toLowerCase() === 'h') selectBody(byId.get('halley'));
   else if (k.toLowerCase() === 'n') document.getElementById('t-now').click();
-  else if (k.toLowerCase() === 'r') { deselect(); runCinematic(); }
+  else if (k.toLowerCase() === 'r') { runIntro(); }
   else if (k.toLowerCase() === 'c') { const cb = document.getElementById('opt-constellations'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
   else if (k === '?') toast('0-9 worlds · H Halley · R replay the opening · T scale · C constellations · Space pause · [ ] speed · N now · M music · F fullscreen', 7000);
 });
@@ -814,15 +819,58 @@ function runCinematic() {
   cinematic.start();
 }
 
+/** A sensible wide view of the inner system: where the opening leaves you. */
+function restingView() {
+  const dir = new THREE.Vector3(0.18, 0.46, 1).normalize();
+  controls.target.set(0, 0, 0);
+  camera.position.copy(dir).multiplyScalar(AU_SCALE * 11);
+  controls.update();
+  followOffset.copy(camera.position).sub(controls.target);
+}
+
+/** Hand control to the viewer, from wherever the intro was interrupted. */
+function endIntro({ reposition = false } = {}) {
+  document.body.classList.remove('cinematic');
+  document.getElementById('skip').classList.remove('show');
+  state.orbitIntro = 1;
+  soundtrack.setIntensity(0.58, 6);
+  if (reposition) restingView();
+}
+
+// The crawl, then the flight. Either can be cut short with Esc or the skip button.
+async function runIntro() {
+  deselect();
+  state.follow = null; fly.active = false; state.orbitIntro = 0;
+  document.body.classList.add('cinematic');
+  // Park on the galaxy for the crawl. The Sun would wash the text out.
+  camera.position.set(-AU_SCALE * 42, AU_SCALE * 26, AU_SCALE * 58);
+  controls.target.set(0, 0, 0);
+  controls.update();
+  const skipped = await playCrawl({ root: document.getElementById('crawl'), skipBtn: document.getElementById('skip') });
+  if (skipped) { endIntro({ reposition: true }); return; }
+  runCinematic();
+}
+
 // splash / launch
+const startHash = () => { const h = location.hash.slice(1); return h && byId.has(h) ? h : null; };
 document.getElementById('launch').addEventListener('click', () => {
+  document.body.classList.remove('pre-launch');
   document.getElementById('splash').classList.add('fade');
   setMusic(true);
-  const h = location.hash.slice(1);
-  if (h && byId.has(h)) { soundtrack.setIntensity(0.58, 8); selectBody(byId.get(h)); }
-  else runCinematic();
+  const h = startHash();
+  if (h) { soundtrack.setIntensity(0.58, 8); selectBody(byId.get(h)); }
+  else runIntro();
 });
-document.getElementById('btn-replay').addEventListener('click', () => { deselect(); runCinematic(); });
+document.getElementById('launch-skip').addEventListener('click', () => {
+  document.body.classList.remove('pre-launch');
+  document.getElementById('splash').classList.add('fade');
+  setMusic(true);
+  soundtrack.setIntensity(0.58, 8);
+  const h = startHash();
+  if (h) selectBody(byId.get(h));
+  else { restingView(); toast('Click any world. Press R for the opening, T for visual scale, ? for the keys.', 6500); }
+});
+document.getElementById('btn-replay').addEventListener('click', () => { runIntro(); });
 
 // clock display
 const clockDate = document.querySelector('#clock .date'), clockSpeed = document.querySelector('#clock .speed');
@@ -909,6 +957,6 @@ function animate() {
   composer.render();
   labelRenderer.render(scene, camera);
 }
-window.__ss = { state, bodies, byId, camera, controls, renderer, scene, fly, selectBody, cinematic, runCinematic, soundtrack };
+window.__ss = { state, bodies, byId, camera, controls, renderer, scene, fly, selectBody, cinematic, runCinematic, runIntro, soundtrack };
 syncSpinEpoch();
 updateWorld(0); refreshClock(); animate();

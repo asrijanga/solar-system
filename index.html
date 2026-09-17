@@ -10,7 +10,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='34' fill='%23ffb347'/><circle cx='50' cy='50' r='46' fill='none' stroke='%237fb2ff' stroke-width='3' opacity='.6'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=Oswald:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <script type="importmap">
   {
@@ -21,7 +21,7 @@
   }
   </script>
 </head>
-<body>
+<body class="pre-launch">
   <div id="app"></div>
   <div id="labels"></div>
 
@@ -30,8 +30,12 @@
       <h1>Solar System</h1>
       <div class="sub">Real imagery · true scale · live positions</div>
       <p>Every world here was photographed, not painted. Every planet sits where it actually is tonight. And nothing is exaggerated: at true scale, the Earth you live on is a single point of light.</p>
-      <p class="quiet">Fifty seconds, with sound. Headphones if you have them.</p>
-      <button id="launch" disabled>Preparing…</button>
+      <p class="quiet">Headphones if you have them.</p>
+      <div class="splash-actions">
+        <button id="launch" disabled>Preparing…</button>
+        <button id="launch-skip" class="ghost" disabled>Skip to the system</button>
+      </div>
+      <div class="splash-note">The opening runs about a minute and a half. You can skip it at any point with <kbd>Esc</kbd>.</div>
       <div id="loadbar"><div></div></div>
       <div id="loadtext">Loading NASA imagery</div>
     </div>
@@ -83,6 +87,18 @@
       <input type="range" id="t-speed" min="0" max="10" step="0.01" value="5.4" />
       <span class="lbl" id="t-label">1 day / s</span>
       <button id="t-now" title="Jump to now">Now</button>
+    </div>
+  </div>
+
+  <div id="crawl">
+    <div class="crawl-preamble">In a quiet arm of an<br>ordinary galaxy&hellip;.</div>
+    <div class="crawl-stage">
+      <div class="crawl-text">
+        <h2>Solar System</h2>
+        <p>It is a period of quiet discovery. From a small blue world, a species barely two hundred thousand years old has begun to map the space around its star.</p>
+        <p>Robotic emissaries have crossed the dark to photograph every planet in the system. The pictures you are about to see are theirs. None of it is invented.</p>
+        <p>The worlds ahead sit where they truly sit tonight, and at their true size. Which means the Earth beneath you is about to become a single point of light&hellip;.</p>
+      </div>
     </div>
   </div>
 

@@ -238,7 +238,7 @@ void main(){
 // Asteroid & Kuiper belts computed on the GPU from orbital parameters.
 export const BELT_VERT = /* glsl */`
 attribute float aA; attribute float aPhase; attribute float aIncl; attribute float aNode; attribute float aSize; attribute float aEcc;
-uniform float uDays; uniform float uMix; uniform float uAuScale; uniform float uPixelRatio;
+uniform float uDays; uniform float uAuScale; uniform float uPixelRatio;
 varying float vAlpha;
 void main(){
   float n = 6.283185 / (365.25 * pow(aA, 1.5));
@@ -252,11 +252,7 @@ void main(){
   vec3 q = vec3(cn * p.x + sn * p.z, 0.0, -sn * p.x + cn * p.z);
   q = vec3(q.x, -q.z * si, q.z * ci);
   q = vec3(cn * q.x - sn * q.z, q.y, sn * q.x + cn * q.z);
-  float rr = length(q);
-  float rVis = uAuScale * pow(rr, 0.55);
-  float rTrue = uAuScale * rr;
-  float rs = mix(rVis, rTrue, uMix);
-  vec3 pos = q / rr * rs;
+  vec3 pos = q * uAuScale;
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   gl_PointSize = aSize * uPixelRatio * (300.0 / -mv.z) + 0.6;
   vAlpha = aSize;

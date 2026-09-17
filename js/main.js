@@ -15,7 +15,6 @@ import * as SH from './shaders.js';
 
 // ------------------------------------------------------------------ constants
 const AU_SCALE = 100;                 // scene units per AU (true scale)
-const DIST_POW = 0.55;                // radial compression in "visual" mode
 const RADIUS_AU = km => km / AU_KM;   // km -> AU
 const TEX = 'assets/textures/';
 const clock = new THREE.Clock();
@@ -25,14 +24,11 @@ const state = {
   jd: dateToJD(new Date()),
   speedExp: 5.4,             // slider value; seconds of sim time per real second = 10^(0.85*exp)
   paused: false,
-  sizeSlider: 45,            // 1..60 -> planet exaggeration
-  trueScale: true,           // the model opens at real sizes and distances
-  scaleMix: 1,               // 0 = visual, 1 = true scale (animated)
   calmRotation: true,        // spin on a compressed clock instead of the simulation clock
   spinClock: 0,              // seconds of real time since the spin clock started
   spinEpochJD: 0,            // date the calm spin was last synchronised to
   orbitIntro: 1,             // orbit lines stay dark through the opening shots
-  showOrbits: true, showLabels: true, showBelts: true, showMoons: true, bloom: true,
+  showOrbits: false, showLabels: true, showBelts: true, showMoons: true, bloom: true,
   selected: null,            // body record
   follow: null,
   hover: null,
@@ -40,29 +36,18 @@ const state = {
 const bodies = [];           // all selectable bodies
 const byId = new Map();
 
-function sizeFactor() { return state.trueScale ? 1 : 20 * Math.pow(30, (state.sizeSlider - 1) / 59); }
 function speedSeconds() { return Math.pow(10, 0.85 * state.speedExp); }
 
-// Map a heliocentric position (AU) to scene coordinates, honouring the scale mix.
+// Everything below is one straight linear map from kilometres to scene units.
+// There is deliberately no size exaggeration and no distance compression: a world
+// that is a speck is drawn as a speck, and the space between them is the space
+// that is actually there. The marker sprites are what keep it navigable.
 const _v = new THREE.Vector3();
 function toScene(p, out = new THREE.Vector3()) {
-  const r = Math.hypot(p.x, p.y, p.z) || 1e-9;
-  const rVis = AU_SCALE * Math.pow(r, DIST_POW), rTrue = AU_SCALE * r;
-  const rs = rVis + (rTrue - rVis) * state.scaleMix;
-  return out.set(p.x, p.z, -p.y).multiplyScalar(rs / r);
+  return out.set(p.x, p.z, -p.y).multiplyScalar(AU_SCALE);
 }
-function bodyRadiusScene(km, isSun = false) {
-  const f = isSun ? Math.max(1, sizeFactor() / 6) : sizeFactor();
-  const fv = 1 + (f - 1) * (1 - state.scaleMix);
-  return RADIUS_AU(km) * AU_SCALE * fv;
-}
-function moonDistanceScene(sat, planet) {
-  const pr = bodyRadiusScene(planet.radiusKm);
-  const ratio = sat.distanceKm / planet.radiusKm;
-  const visual = pr * (1.6 + Math.pow(ratio, 0.7) * 0.55);
-  const real = RADIUS_AU(sat.distanceKm) * AU_SCALE;
-  return visual + (real - visual) * state.scaleMix;
-}
+function bodyRadiusScene(km) { return RADIUS_AU(km) * AU_SCALE; }
+function moonDistanceScene(sat) { return RADIUS_AU(sat.distanceKm) * AU_SCALE; }
 
 // ------------------------------------------------------------------ renderer
 const container = document.getElementById('app');
@@ -86,7 +71,8 @@ const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerH
 camera.position.set(0, 420, 900);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.06;
-controls.minDistance = 0.002; controls.maxDistance = 60000;
+// a true-scale Phobos is 7e-6 units across, so the near limit has to be tiny
+controls.minDistance = 2e-6; controls.maxDistance = 80000;
 controls.enablePan = false;
 
 const composerTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, { type: THREE.HalfFloatType, samples: 4 });
@@ -368,7 +354,7 @@ for (const p of PLANETS) {
       const mm = planetMaterial({ map: tex(s.texture), atmoColor: s.atmosphere?.color, atmo: s.atmosphere ? s.atmosphere.intensity * 0.6 : 0.05 });
       mmesh = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), mm);
     } else {
-      const g = new THREE.IcosahedronGeometry(1, 3); const pa = g.attributes.position;
+      const g = new THREE.IcosahedronGeometry(1, 5); const pa = g.attributes.position;
       for (let i = 0; i < pa.count; i++) { const v = new THREE.Vector3().fromBufferAttribute(pa, i); const k = 1 + 0.18 * Math.sin(v.x * 5.1) * Math.cos(v.y * 4.3) + 0.12 * Math.sin(v.z * 7.7 + 1.3); v.multiplyScalar(k); pa.setXYZ(i, v.x, v.y, v.z); }
       g.computeVertexNormals();
       mmesh = new THREE.Mesh(g, planetMaterial({ map: makeRockTexture('#' + (s.color || 0x888888).toString(16).padStart(6, '0')), atmo: 0.02 }));
@@ -420,7 +406,7 @@ function makeBelt(count, aMin, aMax, inclDeg, color, sizeMul) {
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aA', new THREE.BufferAttribute(a, 1)); g.setAttribute('aPhase', new THREE.BufferAttribute(ph, 1)); g.setAttribute('aIncl', new THREE.BufferAttribute(inc, 1)); g.setAttribute('aNode', new THREE.BufferAttribute(node, 1)); g.setAttribute('aSize', new THREE.BufferAttribute(sz, 1)); g.setAttribute('aEcc', new THREE.BufferAttribute(ecc, 1));
-  const m = new THREE.ShaderMaterial({ vertexShader: SH.BELT_VERT, fragmentShader: SH.BELT_FRAG, uniforms: { uDays: { value: 0 }, uMix: { value: 0 }, uAuScale: { value: AU_SCALE }, uPixelRatio: { value: renderer.getPixelRatio() }, uColor: { value: new THREE.Color(color) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  const m = new THREE.ShaderMaterial({ vertexShader: SH.BELT_VERT, fragmentShader: SH.BELT_FRAG, uniforms: { uDays: { value: 0 }, uAuScale: { value: AU_SCALE }, uPixelRatio: { value: renderer.getPixelRatio() }, uColor: { value: new THREE.Color(color) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   const pts = new THREE.Points(g, m); pts.frustumCulled = false; scene.add(pts); belts.push(pts); return pts;
 }
 makeBelt(9000, 2.1, 3.35, 12, 0xc9b79a, 0.7);   // main asteroid belt
@@ -474,7 +460,6 @@ function updateOrbitLine(body) {
   body.orbit.geometry.attributes.position.needsUpdate = true;
   body.orbit.geometry.computeBoundingSphere();
 }
-let lastMix = -1;
 const _fovTan = () => Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
 function apparentPx(radius, dist) { return radius / (dist * _fovTan()) * (window.innerHeight / 2); }
 function updateHalo(b) {
@@ -491,12 +476,11 @@ function updateHalo(b) {
 function updateWorld(dtSim) {
   const jd = state.jd;
   const hours = jdHoursSinceJ2000(jd);
-  const mixChanged = Math.abs(state.scaleMix - lastMix) > 1e-6 || state._sizeDirty;
   // orbit lines fade away while the camera is close to a world
   let orbitFade = state.orbitIntro;
   if (state.follow && !state.follow.isSun) { const f = state.follow.isMoon ? state.follow.parent : state.follow; const d = camera.position.distanceTo(f.pos); orbitFade *= THREE.MathUtils.clamp((d / (f.radius * 10) - 0.6), 0.12, 1); }
   // sun
-  const sunR = bodyRadiusScene(SUN.radiusKm, true);
+  const sunR = bodyRadiusScene(SUN.radiusKm);
   sunBody.radius = sunR; sunMesh.scale.setScalar(sunR); corona.scale.setScalar(sunR * 5.0); sunGlow.scale.setScalar(sunR * 1.22);
   sunMesh.rotation.y = state.calmRotation ? calmSpin(SUN.rotationHours) : 2 * Math.PI * hours / SUN.rotationHours;
   corona.quaternion.copy(camera.quaternion);
@@ -534,10 +518,9 @@ function updateWorld(dtSim) {
     b.orbit.material.uniforms.uHead.value = posAU.phase;
     b.orbit.material.uniforms.uFade.value = orbitFade;
     updateHalo(b);
-    if (mixChanged) updateOrbitLine(b);
     // moons
     for (const m of b.moons) {
-      const s = m.data; const d = moonDistanceScene(s, p); const mr = bodyRadiusScene(s.radiusKm); m.radius = mr;
+      const s = m.data; const d = moonDistanceScene(s); const mr = bodyRadiusScene(s.radiusKm); m.radius = mr;
       const ang = m.phase + (state.calmRotation ? calmSpin(s.periodDays * 24) : 2 * Math.PI * (jd - J2000_JD) / s.periodDays);
       m.holder.position.set(Math.cos(ang) * d, 0, -Math.sin(ang) * d);
       m.mesh.scale.setScalar(mr); if (m.atmo) m.atmo.scale.setScalar(1.05);
@@ -553,13 +536,11 @@ function updateWorld(dtSim) {
     const nr = Math.max(bodyRadiusScene(8), 0.02); c.radius = nr * 3; c.mesh.scale.setScalar(nr);
     const activity = THREE.MathUtils.clamp(1.6 / (rAU * rAU), 0, 1);
     c.glow.scale.setScalar(nr * (6 + 40 * activity)); c.glow.material.opacity = 0.35 + 0.65 * activity;
-    const u = c.tail.material.uniforms; u.uHead.value.copy(c.pos); u.uDir.value.copy(c.pos).normalize(); u.uLength.value = (0.4 + 0.6 * state.scaleMix + 0.0) * AU_SCALE * 0.6 * activity * (1 - 0.45 * state.scaleMix) + 0.3; u.uWidth.value = 0.12 * u.uLength.value; u.uTime.value = clock.elapsedTime;
+    const u = c.tail.material.uniforms; u.uHead.value.copy(c.pos); u.uDir.value.copy(c.pos).normalize(); u.uLength.value = AU_SCALE * 0.33 * activity + 0.3; u.uWidth.value = 0.12 * u.uLength.value; u.uTime.value = clock.elapsedTime;
     c.tail.visible = activity > 0.02;
     c.orbit.material.uniforms.uHead.value = posAU.phase; c.orbit.material.uniforms.uFade.value = orbitFade;
-    if (mixChanged) updateOrbitLine(c);
   }
-  for (const b of belts) { b.material.uniforms.uDays.value = jd - J2000_JD; b.material.uniforms.uMix.value = state.scaleMix; }
-  lastMix = state.scaleMix; state._sizeDirty = false;
+  for (const b of belts) b.material.uniforms.uDays.value = jd - J2000_JD;
   // shader uniforms shared
   for (const b of bodies) {
     if (b.mat) { b.mat.uniforms.uSunPos.value.set(0, 0, 0); b.mat.uniforms.uCamPos.value.copy(camera.position); }
@@ -573,7 +554,7 @@ function updateWorld(dtSim) {
 const fly = { active: false, t: 0, dur: 1.8, fromOff: new THREE.Vector3(), toOff: new THREE.Vector3(), fromTarget: new THREE.Vector3(), body: null };
 const followOffset = new THREE.Vector3();
 function worldPos(body) { if (body.isMoon) { body.holder.getWorldPosition(tmpV2); return tmpV2; } return tmpV2.copy(body.pos); }
-function viewDistance(body) { return Math.max(body.radius * (body.isSun ? 3.2 : body.ring ? 5.5 : 4.2), 0.004); }
+function viewDistance(body) { return Math.max(body.radius * (body.isSun ? 3.2 : body.ring ? 5.5 : 4.2), 4e-6); }
 
 function selectBody(body, { fly: doFly = true } = {}) {
   state.selected = body; state.follow = body;
@@ -620,7 +601,7 @@ function updateCamera(dt) {
   controls.update();
   // near plane tuning by distance to target
   const d = camera.position.distanceTo(controls.target);
-  camera.near = Math.max(0.0002, d * 0.001); camera.far = 400000; camera.updateProjectionMatrix();
+  camera.near = Math.max(1e-9, d * 0.0015); camera.far = 400000; camera.updateProjectionMatrix();
 }
 
 // ------------------------------------------------------------------ picking (screen-space, robust for tiny bodies)
@@ -683,7 +664,9 @@ function renderYou(body) {
   const el = document.getElementById('you'); if (!el) return; const d = body.data;
   const weight = parseFloat(localStorage.getItem('ss_weight') || '70'); const bday = localStorage.getItem('ss_bday') || '';
   const g = d.gravity; const yd = body.isMoon ? null : yearDays(body);
-  let rows = `<div class="row"><span>Your weight here (${fmt(weight)} kg on Earth)</span><b>${fmt(weight * g / 9.807, 1)} kg</b></div>`;
+  const here = weight * g / 9.807;
+  // Phobos pulls at 0.0057 m/s2, so one decimal place would just read "0 kg"
+  let rows = `<div class="row"><span>Your weight here (${fmt(weight)} kg on Earth)</span><b>${fmt(here, here < 1 ? 3 : here < 10 ? 2 : 1)} kg</b></div>`;
   if (yd) {
     let ageTxt = '—', nextTxt = '';
     if (bday) { const ms = Date.now() - new Date(bday).getTime(); const days = ms / 86400000; ageTxt = fmt(days / yd, 2) + ` ${d.name} years`; const next = Math.ceil(days / yd) * yd; const nd = new Date(new Date(bday).getTime() + next * 86400000); nextTxt = `Next ${d.name} birthday: ${nd.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}`; }
@@ -750,6 +733,7 @@ document.getElementById('btn-settings').addEventListener('click', e => { setting
 document.getElementById('btn-full').addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); });
 const bind = (id, fn) => document.getElementById(id).addEventListener('change', e => fn(e.target.checked ?? e.target.value, e));
 bind('opt-orbits', v => { state.showOrbits = v; orbitGroup.visible = v; });
+orbitGroup.visible = state.showOrbits;
 bind('opt-labels', v => { state.showLabels = v; labelRenderer.domElement.style.display = v ? '' : 'none'; });
 bind('opt-belts', v => { state.showBelts = v; belts.forEach(b => b.visible = v); });
 bind('opt-moons', v => { state.showMoons = v; for (const b of bodies) if (b.isMoon) b.pivot.visible = v; });
@@ -760,19 +744,7 @@ bind('opt-calm', v => {
   if (v) syncSpinEpoch();
   toast(v ? 'Calm rotation: every world turns on a slow, even clock.' : 'True rotation: spin follows the simulation clock, so fast worlds blur at high speed.');
 });
-bind('opt-truescale', v => { setTrueScale(v); });
-document.getElementById('opt-size').addEventListener('input', e => {
-  state.sizeSlider = parseFloat(e.target.value); state._sizeDirty = true;
-  // exaggerating sizes only means something once true scale is off
-  if (state.trueScale) setTrueScale(false);
-});
 document.getElementById('opt-volume').addEventListener('input', e => soundtrack.setVolume(parseFloat(e.target.value)));
-function setTrueScale(v) {
-  state.trueScale = v; document.getElementById('opt-truescale').checked = v;
-  toast(v ? 'True scale. Every size and distance is real, and the planets are specks. That is the honest picture.' : 'Visual scale. Distances compressed and planets enlarged, so the whole system fits on screen.');
-  if (state.follow) { const b = state.follow; setTimeout(() => selectBody(b), 1200); }
-}
-
 // music
 const soundtrack = new Soundtrack();
 const musicBtn = document.getElementById('btn-music');
@@ -793,12 +765,12 @@ window.addEventListener('keydown', e => {
   else if (k.toLowerCase() === 'f') document.getElementById('btn-full').click();
   else if (k === '[') document.getElementById('t-back').click();
   else if (k === ']') document.getElementById('t-fwd').click();
-  else if (k.toLowerCase() === 't') setTrueScale(!state.trueScale);
   else if (k.toLowerCase() === 'h') selectBody(byId.get('halley'));
   else if (k.toLowerCase() === 'n') document.getElementById('t-now').click();
   else if (k.toLowerCase() === 'r') { runIntro(); }
   else if (k.toLowerCase() === 'c') { const cb = document.getElementById('opt-constellations'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
-  else if (k === '?') toast('0-9 worlds · H Halley · R replay the opening · T scale · C constellations · Space pause · [ ] speed · N now · M music · F fullscreen', 7000);
+  else if (k.toLowerCase() === 'o') { const cb = document.getElementById('opt-orbits'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
+  else if (k === '?') toast('0-9 worlds · H Halley · R replay the opening · O orbit lines · C constellations · Space pause · [ ] speed · N now · M music · F fullscreen', 7000);
 });
 
 // ------------------------------------------------------------------ cinematic
@@ -807,7 +779,7 @@ const cinematic = new Cinematic({
   onEnd: (skipped) => {
     document.body.classList.remove('cinematic');
     followOffset.copy(camera.position).sub(controls.target);
-    if (!skipped) toast('Click any world. Press T for visual scale, H for Halley\'s Comet, ? for the keys.', 6000);
+    if (!skipped) toast('Click any world. Press H for Halley\'s Comet, O for orbit lines, ? for the keys.', 6000);
   },
 });
 function runCinematic() {
@@ -868,7 +840,7 @@ document.getElementById('launch-skip').addEventListener('click', () => {
   soundtrack.setIntensity(0.58, 8);
   const h = startHash();
   if (h) selectBody(byId.get(h));
-  else { restingView(); toast('Click any world. Press R for the opening, T for visual scale, ? for the keys.', 6500); }
+  else { restingView(); toast('Click any world. Press R for the opening, O for orbit lines, ? for the keys.', 6500); }
 });
 document.getElementById('btn-replay').addEventListener('click', () => { runIntro(); });
 
@@ -946,11 +918,9 @@ function animate() {
   // orbit lines are held back while the camera is still inside the Sun's glow
   const orbitTarget = (cinematic.active && cinematic.step <= 1) ? 0.0 : 1;
   state.orbitIntro += (orbitTarget - state.orbitIntro) * Math.min(1, rawDt * 1.1);
-  // animate scale mix
-  const targetMix = state.trueScale ? 1 : 0; state.scaleMix += (targetMix - state.scaleMix) * Math.min(1, dt * 2.2); if (Math.abs(state.scaleMix - targetMix) < 0.0005) state.scaleMix = targetMix;
   updateWorld(dt);
   if (!cinematic.update(rawDt)) updateCamera(rawDt);
-  else { const d = camera.position.distanceTo(controls.target); camera.near = Math.max(0.0002, d * 0.001); camera.far = 400000; camera.updateProjectionMatrix(); controls.update(); }
+  else { const d = camera.position.distanceTo(controls.target); camera.near = Math.max(1e-9, d * 0.0015); camera.far = 400000; camera.updateProjectionMatrix(); controls.update(); }
   if (starMat) starMat.uniforms.uTime.value = clock.elapsedTime;
   updateLabels(); updateFlare();
   acc += dt; if (acc > 0.5) { acc = 0; refreshClock(); if (state.selected) updateLiveStats(state.selected); }

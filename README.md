@@ -8,7 +8,7 @@ An interactive 3D model of the Solar System, built with [Three.js](https://three
 
 The opening is a choice. **Begin** plays a Star Wars-style title crawl and then a fifty-second flight: the camera starts inside the Sun's corona, dives to Earth, and pulls back until the whole system is a smudge against the Milky Way. **Skip to the system** drops you straight into the model. Either way `Esc` hands over control at any point, and `R` replays the opening later.
 
-- **True scale by default.** Sizes and distances are real, so Earth is a point of light. That is the honest picture, and the opening sequence teaches you how to read it. Press `T` for the compressed, exaggerated view when you want the whole system on one screen.
+- **True scale, and only true scale.** Sizes and distances are real, with no exaggeration and no compression anywhere in the model. A world that is a speck is drawn as a speck, and the space between them is the space that is actually there. That is the honest picture, and the opening sequence teaches you how to read it. Glowing markers keep the planets findable, and orbit lines are available on `O` when you want the geometry.
 - **Real NASA maps of every world.** Blue Marble and Earth-at-Night for Earth, LRO for the Moon, MESSENGER for Mercury, Magellan for Venus, Viking for Mars, Cassini for Jupiter and Saturn, Voyager 2 for Neptune and Triton, New Horizons for Pluto and Charon, plus Io, Europa, Ganymede, Callisto, Titan and Enceladus.
 - **The Milky Way backdrop** is NASA's Tycho-2 all-sky map, with NASA's constellation figures available as an overlay (`C`).
 - **Planets are where they really are.** Positions come from JPL's Keplerian elements for the current date, and the clock runs from real time up to 22 years per second.
@@ -30,7 +30,7 @@ The opening is a choice. **Begin** plays a Star Wars-style title crawl and then 
 | `Space` | Pause / resume time |
 | `[` `]` | Slower / faster |
 | `N` | Jump to now |
-| `T` | Toggle true scale |
+| `O` | Orbit lines |
 | `R` | Replay the crawl and flight |
 | `C` | Constellation figures |
 | `Space` | Pause time and rotation |

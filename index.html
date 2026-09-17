@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Solar System — an interactive 3D model with real NASA imagery</title>
+  <meta name="description" content="An interactive 3D model of the Solar System built with Three.js, real NASA planet maps, live Sun imagery, accurate planet positions for today's date, and a generative ambient soundtrack." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='34' fill='%23ffb347'/><circle cx='50' cy='50' r='46' fill='none' stroke='%237fb2ff' stroke-width='3' opacity='.6'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="labels"></div>
+
+  <div id="splash">
+    <div class="splash-inner">
+      <h1>Solar System</h1>
+      <div class="sub">A living model, built from NASA data</div>
+      <p>Real NASA maps of every world. Planets placed where they truly are today, from JPL orbital elements. A live picture of the Sun. A soundtrack composed as you watch. Put on headphones.</p>
+      <button id="launch" disabled>Preparing…</button>
+      <div id="loadbar"><div></div></div>
+      <div id="loadtext">Loading NASA imagery</div>
+    </div>
+  </div>
+
+  <div id="topbar" class="hud">
+    <div id="brand">Solar System<small>Real NASA imagery · live positions</small></div>
+    <div id="clock"><div class="date">—</div><div class="speed">—</div></div>
+    <div id="toolbar">
+      <button class="iconbtn" id="btn-music" title="Music (M)">♪</button>
+      <button class="iconbtn" id="btn-settings" title="Settings">⚙</button>
+      <button class="iconbtn" id="btn-full" title="Fullscreen (F)">⛶</button>
+    </div>
+  </div>
+
+  <div id="settings">
+    <h3>View</h3>
+    <label>Orbit lines <input type="checkbox" id="opt-orbits" checked /></label>
+    <label>Labels <input type="checkbox" id="opt-labels" checked /></label>
+    <label>Asteroid & Kuiper belts <input type="checkbox" id="opt-belts" checked /></label>
+    <label>Moons <input type="checkbox" id="opt-moons" checked /></label>
+    <label>Bloom glow <input type="checkbox" id="opt-bloom" checked /></label>
+    <label>True scale <input type="checkbox" id="opt-truescale" /></label>
+    <div class="sub">Planet size exaggeration</div>
+    <label><span>×1 – ×60</span><input type="range" id="opt-size" min="1" max="60" step="1" value="30" /></label>
+    <div class="sub">Music volume</div>
+    <label><span>Volume</span><input type="range" id="opt-volume" min="0" max="1" step="0.01" value="0.5" /></label>
+  </div>
+
+  <div id="panel">
+    <div class="head">
+      <div class="type" id="p-type"></div>
+      <h2 id="p-name"></h2>
+      <button class="close" id="p-close" title="Close (Esc)">✕</button>
+    </div>
+    <div class="body" id="p-body"></div>
+  </div>
+
+  <div id="bottombar" class="hud">
+    <div id="hint">Click a world · drag to orbit · scroll to zoom · keys 0–9 jump · space pauses</div>
+    <div id="planetnav"></div>
+    <div id="timectl">
+      <button id="t-back" title="Slower">◀◀</button>
+      <button id="t-pause" title="Pause (space)">❚❚</button>
+      <button id="t-fwd" title="Faster">▶▶</button>
+      <input type="range" id="t-speed" min="0" max="10" step="0.01" value="3" />
+      <span class="lbl" id="t-label">1 day / s</span>
+      <button id="t-now" title="Jump to now">Now</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <div id="tip"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

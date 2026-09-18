@@ -15,10 +15,13 @@ canvas { display: block; }
 #app { position: fixed; inset: 0; }
 #labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
 #labels > div { pointer-events: none; }
-.label { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(232,236,247,0.85); text-shadow: 0 0 6px rgba(0,0,0,0.9); white-space: nowrap; transform: translateY(-1.6em); transition: opacity 0.4s; user-select: none; }
+.label { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(232,236,247,0.85); text-shadow: 0 0 6px rgba(0,0,0,0.9); white-space: nowrap; transition: opacity 0.4s; user-select: none; pointer-events: auto; }
 .label.moon { font-size: 9px; color: rgba(200,210,235,0.7); letter-spacing: 0.12em; }
 .label.comet { color: #cfe8ff; }
-.label.hidden { opacity: 0; }
+/* A decluttered label is invisible but still a DOM element, so it has to stop
+   taking clicks as well — otherwise a tap near a planet silently selects
+   whatever unseen label happens to lie under the fingertip. */
+.label.hidden { opacity: 0; pointer-events: none; }
 
 /* ---------- splash ---------- */
 #splash { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(ellipse at center, rgba(3,5,14,0.72), rgba(1,2,8,0.93)); transition: opacity 1.2s ease; }
@@ -68,7 +71,8 @@ canvas { display: block; }
 #timectl button:hover { color: var(--accent); }
 #timectl input[type=range] { width: 180px; accent-color: var(--accent); }
 #timectl .lbl { color: var(--muted); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; min-width: 110px; text-align: center; }
-#hint { color: var(--muted); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; }
+#hint, #hint-touch { color: var(--muted); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; text-align: center; }
+#hint-touch { display: none; }
 
 /* ---------- info panel ---------- */
 #panel { position: fixed; top: 76px; right: 18px; bottom: 110px; width: min(420px, calc(100vw - 36px)); z-index: 20; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 18px; backdrop-filter: blur(18px); overflow: hidden; display: flex; flex-direction: column; transform: translateX(120%); opacity: 0; transition: transform 0.55s cubic-bezier(.2,.8,.2,1), opacity 0.4s; }
@@ -123,28 +127,49 @@ canvas { display: block; }
 #tip { position: fixed; z-index: 15; pointer-events: none; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; opacity: 0; transition: opacity 0.15s; transform: translate(12px, -50%); }
 
 @media (max-width: 720px) {
-  #topbar { padding: 10px 12px; }
-  #brand { font-size: 15px; letter-spacing: 0.08em; white-space: nowrap; }
+  /* The top bar has to hold a date and four controls inside 390px, so the
+     wordmark is the first thing to go and fullscreen the second: a phone
+     browser is already very nearly fullscreen. */
+  #topbar { padding: calc(10px + env(safe-area-inset-top)) 12px 10px; gap: 8px; }
+  #brand { font-size: 13px; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; }
   #brand small { display: none; }
-  #clock .date { font-size: 13px; white-space: nowrap; }
+  #clock .date { font-size: 11px; white-space: nowrap; }
   #clock .speed { display: none; }
-  .iconbtn { width: 32px; height: 32px; margin-left: 5px; font-size: 13px; }
+  #btn-full { display: none; }
+  .iconbtn { width: 34px; height: 34px; margin-left: 4px; font-size: 14px; }
   #timectl { width: calc(100vw - 28px); justify-content: space-between; padding: 6px 10px; }
   #timectl input[type=range] { width: auto; flex: 1; min-width: 60px; }
   #timectl .lbl { min-width: 0; font-size: 9px; }
   #timectl button { padding: 4px 4px; font-size: 12px; }
   #panel { max-height: 50vh; }
   #panel .head { padding: 14px 18px 8px; }
-  #panel .body { padding: 12px 18px 18px; }
+  #panel .body { padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); }
   #panel { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 62vh; border-radius: 18px 18px 0 0; transform: translateY(120%); }
   #panel.open { transform: translateY(0); }
   #panel .head h2 { font-size: 30px; }
-  #bottombar { padding-bottom: 8px; }
-  #planetnav button { padding: 6px 7px; font-size: 10px; }
-  #planetnav button span.txt { display: none; }
+  #bottombar { padding-bottom: calc(8px + env(safe-area-inset-bottom)); gap: 7px; }
+  /* Keep the names: ten identical coloured dots are not navigation. The bar
+     scrolls sideways instead, and selecting a world scrolls it into view. */
+  #planetnav {
+    flex-wrap: nowrap; justify-content: flex-start;
+    max-width: calc(100vw - 24px); overflow-x: auto; overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  #planetnav::-webkit-scrollbar { display: none; }
+  #planetnav button { padding: 10px 11px; font-size: 10px; gap: 6px; flex: 0 0 auto; min-height: 40px; }
+  #planetnav button .dot { width: 9px; height: 9px; }
   #timectl input[type=range] { width: 110px; }
   #hint { display: none; }
+  #hint-touch { display: block; font-size: 9px; letter-spacing: 0.1em; }
   #settings { width: calc(100vw - 36px); }
+  /* Labels are the same pixel size on a screen half as wide, so they are
+     dimmed and spaced further apart (the spacing itself lives in main.js). */
+  .label { font-size: 10px; letter-spacing: 0.12em; }
+  .label.moon { font-size: 9px; letter-spacing: 0.08em; }
+}
+
+@media (max-width: 480px) {
+  #brand { display: none; }
 }
 
 /* ---------- lens flare ---------- */

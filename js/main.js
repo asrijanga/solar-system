@@ -57,6 +57,9 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.0;
 container.appendChild(renderer.domElement);
 
+/** Label anchor, in multiples of the label's own height above the body it names. */
+const LABEL_ANCHOR_Y = 2.0;
+
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
 labelRenderer.domElement.id = 'labelroot';
@@ -291,9 +294,15 @@ function makeAtmosphere(radius, color, intensity) {
 
 // ------------------------------------------------------------------ labels
 function makeLabel(text, cls, parent, body) {
-  const el = document.createElement('div'); el.className = `label ${cls}`; el.textContent = text; el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer';
+  // pointer-events lives in the stylesheet, not here: an inline style would win
+  // over `.label.hidden`, and a decluttered label would keep eating taps.
+  const el = document.createElement('div'); el.className = `label ${cls}`; el.textContent = text; el.style.cursor = 'pointer';
   el.addEventListener('click', e => { e.stopPropagation(); selectBody(body); });
-  const obj = new CSS2DObject(el); parent.add(obj); return obj;
+  const obj = new CSS2DObject(el);
+  // CSS2DRenderer writes style.transform itself, so a CSS offset would be
+  // discarded: the anchor is what moves the name off the face of the world.
+  obj.center.set(0.5, LABEL_ANCHOR_Y);
+  parent.add(obj); return obj;
 }
 
 // ------------------------------------------------------------------ build planets
@@ -553,22 +562,35 @@ function updateWorld(dtSim) {
 }
 
 // ------------------------------------------------------------------ camera / selection
-const fly = { active: false, t: 0, dur: 1.8, fromOff: new THREE.Vector3(), toOff: new THREE.Vector3(), fromTarget: new THREE.Vector3(), body: null };
+const fly = { active: false, t: 0, dur: 1.8, fromOff: new THREE.Vector3(), toOff: new THREE.Vector3(), fromTarget: new THREE.Vector3(), point: new THREE.Vector3(), body: null };
 const followOffset = new THREE.Vector3();
 function worldPos(body) { if (body.isMoon) { body.holder.getWorldPosition(tmpV2); return tmpV2; } return tmpV2.copy(body.pos); }
 function viewDistance(body) { return Math.max(body.radius * (body.isSun ? 3.2 : body.ring ? 5.5 : 4.2), 4e-6); }
 
+/**
+ * Ease the camera to a pose. `body` keeps the move locked onto a world that is
+ * still moving; leave it null to aim at a fixed point in space.
+ */
+function flyToPose(point, offset, body = null) {
+  fly.body = body; fly.point.copy(point); fly.active = true; fly.t = 0;
+  fly.fromOff.copy(camera.position).sub(controls.target); fly.fromTarget.copy(controls.target);
+  fly.toOff.copy(offset);
+}
+
 function selectBody(body, { fly: doFly = true } = {}) {
   state.selected = body; state.follow = body;
-  document.querySelectorAll('#planetnav button').forEach(b => b.classList.toggle('active', b.dataset.id === body.id || (body.isMoon && b.dataset.id === body.parent.id)));
+  document.querySelectorAll('#planetnav button').forEach(b => {
+    const on = b.dataset.id === body.id || (body.isMoon && b.dataset.id === body.parent.id);
+    b.classList.toggle('active', on);
+    // the nav scrolls sideways on a phone, so bring the active world into view
+    if (on) b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  });
   showPanel(body);
   const degree = body.isSun ? 0 : body.isMoon ? 6 : Math.max(0, PLANETS.findIndex(p => p.id === body.id)) % CHIME_SCALE.length;
   soundtrack.chime(CHIME_SCALE[degree] * (body.isSun ? 0.5 : 1));
   location.hash = body.id;
   if (doFly) {
     const target = worldPos(body).clone();
-    fly.body = body; fly.active = true; fly.t = 0;
-    fly.fromOff.copy(camera.position).sub(controls.target); fly.fromTarget.copy(controls.target);
     const dir = camera.position.clone().sub(target); if (dir.lengthSq() < 1e-8) dir.set(1, 0.4, 1);
     dir.normalize();
     if (!body.isSun) { // approach from the sunlit side so the world is never seen as a dark disc
@@ -576,8 +598,21 @@ function selectBody(body, { fly: doFly = true } = {}) {
       dir.multiplyScalar(0.35).addScaledVector(sunward, 0.75).normalize();
     }
     dir.y = Math.max(dir.y, 0.18); dir.normalize();
-    fly.toOff.copy(dir.multiplyScalar(viewDistance(body)));
+    flyToPose(target, dir.multiplyScalar(viewDistance(body)), body);
   }
+}
+
+/**
+ * Let go of whatever we are following and pull back until the whole system is
+ * in frame. Without this there is no way off a world on a touch screen, where
+ * there is no Escape key to press.
+ */
+function backToSystem() {
+  deselect();
+  state.follow = null;
+  const dir = new THREE.Vector3(0.18, 0.46, 1).normalize();
+  flyToPose(new THREE.Vector3(0, 0, 0), dir.multiplyScalar(AU_SCALE * 11));
+  toast('Back to the whole system');
 }
 function deselect() {
   state.selected = null; hidePanel();
@@ -610,7 +645,7 @@ function updateCamera(dt) {
   if (fly.active) {
     fly.t = Math.min(1, fly.t + dt / fly.dur);
     const e = fly.t < 0.5 ? 4 * fly.t ** 3 : 1 - Math.pow(-2 * fly.t + 2, 3) / 2;
-    const target = worldPos(fly.body).clone();
+    const target = fly.body ? worldPos(fly.body).clone() : fly.point.clone();
     const t = fly.fromTarget.clone().lerp(target, e);
     // interpolate offsets logarithmically in length for smooth zooms across scales
     const l0 = fly.fromOff.length(), l1 = fly.toOff.length(); const len = Math.exp(THREE.MathUtils.lerp(Math.log(l0), Math.log(l1), e));
@@ -630,24 +665,36 @@ function updateCamera(dt) {
 
 // ------------------------------------------------------------------ picking (screen-space, robust for tiny bodies)
 const ndc = new THREE.Vector2();
-function pickAt(clientX, clientY) {
+/** True where the primary input is a finger: hit targets and drag slop both grow. */
+const coarsePointer = () => window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 720;
+function pickAt(clientX, clientY, minTol = 16) {
   const w = window.innerWidth, h = window.innerHeight; let best = null, bestD = 1e9;
   for (const b of bodies) {
     if (b.isMoon && !state.showMoons) continue;
     if (b.isMoon && b.label.element.classList.contains('hidden')) continue;
-    const wp = worldPos(b).clone(); const v = wp.project(camera); if (v.z > 1) continue;
+    const wp = worldPos(b).clone();
+    // measure the distance BEFORE projecting: project() rewrites wp in place
+    const dist = camera.position.distanceTo(wp);
+    const v = wp.project(camera); if (v.z > 1) continue;
     const sx = (v.x + 1) / 2 * w, sy = (1 - v.y) / 2 * h;
-    const dist = camera.position.distanceTo(wp); const pr = b.radius / (dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * (h / 2);
-    const tol = Math.max(16, pr); const d = Math.hypot(sx - clientX, sy - clientY);
-    if (d < tol && d - pr * 0.5 < bestD) { best = b; bestD = d - pr * 0.5; }
+    const pr = b.radius / (dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * (h / 2);
+    const tol = Math.max(minTol, pr); const d = Math.hypot(sx - clientX, sy - clientY);
+    // A planet and its moons sit within a pixel of each other at system scale,
+    // so the nearest hit is a coin toss. Make a moon earn the tap.
+    const score = d - pr * 0.5 + (b.isMoon ? 7 : b.isComet ? 3 : 0);
+    if (d < tol && score < bestD) { best = b; bestD = score; }
   }
   return best;
 }
 let downPos = null;
-renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY, e.pointerType]; });
 renderer.domElement.addEventListener('pointerup', e => {
-  if (!downPos) return; const moved = Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]); downPos = null; if (moved > 6) return;
-  const b = pickAt(e.clientX, e.clientY); if (b) selectBody(b);
+  if (!downPos) return;
+  const touch = downPos[2] === 'touch' || downPos[2] === 'pen';
+  const moved = Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]); downPos = null;
+  // a finger always slides a little on the way back up
+  if (moved > (touch ? 14 : 6)) return;
+  const b = pickAt(e.clientX, e.clientY, touch || coarsePointer() ? 28 : 16); if (b) selectBody(b);
 });
 const tip = document.getElementById('tip');
 renderer.domElement.addEventListener('pointermove', e => {
@@ -765,6 +812,7 @@ refreshSpeedUI();
 
 const settings = document.getElementById('settings');
 document.getElementById('btn-settings').addEventListener('click', e => { settings.classList.toggle('open'); e.currentTarget.classList.toggle('active', settings.classList.contains('open')); });
+document.getElementById('btn-home').addEventListener('click', () => backToSystem());
 document.getElementById('btn-full').addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); });
 const bind = (id, fn) => document.getElementById(id).addEventListener('change', e => fn(e.target.checked ?? e.target.value, e));
 bind('opt-orbits', v => { state.showOrbits = v; orbitGroup.visible = v; });
@@ -805,7 +853,8 @@ window.addEventListener('keydown', e => {
   else if (k.toLowerCase() === 'r') { deselect(); runCinematic(); }
   else if (k.toLowerCase() === 'c') { const cb = document.getElementById('opt-constellations'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
   else if (k.toLowerCase() === 'o') { const cb = document.getElementById('opt-orbits'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
-  else if (k === '?') toast('0-9 worlds · H Halley · R replay the opening · O orbit lines · C constellations · Space pause · [ ] speed · N now · M music · F fullscreen', 7000);
+  else if (k.toLowerCase() === 'b') backToSystem();
+  else if (k === '?') toast('0-9 worlds · B back to the system · H Halley · R replay the opening · O orbit lines · C constellations · Space pause · [ ] speed · N now · M music · F fullscreen', 7000);
 });
 
 // ------------------------------------------------------------------ cinematic
@@ -814,7 +863,7 @@ const cinematic = new Cinematic({
   onEnd: (skipped) => {
     document.body.classList.remove('cinematic');
     followOffset.copy(camera.position).sub(controls.target);
-    if (!skipped) toast('Click any world. Press H for Halley\'s Comet, O for orbit lines, ? for the keys.', 6000);
+    if (!skipped) toast(coarsePointer() ? 'Tap any world. ◎ brings you back, ⚙ has orbit lines and the rest.' : 'Click any world. Press H for Halley\'s Comet, O for orbit lines, ? for the keys.', 6000);
   },
 });
 function runCinematic() {
@@ -856,7 +905,7 @@ document.getElementById('launch').addEventListener('click', () => {
   soundtrack.setIntensity(0.58, 8);
   const h = startHash();
   if (h) selectBody(byId.get(h));
-  else { restingView(); toast('Click any world. Press R for the flight, O for orbit lines, ? for the keys.', 6500); }
+  else { restingView(); toast(coarsePointer() ? 'Tap any world. ◎ brings you back, ⚙ has orbit lines and the rest.' : 'Click any world. Press R for the flight, O for orbit lines, ? for the keys.', 6500); }
 });
 // Secondary: watch the camera flight first.
 document.getElementById('launch-flight').addEventListener('click', () => {
@@ -882,11 +931,58 @@ window.addEventListener('resize', () => {
 });
 
 // ------------------------------------------------------------------ label visibility
+//
+// Four passes, in the order they matter:
+//
+//   1. Relevance. The scene spans six orders of magnitude, so "in front of the
+//      camera" is a useless test on its own: parked beside Earth, Jupiter is
+//      still on screen, six hundred million kilometres behind it. Anything far
+//      outside the shell the camera is currently looking at is background.
+//   2. Occlusion. A world sitting behind the disc of a nearer one should not
+//      label itself straight through the rock.
+//   3. Declutter. Whatever survives is thinned so no two labels collide.
+//   4. A hard cap, so a phone never has to carry twenty of them.
+//
+// Pass 1 needs no mode switch: zooming out raises the shell, and the rest of
+// the system fades back in by itself.
+
+/** How much farther than the current view shell a body may sit before its label counts as background. */
+const LABEL_FAR_RATIO = 45;
+
+function labelSpacing() {
+  // The same label is roughly twice as large a share of a phone screen, and a
+  // fingertip needs the gap that a mouse pointer does not.
+  const narrow = window.innerWidth < 720;
+  return narrow ? { padX: 14, padY: 12, max: 10 } : { padX: 5, padY: 4, max: 22 };
+}
+
 function updateLabels() {
   const camPos = camera.position, w = window.innerWidth, h = window.innerHeight;
-  const candidates = [];
+  const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const shell = Math.max(1e-12, camPos.distanceTo(controls.target));
+  const gap = labelSpacing();
+
+  // Project every body once, and record how wide it is on screen so the big
+  // ones can be used as occluders below.
+  const shots = [];
   for (const b of bodies) {
-    const el = b.label.element;
+    const wp = worldPos(b).clone();
+    const dist = camPos.distanceTo(wp);
+    wp.project(camera);   // in place: the world position is not needed past here
+    shots.push({
+      b, dist, front: wp.z <= 1,
+      x: (wp.x + 1) / 2 * w, y: (1 - wp.y) / 2 * h,
+      screenR: b.radius / Math.max(1e-12, dist * tanHalf) * (h / 2),
+    });
+  }
+  const occluders = shots.filter(s => s.front && s.screenR > 7);
+
+  const candidates = [];
+  for (const s of shots) {
+    const b = s.b, el = b.label.element;
+    const selected = state.selected === b;
+    el.classList.toggle('sel', selected);
+
     let show = true, priority = 0;
     if (b.isMoon) {
       // show once the moon's orbit fills a useful part of the frame (works at any scale)
@@ -899,28 +995,36 @@ function updateLabels() {
       priority = 80;
     } else {
       // hide when the camera is very close to the body (label would overlap the surface)
-      show = camPos.distanceTo(b.pos) >= b.radius * 2.2;
+      show = s.dist >= b.radius * 2.2;
       priority = 40 + Math.min(20, (b.data.radiusKm || 1) / 4000);
     }
-    if (state.selected === b) priority = 200;
-    el.classList.toggle('sel', state.selected === b);
-    if (!show) { el.classList.add('hidden'); continue; }
-    // project to the screen so overlapping labels can be thinned out
-    const wp = worldPos(b).clone().project(camera);
-    if (wp.z > 1) { el.classList.add('hidden'); continue; }
-    const x = (wp.x + 1) / 2 * w, y = (1 - wp.y) / 2 * h;
-    if (x < -120 || x > w + 120 || y < -60 || y > h + 60) { el.classList.add('hidden'); continue; }
+    // 1. relevance. The selected world always keeps its name.
+    if (!selected && s.dist > shell * LABEL_FAR_RATIO) show = false;
+    if (selected) priority = 200;
+
+    if (!show || !s.front) { el.classList.add('hidden'); continue; }
+    if (s.x < -120 || s.x > w + 120 || s.y < -60 || s.y > h + 60) { el.classList.add('hidden'); continue; }
+
+    // 2. occlusion
+    let blocked = false;
+    for (const o of occluders) {
+      if (o.b === b || o.dist >= s.dist - o.b.radius) continue;
+      if (Math.hypot(s.x - o.x, s.y - o.y) < o.screenR * 0.92) { blocked = true; break; }
+    }
+    if (blocked) { el.classList.add('hidden'); continue; }
+
     const tw = el.offsetWidth || (el.textContent.length * 7 + 10);
     const th = el.offsetHeight || 14;
-    candidates.push({ el, priority, x, y: y - th * 1.6, hw: tw / 2 + 5, hh: th / 2 + 4 });
+    candidates.push({ el, priority, x: s.x, y: s.y + (0.5 - LABEL_ANCHOR_Y) * th, hw: tw / 2 + gap.padX, hh: th / 2 + gap.padY });
   }
-  // Greedy declutter: keep the most important label in any cluster, drop the rest.
-  // Without this the inner planets stack into an unreadable pile at system scale.
+
+  // 3/4. Greedy declutter: keep the most important label in any cluster, drop
+  // the rest. Without this the inner planets stack into an unreadable pile.
   candidates.sort((a, b) => b.priority - a.priority);
   const placed = [];
   for (const c of candidates) {
-    let clash = false;
-    for (const p of placed) {
+    let clash = placed.length >= gap.max;
+    if (!clash) for (const p of placed) {
       if (Math.abs(c.x - p.x) < c.hw + p.hw && Math.abs(c.y - p.y) < c.hh + p.hh) { clash = true; break; }
     }
     c.el.classList.toggle('hidden', clash);
@@ -951,6 +1055,6 @@ function animate() {
   composer.render();
   labelRenderer.render(scene, camera);
 }
-window.__ss = { state, bodies, byId, camera, controls, renderer, scene, fly, selectBody, cinematic, runCinematic, soundtrack };
+window.__ss = { state, bodies, byId, camera, controls, renderer, scene, fly, selectBody, pickAt, cinematic, runCinematic, soundtrack };
 syncSpinEpoch();
 updateWorld(0); refreshClock(); animate();

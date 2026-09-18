@@ -23,6 +23,9 @@ export const SUN = {
     'The Sun orbits the centre of the Milky Way at about 828,000 km/h, completing one galactic year every ~230 million years.'
   ],
   credit: { text: 'Surface: procedural shader. Live image: NASA/SDO, AIA 304 Å (updated every few minutes)', url: 'https://sdo.gsfc.nasa.gov/data/' },
+  // The cached frame ships with the repo so the panel works offline and on first
+  // paint; the live one is fetched afterwards and swapped in only if it arrives.
+  cachedImage: 'assets/textures/sun_sdo_cached.jpg',
   liveImage: 'https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0304.jpg'
 };
 
@@ -79,7 +82,7 @@ export const PLANETS = [
       { id: 'moon', name: 'Moon', radiusKm: 1737.4, gravity: 1.62, distanceKm: 384400, periodDays: 27.3217, inclination: 5.145, texture: 'moon.jpg', tidallyLocked: true,
         description: 'Earth\'s only natural satellite, formed ~4.5 billion years ago when a Mars-sized body collided with the young Earth. Twelve humans have walked here.',
         facts: [ 'The Moon always shows us the same face because it rotates exactly once per orbit.', 'Apollo astronauts\' footprints will survive for millions of years: there is no wind or water to erase them.', 'The Moon is slowly moving away from Earth at 3.8 cm/year, about the rate your fingernails grow.' ],
-        credit: { text: 'NASA 3D Resources — Lunar Reconnaissance Orbiter (LRO) colour map', url: 'https://github.com/nasa/NASA-3D-Resources' } }
+        credit: { text: 'NASA/GSFC Scientific Visualization Studio — Lunar Reconnaissance Orbiter colour mosaic, 8192 x 4096', url: 'https://svs.gsfc.nasa.gov/4720' } }
     ]
   },
   {
@@ -98,10 +101,10 @@ export const PLANETS = [
     ],
     credit: { text: 'NASA 3D Resources — Viking Orbiter colour mosaic (NASA/JPL/USGS)', url: 'https://github.com/nasa/NASA-3D-Resources' },
     satellites: [
-      { id: 'phobos', name: 'Phobos', radiusKm: 11.1, gravity: 0.0057, distanceKm: 9376, periodDays: 0.3189, inclination: 1.08, color: 0x8a7f74,
-        description: 'The larger and inner of Mars\'s two moons. It orbits so fast that it rises in the west and sets in the east, twice every Martian day.', facts: [], credit: { text: 'Procedural (no NASA global map used)', url: '' } },
-      { id: 'deimos', name: 'Deimos', radiusKm: 6.2, gravity: 0.003, distanceKm: 23463, periodDays: 1.263, inclination: 1.79, color: 0x9a9088,
-        description: 'The outer Martian moon, only 12 km across.', facts: [], credit: { text: 'Procedural (no NASA global map used)', url: '' } }
+      { id: 'phobos', name: 'Phobos', radiusKm: 11.1, gravity: 0.0057, distanceKm: 9376, periodDays: 0.3189, inclination: 1.08, color: 0x8a7f74, texture: 'phobos.jpg',
+        description: 'The larger and inner of Mars\'s two moons. It orbits so fast that it rises in the west and sets in the east, twice every Martian day.', facts: [], credit: { text: 'NASA/JPL/USGS — Viking and Mars Express mosaic of Phobos, wrapped on a displaced mesh because Phobos is 27 km by 22 km and not a sphere', url: 'https://github.com/nasa/NASA-3D-Resources' } },
+      { id: 'deimos', name: 'Deimos', radiusKm: 6.2, gravity: 0.003, distanceKm: 23463, periodDays: 1.263, inclination: 1.79, color: 0x9a9088, texture: 'deimos.jpg',
+        description: 'The outer Martian moon, only 12 km across.', facts: [], credit: { text: 'NASA/JPL/USGS — Viking mosaic of Deimos, wrapped on a displaced mesh', url: 'https://github.com/nasa/NASA-3D-Resources' } }
     ]
   },
   {
@@ -148,7 +151,7 @@ export const PLANETS = [
     credit: { text: 'NASA 3D Resources — Cassini/Voyager map. Rings: procedural, built from real ring radii (C, B, Cassini Division, A, Encke Gap, F)', url: 'https://github.com/nasa/NASA-3D-Resources' },
     satellites: [
       { id: 'titan', name: 'Titan', radiusKm: 2574.7, gravity: 1.352, distanceKm: 1221870, periodDays: 15.945, inclination: 0.35, texture: 'titan.jpg', atmosphere: { color: 0xe8a94a, intensity: 0.8 },
-        description: 'The only moon with a thick atmosphere, and the only other world with rivers, lakes and seas on its surface, filled with liquid methane. NASA\'s Dragonfly rotorcraft will land here in the 2030s.', facts: ['Titan\'s air is so thick and its gravity so low that a human could fly by flapping strap-on wings.'], credit: { text: 'NASA 3D Resources — Cassini map', url: 'https://github.com/nasa/NASA-3D-Resources' } },
+        description: 'The only moon with a thick atmosphere, and the only other world with rivers, lakes and seas on its surface, filled with liquid methane. NASA\'s Dragonfly rotorcraft will land here in the 2030s.', facts: ['Titan\'s air is so thick and its gravity so low that a human could fly by flapping strap-on wings.'], credit: { text: 'NASA/JPL/Space Science Institute — Cassini ISS global mosaic (PIA22770). Cassini mapped Titan in the near infrared because visible light cannot penetrate its haze, so the mosaic is colourised to the orange an eye would see', url: 'https://photojournal.jpl.nasa.gov/catalog/PIA22770' } },
       { id: 'enceladus', name: 'Enceladus', radiusKm: 252.1, gravity: 0.113, distanceKm: 237948, periodDays: 1.370, inclination: 0.02, texture: 'enceladus.jpg',
         description: 'A tiny ice moon that shoots geysers of water 500 km into space from a subsurface ocean. Cassini flew through the plumes and tasted salt and organic molecules.', facts: [], credit: { text: 'NASA 3D Resources — Cassini mosaic', url: 'https://github.com/nasa/NASA-3D-Resources' } }
     ]
@@ -187,7 +190,7 @@ export const PLANETS = [
     credit: { text: 'NASA 3D Resources — Voyager 2 map (NASA/JPL)', url: 'https://github.com/nasa/NASA-3D-Resources' },
     satellites: [
       { id: 'triton', name: 'Triton', radiusKm: 1353.4, gravity: 0.779, distanceKm: 354759, periodDays: -5.877, inclination: 156.9, texture: 'triton.jpg',
-        description: 'Neptune\'s largest moon orbits backwards, has nitrogen geysers, and a surface of frozen nitrogen at −235 °C.', facts: [], credit: { text: 'NASA 3D Resources — Voyager 2 mosaic', url: 'https://github.com/nasa/NASA-3D-Resources' } }
+        description: 'Neptune\'s largest moon orbits backwards, has nitrogen geysers, and a surface of frozen nitrogen at −235 °C.', facts: [], credit: { text: 'NASA/JPL/USGS — Voyager 2 map of Triton (PIA18668). Voyager 2 saw only part of the surface during its 1989 flyby, so roughly a third of this map is extrapolated from the terrain it did image', url: 'https://photojournal.jpl.nasa.gov/catalog/PIA18668' } }
     ]
   },
   {
@@ -204,10 +207,10 @@ export const PLANETS = [
       'A year on Pluto lasts 248 Earth years. No one born when it was discovered (1930) will live to see it complete one orbit.',
       'Some of the ashes of Clyde Tombaugh, who discovered Pluto, are aboard New Horizons, making him the first human to leave the Solar System.'
     ],
-    credit: { text: 'NASA 3D Resources — New Horizons map (NASA/JHUAPL/SwRI)', url: 'https://github.com/nasa/NASA-3D-Resources' },
+    credit: { text: 'NASA/JHUAPL/SwRI — New Horizons. The sharp hemisphere (PIA19956) is registered onto the full-coverage global map, so the side New Horizons could not resolve is still real data rather than a gap', url: 'https://photojournal.jpl.nasa.gov/catalog/PIA19956' },
     satellites: [
       { id: 'charon', name: 'Charon', radiusKm: 606, gravity: 0.288, distanceKm: 19591, periodDays: 6.387, inclination: 0.08, texture: 'charon.jpg',
-        description: 'Half the size of Pluto, with a dark red polar cap made of organic molecules that drifted over from Pluto\'s atmosphere.', facts: [], credit: { text: 'NASA 3D Resources — New Horizons map', url: 'https://github.com/nasa/NASA-3D-Resources' } }
+        description: 'Half the size of Pluto, with a dark red polar cap made of organic molecules that drifted over from Pluto\'s atmosphere.', facts: [], credit: { text: 'NASA/JHUAPL/SwRI — New Horizons global map of Charon (PIA19866). New Horizons flew past before the southern hemisphere left winter darkness, so about a third of this map is extrapolated from the imaged terrain', url: 'https://photojournal.jpl.nasa.gov/catalog/PIA19866' } }
     ]
   }
 ];

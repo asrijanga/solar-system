@@ -70,9 +70,9 @@ void main(){
 // Additive glow shell (rendered on the back faces of a larger sphere).
 export const GLOW_FRAG = /* glsl */`
 uniform vec3 uColor; uniform float uPower; uniform float uIntensity;
-varying vec3 vN; varying vec3 vV; varying vec3 vW;
+varying vec3 vViewNormal; varying vec3 vViewPos;
 void main(){
-  float c = clamp(dot(-normalize(vN), normalize(vV)), 0.0, 1.0);
+  float c = clamp(dot(-normalize(vViewNormal), normalize(-vViewPos)), 0.0, 1.0);
   float a = pow(c, uPower) * uIntensity;
   gl_FragColor = vec4(uColor * a, a);
 }`;
@@ -99,46 +99,48 @@ void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(p
 export const PLANET_VERT = /* glsl */`
 #include <common>
 #include <logdepthbuf_pars_vertex>
-varying vec2 vUv; varying vec3 vWorldPos; varying vec3 vWorldNormal;
+varying vec2 vUv; varying vec3 vViewPos; varying vec3 vViewNormal;
 void main(){
   vUv = uv;
-  vec4 wp = modelMatrix * vec4(position, 1.0);
-  vWorldPos = wp.xyz;
-  vWorldNormal = normalize(mat3(modelMatrix) * normal);
-  gl_Position = projectionMatrix * viewMatrix * wp;
+  // Everything is shaded in view space. modelViewMatrix is built on the CPU in
+  // double precision, so the huge camera-to-body offset cancels before anything
+  // reaches float32. Going via world space instead costs the model its accuracy:
+  // Pluto sits ~4000 units out, where a float32 step is 4.7e-4, while its radius
+  // is only 7.9e-4 units. Its whole sphere spanned under two representable
+  // values, so neighbouring vertices collapsed together and it rendered as a
+  // faceted lump. In view space those same vertices are a few thousandths of a
+  // unit from the origin and resolve to a millionth of their radius.
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vViewPos = mv.xyz;
+  vViewNormal = normalize(normalMatrix * normal);
+  gl_Position = projectionMatrix * mv;
 #include <logdepthbuf_vertex>
-
-#include <logdepthbuf_vertex>
-
-#include <logdepthbuf_vertex>
-
 }`;
 export const PLANET_FRAG = /* glsl */`
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform sampler2D uMap; uniform sampler2D uNight; uniform sampler2D uRingMap;
 uniform float uHasNight; uniform float uOcean; uniform float uHasRingShadow;
-uniform vec3 uSunPos; uniform vec3 uAtmoColor; uniform float uAtmo; uniform float uAmbient;
-uniform vec3 uCenter; uniform vec3 uPoleAxis; uniform float uRingInner; uniform float uRingOuter;
-uniform vec3 uCamPos; uniform float uLightScale; uniform float uWrap; uniform float uSaturation; uniform float uSpecular; uniform float uShininess;
-varying vec2 vUv; varying vec3 vWorldPos; varying vec3 vWorldNormal;
+uniform vec3 uSunView; uniform vec3 uAtmoColor; uniform float uAtmo; uniform float uAmbient;
+uniform vec3 uCenterView; uniform vec3 uPoleView; uniform float uRingInner; uniform float uRingOuter;
+uniform float uLightScale; uniform float uWrap; uniform float uSaturation; uniform float uSpecular; uniform float uShininess;
+varying vec2 vUv; varying vec3 vViewPos; varying vec3 vViewNormal;
 void main(){
 #include <logdepthbuf_fragment>
-
-  vec3 N = normalize(vWorldNormal);
-  vec3 L = normalize(uSunPos - vWorldPos);
-  vec3 V = normalize(uCamPos - vWorldPos);
+  vec3 N = normalize(vViewNormal);
+  vec3 L = normalize(uSunView - vViewPos);
+  vec3 V = normalize(-vViewPos);            // the camera is the origin of view space
   float ndl = dot(N, L);
   float diffuse = clamp((ndl + uWrap) / (1.0 + uWrap), 0.0, 1.0);
   float shadow = 1.0;
   if (uHasRingShadow > 0.5) {
     // Intersect the ray from this point toward the Sun with the ring plane.
-    float denom = dot(uPoleAxis, L);
+    float denom = dot(uPoleView, L);
     if (abs(denom) > 1e-4) {
-      float tt = dot(uPoleAxis, uCenter - vWorldPos) / denom;
+      float tt = dot(uPoleView, uCenterView - vViewPos) / denom;
       if (tt > 0.0) {
-        vec3 hit = vWorldPos + L * tt;
-        float rr = length(hit - uCenter);
+        vec3 hit = vViewPos + L * tt;
+        float rr = length(hit - uCenterView);
         if (rr > uRingInner && rr < uRingOuter) {
           float u = (rr - uRingInner) / (uRingOuter - uRingInner);
           shadow = 1.0 - texture2D(uRingMap, vec2(u, 0.5)).a * 0.92;
@@ -176,25 +178,28 @@ void main(){
 export const ATMO_VERT = /* glsl */`
 #include <common>
 #include <logdepthbuf_pars_vertex>
-varying vec3 vN; varying vec3 vV; varying vec3 vW;
+varying vec3 vViewNormal; varying vec3 vViewPos;
 void main(){
-  vec4 wp = modelMatrix * vec4(position,1.0);
-  vW = wp.xyz; vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - wp.xyz);
-  gl_Position = projectionMatrix * viewMatrix * wp;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vViewPos = mv.xyz;
+  vViewNormal = normalize(normalMatrix * normal);
+  gl_Position = projectionMatrix * mv;
+#include <logdepthbuf_vertex>
 }`;
 export const ATMO_FRAG = /* glsl */`
 #include <common>
 #include <logdepthbuf_pars_fragment>
-uniform vec3 uColor; uniform vec3 uSunPos; uniform float uIntensity;
-varying vec3 vN; varying vec3 vV; varying vec3 vW;
+uniform vec3 uColor; uniform vec3 uSunView; uniform float uIntensity;
+varying vec3 vViewNormal; varying vec3 vViewPos;
 void main(){
 #include <logdepthbuf_fragment>
-
-  vec3 L = normalize(uSunPos - vW);
-  float lit = clamp(dot(vN, L) * 1.2 + 0.35, 0.0, 1.0);
+  vec3 N = normalize(vViewNormal);
+  vec3 V = normalize(-vViewPos);
+  vec3 L = normalize(uSunView - vViewPos);
+  float lit = clamp(dot(N, L) * 1.2 + 0.35, 0.0, 1.0);
   // Rendered on the back faces of a shell just outside the planet: c is 0 at the shell's
   // silhouette and rises toward the planet's limb, so the glow hugs the limb and fades outward.
-  float c = clamp(dot(-vN, vV), 0.0, 1.0);
+  float c = clamp(dot(-N, V), 0.0, 1.0);
   float a = pow(clamp(c / 0.34, 0.0, 1.0), 1.6) * lit * uIntensity;
   gl_FragColor = vec4(uColor * a * 1.5, a);
 }`;
@@ -202,31 +207,32 @@ void main(){
 export const RING_VERT = /* glsl */`
 #include <common>
 #include <logdepthbuf_pars_vertex>
-varying vec3 vWorldPos; varying float vR;
+varying vec3 vViewPos; varying float vR;
 uniform float uInner; uniform float uOuter;
 void main(){
-  vec4 wp = modelMatrix * vec4(position,1.0);
-  vWorldPos = wp.xyz;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vViewPos = mv.xyz;
   vR = (length(position.xy) - uInner) / (uOuter - uInner);
-  gl_Position = projectionMatrix * viewMatrix * wp;
+  gl_Position = projectionMatrix * mv;
+#include <logdepthbuf_vertex>
 }`;
 export const RING_FRAG = /* glsl */`
 #include <common>
 #include <logdepthbuf_pars_fragment>
-uniform sampler2D uRingMap; uniform vec3 uSunPos; uniform vec3 uCenter; uniform float uPlanetRadius; uniform vec3 uPoleAxis; uniform float uLightScale; uniform vec3 uCamPos;
-varying vec3 vWorldPos; varying float vR;
+uniform sampler2D uRingMap; uniform vec3 uSunView; uniform vec3 uCenterView;
+uniform float uPlanetRadius; uniform vec3 uPoleView; uniform float uLightScale;
+varying vec3 vViewPos; varying float vR;
 void main(){
 #include <logdepthbuf_fragment>
-
   vec4 ring = texture2D(uRingMap, vec2(clamp(vR, 0.0, 1.0), 0.5));
   if (ring.a < 0.01) discard;
-  vec3 L = normalize(uSunPos - vWorldPos);
-  vec3 V = normalize(uCamPos - vWorldPos);
+  vec3 L = normalize(uSunView - vViewPos);
+  vec3 V = normalize(-vViewPos);
   // planet shadow on the rings: does the ray toward the Sun hit the planet sphere?
-  vec3 toC = uCenter - vWorldPos; float t = dot(toC, L);
+  vec3 toC = uCenterView - vViewPos; float t = dot(toC, L);
   float shadow = 1.0;
   if (t > 0.0) { float d = length(toC - L * t); shadow = smoothstep(uPlanetRadius * 0.985, uPlanetRadius * 1.01, d); }
-  float cosSun = dot(uPoleAxis, L); float cosView = dot(uPoleAxis, V);
+  float cosSun = dot(uPoleView, L); float cosView = dot(uPoleView, V);
   float facing = abs(cosSun);
   // lit side vs. back-lit transmission through the ring particles
   float sameSide = step(0.0, cosSun * cosView);

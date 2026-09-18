@@ -141,12 +141,12 @@ scene.add(sunLight);
 // ------------------------------------------------------------------ sun
 const sunGroup = new THREE.Group();
 const sunMat = new THREE.ShaderMaterial({ vertexShader: SH.SUN_VERT, fragmentShader: SH.SUN_FRAG, uniforms: { uTime: { value: 0 } } });
-const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), sunMat);
+const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 160, 96), sunMat);
 sunGroup.add(sunMesh);
 const coronaMat = new THREE.ShaderMaterial({ vertexShader: SH.SPRITE_VERT, fragmentShader: SH.CORONA_FRAG, uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(1.0, 0.72, 0.35) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
 const corona = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), coronaMat);
 sunGroup.add(corona);
-const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), new THREE.ShaderMaterial({ vertexShader: SH.ATMO_VERT, fragmentShader: SH.GLOW_FRAG, uniforms: { uColor: { value: new THREE.Color(1.0, 0.55, 0.15) }, uPower: { value: 2.2 }, uIntensity: { value: 1.4 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide }));
+const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 56), new THREE.ShaderMaterial({ vertexShader: SH.ATMO_VERT, fragmentShader: SH.GLOW_FRAG, uniforms: { uColor: { value: new THREE.Color(1.0, 0.55, 0.15) }, uPower: { value: 2.2 }, uIntensity: { value: 1.4 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide }));
 sunGroup.add(sunGlow);
 function flareTexture(size, stops) {
   const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
@@ -269,12 +269,7 @@ function makeUranusTexture() {
   for (let y = 0; y < 512; y += 2) { const a = 0.05 + 0.05 * Math.sin(y * 0.09) * Math.sin(y * 0.021); g.fillStyle = `rgba(255,255,255,${a})`; g.fillRect(0, y, 1024, 1); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
-function makeRockTexture(base) {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d');
-  g.fillStyle = base; g.fillRect(0, 0, 256, 128);
-  for (let i = 0; i < 400; i++) { const r = Math.random() * 6 + 1; g.beginPath(); g.arc(Math.random() * 256, Math.random() * 128, r, 0, Math.PI * 2); g.fillStyle = `rgba(0,0,0,${Math.random() * 0.35})`; g.fill(); }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
+
 const saturnRingTex = makeSaturnRingTexture();
 
 // ------------------------------------------------------------------ planet material factory
@@ -282,16 +277,16 @@ function planetMaterial(opts) {
   const u = {
     uMap: { value: opts.map }, uNight: { value: opts.night || opts.map }, uRingMap: { value: opts.ringMap || saturnRingTex },
     uHasNight: { value: opts.night ? 1 : 0 }, uOcean: { value: opts.ocean ? 1 : 0 }, uHasRingShadow: { value: opts.ringShadow ? 1 : 0 },
-    uSunPos: { value: new THREE.Vector3() }, uAtmoColor: { value: new THREE.Color(opts.atmoColor ?? 0xffffff) }, uAtmo: { value: opts.atmo ?? 0 },
-    uAmbient: { value: 0.035 }, uCenter: { value: new THREE.Vector3() }, uPoleAxis: { value: new THREE.Vector3(0, 1, 0) },
-    uRingInner: { value: 1 }, uRingOuter: { value: 2 }, uCamPos: { value: new THREE.Vector3() }, uLightScale: { value: 1.25 },
+    uSunView: { value: new THREE.Vector3() }, uAtmoColor: { value: new THREE.Color(opts.atmoColor ?? 0xffffff) }, uAtmo: { value: opts.atmo ?? 0 },
+    uAmbient: { value: 0.035 }, uCenterView: { value: new THREE.Vector3() }, uPoleView: { value: new THREE.Vector3(0, 1, 0) },
+    uRingInner: { value: 1 }, uRingOuter: { value: 2 }, uLightScale: { value: 1.25 },
     uWrap: { value: opts.wrap ?? 0.05 }, uSaturation: { value: opts.saturation ?? 1.12 }, uSpecular: { value: opts.specular ?? 0.12 }, uShininess: { value: opts.shininess ?? 24 },
   };
   return new THREE.ShaderMaterial({ vertexShader: SH.PLANET_VERT, fragmentShader: SH.PLANET_FRAG, uniforms: u });
 }
 function makeAtmosphere(radius, color, intensity) {
-  const m = new THREE.ShaderMaterial({ vertexShader: SH.ATMO_VERT, fragmentShader: SH.ATMO_FRAG, uniforms: { uColor: { value: new THREE.Color(color) }, uSunPos: { value: new THREE.Vector3() }, uIntensity: { value: intensity } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide });
-  return new THREE.Mesh(new THREE.SphereGeometry(radius, 64, 32), m);
+  const m = new THREE.ShaderMaterial({ vertexShader: SH.ATMO_VERT, fragmentShader: SH.ATMO_FRAG, uniforms: { uColor: { value: new THREE.Color(color) }, uSunView: { value: new THREE.Vector3() }, uIntensity: { value: intensity } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide });
+  return new THREE.Mesh(new THREE.SphereGeometry(radius, 96, 56), m);
 }
 
 // ------------------------------------------------------------------ labels
@@ -317,18 +312,18 @@ for (const p of PLANETS) {
   tilt.quaternion.copy(tiltQuaternion(p.axialTilt, p.id === 'uranus' ? 258 : 90));
   const map = p.procedural === 'uranus' ? makeUranusTexture() : tex(p.texture);
   const mat = planetMaterial({ map, night: p.nightTexture ? tex(p.nightTexture) : null, ocean: p.id === 'earth', ringShadow: !!p.rings && !p.rings.faint, atmoColor: p.atmosphere?.color, atmo: p.atmosphere ? p.atmosphere.intensity * 0.6 : 0.08, wrap: p.atmosphere ? 0.12 : 0.03, specular: p.type === 'terrestrial' ? 0.08 : 0.2, shininess: p.type === 'terrestrial' ? 16 : 40, saturation: ({ saturn: 0.88, earth: 1.12, mars: 1.15, jupiter: 1.08 })[p.id] ?? 1.04 });
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), mat);
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 160, 96), mat);
   if (p.oblateness) mesh.scale.y = 1 - p.oblateness;
   tilt.add(mesh);
   const body = { id: p.id, data: p, group, tilt, mesh, mat, radius: 1, pos: new THREE.Vector3(), moons: [], parent: null };
   if (p.cloudsTexture) {
     const cm = new THREE.MeshStandardMaterial({ color: 0xffffff, alphaMap: tex(p.cloudsTexture, false), transparent: true, depthWrite: false, roughness: 1, metalness: 0 });
-    body.clouds = new THREE.Mesh(new THREE.SphereGeometry(1.008, 96, 64), cm); tilt.add(body.clouds);
+    body.clouds = new THREE.Mesh(new THREE.SphereGeometry(1.008, 160, 96), cm); tilt.add(body.clouds);
   }
   if (p.atmosphere) { body.atmo = makeAtmosphere(1.06, p.atmosphere.color, p.atmosphere.intensity * 0.9); tilt.add(body.atmo); }
   if (p.rings) {
     const ringTex = p.rings.faint ? makeUranusRingTexture() : saturnRingTex;
-    const rm = new THREE.ShaderMaterial({ vertexShader: SH.RING_VERT, fragmentShader: SH.RING_FRAG, uniforms: { uRingMap: { value: ringTex }, uSunPos: { value: new THREE.Vector3() }, uCenter: { value: new THREE.Vector3() }, uPlanetRadius: { value: 1 }, uPoleAxis: { value: new THREE.Vector3(0, 1, 0) }, uInner: { value: 1 }, uOuter: { value: 2 }, uLightScale: { value: 1.2 }, uCamPos: { value: new THREE.Vector3() } }, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+    const rm = new THREE.ShaderMaterial({ vertexShader: SH.RING_VERT, fragmentShader: SH.RING_FRAG, uniforms: { uRingMap: { value: ringTex }, uSunView: { value: new THREE.Vector3() }, uCenterView: { value: new THREE.Vector3() }, uPlanetRadius: { value: 1 }, uPoleView: { value: new THREE.Vector3(0, 1, 0) }, uInner: { value: 1 }, uOuter: { value: 2 }, uLightScale: { value: 1.2 } }, transparent: true, side: THREE.DoubleSide, depthWrite: false });
     body.ringInnerRatio = p.rings.innerKm / p.radiusKm; body.ringOuterRatio = p.rings.outerKm / p.radiusKm;
     const geo = new THREE.RingGeometry(body.ringInnerRatio / body.ringOuterRatio, 1, 256, 8);
     rm.uniforms.uInner.value = body.ringInnerRatio / body.ringOuterRatio; rm.uniforms.uOuter.value = 1;
@@ -354,12 +349,21 @@ for (const p of PLANETS) {
     let mmesh;
     if (s.texture) {
       const mm = planetMaterial({ map: tex(s.texture), atmoColor: s.atmosphere?.color, atmo: s.atmosphere ? s.atmosphere.intensity * 0.6 : 0.05 });
-      mmesh = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), mm);
+      mmesh = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 80), mm);
     } else {
-      const g = new THREE.IcosahedronGeometry(1, 5); const pa = g.attributes.position;
-      for (let i = 0; i < pa.count; i++) { const v = new THREE.Vector3().fromBufferAttribute(pa, i); const k = 1 + 0.18 * Math.sin(v.x * 5.1) * Math.cos(v.y * 4.3) + 0.12 * Math.sin(v.z * 7.7 + 1.3); v.multiplyScalar(k); pa.setXYZ(i, v.x, v.y, v.z); }
+      // Phobos and Deimos are potatoes, not spheres, so the mesh is displaced radially.
+      // The base has to be an indexed SphereGeometry: IcosahedronGeometry is non-indexed,
+      // where computeVertexNormals() can only produce flat per-face normals and the moon
+      // renders as a visibly faceted lump. A sphere also carries the equirectangular UVs
+      // the real NASA maps need.
+      const g = new THREE.SphereGeometry(1, 128, 80); const pa = g.attributes.position;
+      for (let i = 0; i < pa.count; i++) {
+        const v = new THREE.Vector3().fromBufferAttribute(pa, i);
+        const k = 1 + 0.18 * Math.sin(v.x * 5.1) * Math.cos(v.y * 4.3) + 0.12 * Math.sin(v.z * 7.7 + 1.3);
+        v.multiplyScalar(k); pa.setXYZ(i, v.x, v.y, v.z);
+      }
       g.computeVertexNormals();
-      mmesh = new THREE.Mesh(g, planetMaterial({ map: makeRockTexture('#' + (s.color || 0x888888).toString(16).padStart(6, '0')), atmo: 0.02 }));
+      mmesh = new THREE.Mesh(g, planetMaterial({ map: tex(s.texture), atmo: 0.02 }));
     }
     holder.add(mmesh);
     const orbitG = new THREE.BufferGeometry(); const pts = []; for (let k = 0; k <= 128; k++) { const a = k / 128 * Math.PI * 2; pts.push(Math.cos(a), 0, Math.sin(a)); }
@@ -513,9 +517,10 @@ function updateWorld(dtSim) {
     if (b.ring) {
       const ri = r * b.ringInnerRatio, ro = r * b.ringOuterRatio;
       b.ring.scale.set(ro, ro, 1);
-      const u = b.ring.material.uniforms; u.uCenter.value.copy(b.pos); u.uPlanetRadius.value = r;
-      b.tilt.getWorldQuaternion(tmpQ); u.uPoleAxis.value.set(0, 1, 0).applyQuaternion(tmpQ);
-      const pu = b.mat.uniforms; pu.uCenter.value.copy(b.pos); pu.uPoleAxis.value.copy(u.uPoleAxis.value); pu.uRingInner.value = ri; pu.uRingOuter.value = ro;
+      const u = b.ring.material.uniforms; u.uPlanetRadius.value = r;
+      b.tilt.getWorldQuaternion(tmpQ);
+      b.poleWorld = (b.poleWorld || new THREE.Vector3()).set(0, 1, 0).applyQuaternion(tmpQ);
+      const pu = b.mat.uniforms; pu.uRingInner.value = ri; pu.uRingOuter.value = ro;
     }
     b.orbit.material.uniforms.uHead.value = posAU.phase;
     b.orbit.material.uniforms.uFade.value = orbitFade;
@@ -544,11 +549,6 @@ function updateWorld(dtSim) {
   }
   for (const b of belts) b.material.uniforms.uDays.value = jd - J2000_JD;
   // shader uniforms shared
-  for (const b of bodies) {
-    if (b.mat) { b.mat.uniforms.uSunPos.value.set(0, 0, 0); b.mat.uniforms.uCamPos.value.copy(camera.position); }
-    if (b.atmo) b.atmo.material.uniforms.uSunPos.value.set(0, 0, 0);
-    if (b.ring) b.ring.material.uniforms.uCamPos.value.copy(camera.position);
-  }
   sunMat.uniforms.uTime.value = clock.elapsedTime; coronaMat.uniforms.uTime.value = clock.elapsedTime; vignettePass.uniforms.uTime.value = clock.elapsedTime % 100;
 }
 
@@ -584,6 +584,28 @@ function deselect() {
   document.querySelectorAll('#planetnav button').forEach(b => b.classList.remove('active'));
   history.replaceState(null, '', location.pathname + location.search);
 }
+// Shading uniforms are camera-relative, so they are refreshed after the camera has
+// moved for this frame and the view matrix is current.
+const _sunView = new THREE.Vector3();
+function updateViewUniforms() {
+  camera.updateMatrixWorld();
+  const vm = camera.matrixWorldInverse;
+  _sunView.set(0, 0, 0).applyMatrix4(vm);
+  for (const b of bodies) {
+    if (b.mat) b.mat.uniforms.uSunView.value.copy(_sunView);
+    if (b.atmo) b.atmo.material.uniforms.uSunView.value.copy(_sunView);
+    if (b.ring) {
+      const u = b.ring.material.uniforms;
+      u.uSunView.value.copy(_sunView);
+      u.uCenterView.value.copy(b.pos).applyMatrix4(vm);
+      u.uPoleView.value.copy(b.poleWorld).transformDirection(vm);
+      const pu = b.mat.uniforms;
+      pu.uCenterView.value.copy(u.uCenterView.value);
+      pu.uPoleView.value.copy(u.uPoleView.value);
+    }
+  }
+}
+
 function updateCamera(dt) {
   if (fly.active) {
     fly.t = Math.min(1, fly.t + dt / fly.dur);
@@ -645,7 +667,9 @@ function showPanel(body) {
   const d = body.data; const type = body.isSun ? 'Star · G2V' : body.isMoon ? `Moon of ${body.parent.data.name}` : body.isComet ? 'Periodic comet' : d.type;
   document.getElementById('p-type').textContent = type; document.getElementById('p-name').textContent = d.name;
   let html = `<p class="desc">${d.description}</p>`;
-  if (d.liveImage) html += `<div class="live"><img id="live-sun" src="${d.liveImage}?t=${Date.now()}" alt="Live image of the Sun from NASA SDO" onerror="this.parentElement.style.display='none'"/><div class="cap">Live: the Sun as NASA's Solar Dynamics Observatory sees it right now (extreme ultraviolet, 304 Å)</div></div>`;
+  // Show the cached frame immediately, then quietly upgrade to the live one if the
+  // network allows. Offline, or with the fetch blocked, the panel still looks right.
+  if (d.cachedImage) html += `<div class="live"><img id="live-sun" src="${d.cachedImage}" alt="The Sun from NASA's Solar Dynamics Observatory"/><div class="cap" id="live-cap">NASA Solar Dynamics Observatory, extreme ultraviolet at 304 Å</div></div>`;
   html += `<div class="stats" id="p-stats"></div>`;
   if (d.facts && d.facts.length) html += `<h3>Did you know</h3><ul class="facts">${d.facts.map(f => `<li>${f}</li>`).join('')}</ul>`;
   if (!body.isSun && !body.isComet) {
@@ -656,6 +680,15 @@ function showPanel(body) {
   if (d.credit) html += `<div class="credit">Imagery: ${d.credit.text}${d.credit.url ? ` · <a href="${d.credit.url}" target="_blank" rel="noopener">source</a>` : ''}</div>`;
   pBody.innerHTML = html; pBody.scrollTop = 0;
   pBody.querySelectorAll('.moonlist button').forEach(b => b.addEventListener('click', () => selectBody(byId.get(b.dataset.id))));
+  if (d.liveImage) {
+    const probe = new Image();
+    probe.onload = () => {
+      const img = document.getElementById('live-sun'), cap = document.getElementById('live-cap');
+      if (img) img.src = probe.src;
+      if (cap) cap.textContent = 'Live: the Sun as NASA\'s Solar Dynamics Observatory sees it right now (extreme ultraviolet, 304 Å)';
+    };
+    probe.src = `${d.liveImage}?t=${Date.now()}`;
+  }
   panel.classList.add('open');
   renderYou(body); updateLiveStats(body);
 }
@@ -911,6 +944,7 @@ function animate() {
   updateWorld(dt);
   if (!cinematic.update(rawDt)) updateCamera(rawDt);
   else { const d = camera.position.distanceTo(controls.target); camera.near = Math.max(1e-9, d * 0.0015); camera.far = 400000; camera.updateProjectionMatrix(); controls.update(); }
+  updateViewUniforms();
   if (starMat) starMat.uniforms.uTime.value = clock.elapsedTime;
   updateLabels(); updateFlare();
   acc += dt; if (acc > 0.5) { acc = 0; refreshClock(); if (state.selected) updateLiveStats(state.selected); }

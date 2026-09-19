@@ -20,7 +20,7 @@ export function showSideSelect(root: HTMLElement): Promise<SideSelectResult> {
     screen.className = 'overlay-screen';
     screen.innerHTML = `
       <h1 class="select-title font-display">Obsidian &amp; Aurora</h1>
-      <p class="select-subtitle">A chess board suspended in the void. Choose your army, then face an opponent that calculates every reply — a search-driven engine, not a script.</p>
+      <p class="select-subtitle">A chess board on a sunlit terrace. Choose your army, then face an opponent that calculates every reply — a search-driven engine, running right here in your browser, not a script.</p>
       <div class="side-cards">
         <button type="button" class="side-card aurora selected" data-color="w">
           <span class="side-card__badge">&#9812;</span>

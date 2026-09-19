@@ -1,13 +1,16 @@
 # Obsidian & Aurora — 3D Chess
 
-A chess board suspended in the void. Two armies — jet-black **Obsidian** and
-ivory-and-gold **Aurora** — face off on a floating glass board, viewed from a
-steep bird's-eye angle that keeps the game readable while staying unmistakably
-three-dimensional. A real search-based chess engine plays the opponent, and
-every capture on the board plays its own short scene: the attacking piece's
-approach and the captured piece's demise are both keyed to *what* they are, so
-a pawn taking a rook looks and feels different from the same pawn taking a
-bishop.
+A chess board on a sunlit marble terrace. Two armies — jet-black **Obsidian**
+and ivory-and-gold **Aurora** — face off on a polished stone board, viewed
+from a steep bird's-eye angle that keeps the game readable while staying
+unmistakably three-dimensional. The opponent is a real search-based chess
+engine running entirely in your browser (a Web Worker, no server involved),
+and every capture on the board plays its own short scene: the attacking
+piece's approach and the captured piece's demise are both keyed to *what*
+they are, so a pawn taking a rook looks and feels different from the same
+pawn taking a bishop.
+
+**Play it:** https://asrijanga.github.io/solar-system/chess/
 
 **Live-tested at:** desktop, iPhone-sized and small-phone viewports, both
 portrait and landscape, both starting colors, and every attacker × captured
@@ -15,68 +18,84 @@ piece-type combination.
 
 ## Stack
 
-- **Frontend** — TypeScript, [Three.js](https://threejs.org), [Vite](https://vitejs.dev). No UI framework: the HUD, side-select screen and modals are plain DOM, styled to match the 3D scene.
-- **Backend** — TypeScript, [Express](https://expressjs.com), [chess.js](https://github.com/jhlywa/chess.js) for rules/legality, and a hand-written **negamax + alpha-beta engine with iterative deepening** for the opponent (not a scripted or random mover — it actually searches the position tree, with MVV-LVA move ordering and piece-square tables).
+Everything is static — there is no backend and nothing to host beyond the
+built files. TypeScript, [Three.js](https://threejs.org),
+[Vite](https://vitejs.dev), [chess.js](https://github.com/jhlywa/chess.js)
+for rules/legality, and a hand-written **negamax + alpha-beta engine with
+iterative deepening** for the opponent (not a scripted or random mover — it
+actually searches the position tree, with MVV-LVA move ordering and
+piece-square tables), running off the main thread in a Web Worker so the
+scene never stutters while it thinks. No UI framework: the HUD, side-select
+screen and modals are plain DOM, styled to match the 3D scene.
 
 ```
-chess/
-  backend/    Express API + chess engine (src/engine/search.ts, evaluate.ts)
-  frontend/   Three.js scene, piece geometry, animation system, game UI
+chess/frontend/src/
+  engine/     chess.js + the search engine, and the Web Worker that runs it
+  game/       game state, FEN parsing, input handling
+  three/      scene, board, piece geometry, capture-animation system
+  ui/         side-select, HUD, promotion/game-over modals
 ```
 
 ## Running it locally
 
-Two servers, two terminals:
-
 ```bash
-cd chess/backend && npm install && npm run dev     # http://localhost:8787
-cd chess/frontend && npm install && npm run dev    # http://localhost:5173
+cd chess/frontend
+npm install
+npm run dev      # http://localhost:5173
 ```
 
-The Vite dev server proxies `/api/*` to the backend automatically
-(`vite.config.ts`), so just open `http://localhost:5173`.
-
-### Production build
-
 ```bash
-cd chess/backend && npm run build && npm start      # serves the API
-cd chess/frontend && npm run build                  # writes frontend/dist
+npm run build     # writes frontend/dist — a fully static site
+npm run preview   # serve that build locally
 ```
 
-The frontend calls the API at `VITE_API_BASE` (build-time env var), defaulting
-to the relative path `/api`. If you serve the frontend and backend from
-different origins, set `VITE_API_BASE=https://your-api-host` before building,
-or put both behind a reverse proxy that maps `/api` to the backend.
+## Deployment
+
+This game is deployed as part of the repository's GitHub Pages site: the
+top-level `.github/workflows/deploy-pages.yml` builds `chess/frontend` and
+publishes it under `/chess/` alongside the solar-system app at the repo
+root, on every push to `main`. `vite.config.ts` sets `base: './'` so the
+same build works unmodified whether it ends up at a site root or nested in
+a subpath. To deploy the chess app on its own elsewhere, just run
+`npm run build` and serve `frontend/dist` — no environment variables, no
+API to point at.
 
 ## The engine
 
-`backend/src/engine/search.ts` runs iterative-deepening negamax with
-alpha-beta pruning directly against a `chess.js` position, ordering moves by
-MVV-LVA (captures first, biggest prize / cheapest attacker first) so pruning
-is effective even at shallow depth. `evaluate.ts` scores a position by
-material plus classic piece-square tables. Each of the three difficulties is
-a search-depth/time budget, not a different algorithm:
+`engine/search.ts` runs iterative-deepening negamax with alpha-beta pruning
+directly against a `chess.js` position, ordering moves by MVV-LVA (captures
+first, biggest prize / cheapest attacker first) so pruning is effective even
+at shallow depth. `engine/evaluate.ts` scores a position by material plus
+classic piece-square tables. `engine/worker.ts` runs all of this on a
+background thread; `engine/workerClient.ts` is the main-thread promise
+wrapper the game talks to. Each of the three difficulties is a search-depth
+/ time budget, not a different algorithm:
 
 | Difficulty | Max depth | Time budget |
 | --- | --- | --- |
 | Squire | 2 ply | 450 ms |
 | Knight | 3 ply | 1.1 s |
-| Warlord | 4 ply | 2.6 s |
+| Warlord | 4 ply | 2.4 s |
 
-Game sessions live in memory on the server (`backend/src/game/store.ts`),
-keyed by a UUID; the frontend never runs its own copy of the rules, so the
-board it draws is always exactly what the server has.
+`engine/store.ts` + `engine/localApi.ts` hold the game session and drive the
+turn sequence (validate the player's move, ask the worker for the engine's
+reply, apply it) — this is the same shape a small REST API would have
+(`createGame` / `submitMove` / `resignGame`), just called as local async
+functions instead of `fetch`, so the rest of the app doesn't know or care
+that there's no server behind it.
 
 ## The art direction
 
 **Obsidian & Aurora**: low-poly, gem-faceted pieces (a 10-sided lathe revolve
 with flat shading, so every face catches light distinctly instead of
 smoothing into a blob) in two palettes — jet obsidian with a violet inner
-glow, ivory aurora with a gold one — standing on a checkered glass slab with
-a gilt frame, floating in a starfield void. Every piece type has its own
-silhouette (`frontend/src/three/pieces/profiles.ts` and `factory.ts`): rooks
-get a ring of crenellations, bishops a mitre slit and finial, knights an
-actual extruded horse-head profile, queens a crown of spikes, kings a cross.
+glow, ivory aurora with a gold one — standing on a warm marble board with a
+gilt frame, in daylight: a pale sky gradient, drifting clouds, soft dust
+motes, and a sunlit stone floor beneath the board. Every piece type has its
+own silhouette (`frontend/src/three/pieces/profiles.ts` and `factory.ts`):
+rooks get a ring of crenellations, bishops a mitre slit and finial, knights
+an actual extruded horse-head profile, queens a crown of spikes, kings a
+cross.
 
 The camera is a `PerspectiveCamera` locked to a steep, mostly-overhead
 viewing direction (`frontend/src/three/fitView.ts` binary-searches the

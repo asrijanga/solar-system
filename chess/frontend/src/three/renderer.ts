@@ -38,7 +38,7 @@ export function createSceneRig(mount: HTMLElement): SceneRig {
   renderer.shadowMap.enabled = !IS_SMALL_SCREEN;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.0;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   mount.appendChild(renderer.domElement);
 

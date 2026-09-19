@@ -23,14 +23,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: chess/frontend/package-lock.json
+
+      - name: Build chess app
+        working-directory: chess/frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble site
+        # Built outside the checkout (not a subdirectory of it) so copying the
+        # solar-system's static files can't ever recurse into its own output.
+        run: |
+          SITE_DIR="${{ runner.temp }}/site"
+          mkdir -p "$SITE_DIR"
+          # The solar-system app's own static files (add here if new top-level
+          # folders are added to it).
+          cp -r assets css js vendor index.html .nojekyll README.md LICENSE "$SITE_DIR/"
+          mkdir -p "$SITE_DIR/chess"
+          cp -r chess/frontend/dist/. "$SITE_DIR/chess/"
+          echo "SITE_DIR=$SITE_DIR" >> "$GITHUB_ENV"
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: ${{ env.SITE_DIR }}
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

@@ -1,5 +1,5 @@
 import type { Move } from 'chess.js';
-import type { MoveInfo } from '../types.js';
+import type { MoveInfo } from '../types';
 
 export function toMoveInfo(move: Move): MoveInfo {
   return {

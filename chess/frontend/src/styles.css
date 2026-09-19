@@ -1,18 +1,18 @@
 :root {
-  color-scheme: dark;
-  --bg: #05040a;
-  --panel: rgba(14, 11, 22, 0.78);
-  --panel-strong: rgba(10, 8, 16, 0.92);
-  --panel-border: rgba(201, 162, 75, 0.32);
-  --gold: #c9a24b;
-  --gold-bright: #ffe3a3;
+  color-scheme: light;
+  --bg: #f5efe2;
+  --panel: rgba(255, 253, 248, 0.72);
+  --panel-strong: rgba(255, 252, 245, 0.94);
+  --panel-border: rgba(146, 108, 46, 0.28);
+  --gold: #a97423;
+  --gold-bright: #dba43f;
   --violet: #7c3aed;
-  --violet-bright: #b98cff;
-  --ivory: #f3ecd9;
-  --text: #ece7f7;
-  --text-dim: #9d93b3;
-  --danger: #ff5c5c;
-  --success: #38f0c8;
+  --violet-bright: #8f5cf0;
+  --ivory: #fbf4e4;
+  --text: #2c2416;
+  --text-dim: #7c705c;
+  --danger: #c23c33;
+  --success: #157a63;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -76,7 +76,7 @@ button {
   cursor: pointer;
   touch-action: manipulation;
   border: 1px solid var(--panel-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(40, 28, 10, 0.05);
   color: var(--text);
   border-radius: 999px;
   padding: 0.65em 1.4em;
@@ -91,16 +91,16 @@ button {
   transform: scale(0.96);
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(40, 28, 10, 0.09);
 }
 .btn-primary {
   background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-  color: #241a04;
+  color: #2b1a02;
   border: none;
-  box-shadow: 0 8px 24px rgba(201, 162, 75, 0.35);
+  box-shadow: 0 8px 24px rgba(169, 116, 35, 0.3);
 }
 .btn-primary:hover {
-  box-shadow: 0 10px 30px rgba(201, 162, 75, 0.5);
+  box-shadow: 0 10px 30px rgba(169, 116, 35, 0.42);
 }
 .btn-primary:disabled {
   opacity: 0.45;
@@ -109,11 +109,11 @@ button {
   transform: none;
 }
 .btn-danger {
-  border-color: rgba(255, 92, 92, 0.4);
-  color: #ffb3b3;
+  border-color: rgba(194, 60, 51, 0.4);
+  color: var(--danger);
 }
 .btn-danger:hover {
-  background: rgba(255, 92, 92, 0.12);
+  background: rgba(194, 60, 51, 0.1);
 }
 .btn-small {
   padding: 0.45em 1em;
@@ -132,7 +132,7 @@ button {
   align-items: center;
   justify-content: center;
   padding: calc(24px + var(--safe-top)) calc(20px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(20px + var(--safe-left));
-  background: radial-gradient(ellipse at 50% 30%, rgba(80, 50, 140, 0.18), transparent 60%), rgba(3, 2, 7, 0.55);
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 244, 214, 0.55), transparent 60%), rgba(255, 251, 243, 0.5);
   overflow-y: auto;
   animation: fadeIn 0.5s ease both;
 }
@@ -141,7 +141,7 @@ button {
   font-size: clamp(1.8rem, 6vw, 3rem);
   text-align: center;
   margin: 0 0 0.2em;
-  background: linear-gradient(135deg, var(--gold-bright), var(--gold) 45%, var(--violet-bright));
+  background: linear-gradient(135deg, var(--gold) 10%, #a3521f 45%, var(--violet));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -188,7 +188,13 @@ button {
 }
 .side-card.selected {
   border-color: var(--success);
-  box-shadow: 0 0 0 1px var(--success), 0 16px 40px rgba(56, 240, 200, 0.2);
+  box-shadow: 0 0 0 1px var(--success), 0 16px 40px rgba(21, 122, 99, 0.18);
+}
+.side-card.aurora {
+  background: linear-gradient(160deg, rgba(255, 250, 235, 0.85), rgba(245, 226, 180, 0.55));
+}
+.side-card.obsidian {
+  background: linear-gradient(160deg, rgba(240, 236, 250, 0.85), rgba(210, 198, 235, 0.5));
 }
 .side-card__badge {
   width: 64px;
@@ -198,16 +204,17 @@ button {
   align-items: center;
   justify-content: center;
   font-size: 2rem;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(43, 36, 22, 0.22);
 }
 .side-card.aurora .side-card__badge {
-  background: radial-gradient(circle at 35% 30%, #fff8e6, var(--ivory) 55%, #c9a24b 130%);
+  background: radial-gradient(circle at 35% 30%, #fffaf0, var(--ivory) 55%, #c9862f 130%);
   color: #3a2a08;
+  border: 1px solid rgba(169, 116, 35, 0.35);
 }
 .side-card.obsidian .side-card__badge {
-  background: radial-gradient(circle at 35% 30%, #2c2440, #0c0a12 60%, #000 130%);
+  background: radial-gradient(circle at 35% 30%, #443a5c, #211c26 60%, #000 130%);
   color: var(--violet-bright);
-  border: 1px solid rgba(185, 140, 255, 0.4);
+  border: 1px solid rgba(124, 58, 237, 0.4);
 }
 .side-card__name {
   font-family: 'Cinzel', serif;
@@ -224,7 +231,7 @@ button {
   margin-top: 1.8rem;
   display: flex;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   padding: 0.3rem;
@@ -303,18 +310,21 @@ button {
   height: 11px;
   border-radius: 50%;
   background: var(--ivory);
-  box-shadow: 0 0 10px currentColor;
+  border: 1px solid rgba(43, 36, 22, 0.35);
+  box-shadow: 0 0 8px rgba(169, 116, 35, 0.6);
   flex-shrink: 0;
 }
 .turn-pill.is-black .turn-pill__dot {
   background: var(--violet-bright);
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.55);
 }
 .turn-pill__spinner {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: var(--gold-bright);
+  border: 2px solid rgba(43, 36, 22, 0.18);
+  border-top-color: var(--gold);
   animation: spin 0.8s linear infinite;
   display: none;
 }
@@ -338,13 +348,13 @@ button {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2a0505;
-  background: linear-gradient(135deg, #ff9a9a, var(--danger));
+  color: #3a0d09;
+  background: linear-gradient(135deg, #f3a29c, var(--danger));
   border-radius: 999px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
-  box-shadow: 0 6px 20px rgba(255, 92, 92, 0.4);
+  box-shadow: 0 6px 20px rgba(194, 60, 51, 0.35);
 }
 .check-flag.show {
   opacity: 1;
@@ -387,7 +397,7 @@ button {
   position: absolute;
   inset: 0;
   pointer-events: auto;
-  background: rgba(3, 2, 7, 0.55);
+  background: rgba(44, 34, 18, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -420,7 +430,7 @@ button {
   height: 60px;
   border-radius: 14px;
   border: 1.5px solid var(--panel-border);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(40, 28, 10, 0.05);
   font-size: 1.6rem;
   display: flex;
   align-items: center;
@@ -446,7 +456,7 @@ button {
 .game-over-title {
   font-family: 'Cinzel', serif;
   font-size: clamp(1.5rem, 5vw, 2.1rem);
-  color: var(--gold-bright);
+  color: var(--gold);
 }
 .game-over-sub {
   color: var(--text-dim);
@@ -468,8 +478,8 @@ button {
   transform: translateX(-50%);
   padding: 0.6em 1.2em;
   font-size: 0.85rem;
-  color: #ffb3b3;
-  border-color: rgba(255, 92, 92, 0.4);
+  color: var(--danger);
+  border-color: rgba(194, 60, 51, 0.4);
   opacity: 0;
   transition: opacity 0.25s ease;
   pointer-events: none;

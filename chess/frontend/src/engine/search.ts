@@ -1,6 +1,6 @@
 import { Chess, type Move } from 'chess.js';
-import { evaluate, PIECE_VALUE, MATE_SCORE } from './evaluate.js';
-import type { Difficulty } from '../types.js';
+import { evaluate, PIECE_VALUE, MATE_SCORE } from './evaluate';
+import type { Difficulty } from '../types';
 
 interface SearchBudget {
   maxDepth: number;
@@ -10,7 +10,7 @@ interface SearchBudget {
 const BUDGETS: Record<Difficulty, SearchBudget> = {
   squire: { maxDepth: 2, timeMs: 450 },
   knight: { maxDepth: 3, timeMs: 1100 },
-  warlord: { maxDepth: 4, timeMs: 2600 },
+  warlord: { maxDepth: 4, timeMs: 2400 },
 };
 
 function orderMoves(moves: Move[]): Move[] {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Color, Difficulty, GameStateResponse, MoveInfo, PieceType } from '../types';
-import { createGame, resignGame, submitMove } from '../api/client';
+import { createGame, resignGame, submitMove } from '../engine/localApi';
 import { findKingSquare, parseFen } from './fen';
 import { Board } from '../three/board';
 import { PieceManager } from '../three/pieces/pieceManager';

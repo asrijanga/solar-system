@@ -8,10 +8,8 @@ const SQUARE_HEIGHT = 0.14;
 function makeSquareMaterial(color: number, dark: boolean): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     color,
-    roughness: dark ? 0.35 : 0.5,
-    metalness: dark ? 0.25 : 0.05,
-    emissive: dark ? new THREE.Color(THEME.obsidian.emissive) : new THREE.Color(0x000000),
-    emissiveIntensity: dark ? 0.05 : 0,
+    roughness: dark ? 0.55 : 0.4,
+    metalness: dark ? 0.08 : 0.04,
   });
 }
 
@@ -51,29 +49,27 @@ function buildSquares(group: THREE.Group): void {
 }
 
 function buildPlinth(group: THREE.Group): void {
-  const glass = new THREE.Mesh(
+  const marble = new THREE.Mesh(
     new THREE.BoxGeometry(9.2, 0.42, 9.2),
     new THREE.MeshPhysicalMaterial({
-      color: 0x0c0e1a,
-      roughness: 0.15,
-      metalness: 0.1,
-      transmission: 0.55,
-      thickness: 1.2,
-      ior: 1.4,
-      clearcoat: 1,
-      clearcoatRoughness: 0.2,
+      color: 0xf1e7d2,
+      roughness: 0.32,
+      metalness: 0.04,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.18,
     }),
   );
-  glass.position.y = -SQUARE_HEIGHT - 0.21;
-  glass.receiveShadow = true;
-  group.add(glass);
+  marble.position.y = -SQUARE_HEIGHT - 0.21;
+  marble.receiveShadow = true;
+  marble.castShadow = true;
+  group.add(marble);
 
   const frameMat = new THREE.MeshStandardMaterial({
     color: 0xd8b46a,
     metalness: 0.85,
-    roughness: 0.3,
-    emissive: new THREE.Color(0x3a2a08),
-    emissiveIntensity: 0.4,
+    roughness: 0.28,
+    emissive: new THREE.Color(0x8a5f18),
+    emissiveIntensity: 0.18,
   });
   const frameThickness = 0.12;
   const frameHeight = 0.16;
@@ -111,7 +107,7 @@ function buildMarkers(): MarkerPool {
     color: THEME.moveDot,
     transparent: true,
     opacity: 0.85,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
     depthWrite: false,
   });
   const moveDots: GlowMesh[] = [];
@@ -129,7 +125,7 @@ function buildMarkers(): MarkerPool {
     color: THEME.captureRing,
     transparent: true,
     opacity: 0.9,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
@@ -149,7 +145,7 @@ function buildMarkers(): MarkerPool {
       color: THEME.selectGlow,
       transparent: true,
       opacity: 0.95,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
       depthWrite: false,
       side: THREE.DoubleSide,
     }),
@@ -165,7 +161,7 @@ function buildMarkers(): MarkerPool {
       color: THEME.checkGlow,
       transparent: true,
       opacity: 0.55,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
       depthWrite: false,
     }),
   );

@@ -4,6 +4,15 @@ An interactive 3D model of the Solar System, built with [Three.js](https://three
 
 **Live site:** https://asrijanga.github.io/solar-system/
 
+---
+
+This repository also contains **[Obsidian & Aurora](chess/README.md)**, a separate
+3D chess game (Three.js + TypeScript, with a search-based chess engine
+backend) living in [`chess/`](chess/). It's an independent app with its own
+build — see [`chess/README.md`](chess/README.md) to run it.
+
+---
+
 ## What's in it
 
 An intro card explains what you are looking at, then **Enter the system** takes you straight in. **Watch the flight first** plays an optional fifty-second camera move instead: it starts inside the Sun's corona, dives to Earth, and pulls back until the whole system is a smudge against the Milky Way. `Esc` leaves the flight at any point, and `R` replays it later.

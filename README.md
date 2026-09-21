@@ -1,6 +1,6 @@
 # Solar System Sim — MVP Plan & Iteration Loop
 
-*2026-09-20 — mirrored from the project's [Claude artifact](https://claude.ai/artifact/D6Gs7dXDfWt5PZJXHYmhHK). The world-by-world data status lives in [`docs/world-catalogue.md`](docs/world-catalogue.md).*
+2026-09-20 · @Someone
 
 ## Direction
 
@@ -66,7 +66,7 @@ The gas giants are not a later story in the same pipeline. They have no terrain,
 
 The data volume is a project in its own right. Full-resolution Mars CTX is measured in terabytes. You will preprocess each source into your own tile pyramid, host it on object storage, and stream it to the browser. Budget real time for that pipeline, and prefer a host where egress is free, because egress is what makes this expensive rather than storage.
 
-Every body worth rendering, sorted into four tiers by how much data exists, is catalogued in [World catalogue](docs/world-catalogue.md). Every row carries a status, so that file is the single answer to which worlds are supported. Tier 1 and Tier 2 together are twenty-five bodies and a realistic multi-year target.
+Every body worth rendering, sorted into four tiers by how much data exists, is catalogued in [World catalogue](file/49e8f741-b4e5). Every row carries a status dropdown, so that tab is the single answer to which worlds are supported. Tier 1 and Tier 2 together are twenty-five bodies and a realistic multi-year target.
 
 ## Vision and principles
 
@@ -351,7 +351,7 @@ When SS-5 passes, Release 1 is done. You will have a real Moon you can spin, bui
 
 Release 1 is about 41 hours of work, plausibly 26 to 60. At eight hours a week that is five weeks. SS-5 is worth two weeks on its own, so the one-week cadence holds for the first four stories and then bends once, deliberately.
 
-*(the 13-story breakdown behind this estimate was worked out in the planning conversation attached to the source doc)*
+[estimated in chat · 13 stories](node/b9ec8dda-7265)
 
 These assume you are learning Rust as you go. More than half the hours in SS-1 to SS-3 are reading and confusion rather than typing. That ratio starts to flip around SS-4, once the language stops fighting you over every line.
 

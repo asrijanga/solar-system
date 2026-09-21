@@ -1,7 +1,5 @@
 # World catalogue
 
-*Mirrored from the "World catalogue" tab of the project's [Claude artifact](https://claude.ai/artifact/D6Gs7dXDfWt5PZJXHYmhHK). See [`README.md`](../README.md) for the project plan.*
-
 Every body in the solar system that has been imaged well enough to render as a place, sorted by how much data exists rather than by size or distance. The tier is the build queue.
 
 Status is a dropdown on every row. Change it in place as worlds ship, and this tab stays the single answer to what is supported. Everything reads Not started today.

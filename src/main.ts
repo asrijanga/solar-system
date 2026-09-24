@@ -19,12 +19,16 @@ import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
 import { createCubeScene } from './scenes/cube';
 import { createDepthTestScene } from './scenes/depthTest';
+import { createStarMesh, loadStarField } from './scenes/stars';
 
 /**
  * Scaffolding colour: deliberately not black and not three.js's default, so a successful
- * clear can never be mistaken for a blank or failed canvas. Space becomes true black in SS-4.
+ * clear can never be mistaken for a blank or failed canvas. Kept for the harness and depth
+ * viewpoints; everything that shows space uses true black.
  */
-export const CLEAR_COLOUR = '#1b3a5c';
+export const SCAFFOLD_COLOUR = '#1b3a5c';
+/** Space is true black, and nothing here adds light it did not come by honestly. */
+export const SPACE_COLOUR = '#000000';
 
 /** Sharper than 2x costs fill rate for detail nobody can see. */
 const MAX_PIXEL_RATIO = 2;
@@ -38,8 +42,8 @@ const params = new URLSearchParams(location.search);
 const captureId = params.get('capture');
 const debug = params.has('debug');
 
-/** The interactive app shows the cube viewpoint's scene and pose. */
-const INTERACTIVE = findViewpoint('cube');
+/** The interactive app shows the app viewpoint's scene and pose. */
+const INTERACTIVE = findViewpoint('app');
 
 /** A frame counter the allocation test reads. A number property: incrementing never allocates. */
 const stats = { frames: 0 };
@@ -68,7 +72,7 @@ function showRefusal(refusal: Refusal): void {
   report({ status: 'refused', reason: refusal });
 }
 
-function createScene(id: SceneId): Scene {
+async function createScene(id: SceneId, reversedDepth: boolean): Promise<Scene> {
   switch (id) {
     case 'empty':
       return new Scene();
@@ -78,6 +82,18 @@ function createScene(id: SceneId): Scene {
       return createDepthTestScene(10 * METRE);
     case 'depth-test-coplanar':
       return createDepthTestScene(0);
+    case 'stars':
+    case 'stars-mirrored': {
+      const scene = new Scene();
+      const mirrored = id === 'stars-mirrored';
+      scene.add(createStarMesh(await loadStarField(), { reversedDepth, mirrored }));
+      return scene;
+    }
+    case 'cube-and-stars': {
+      const scene = createCubeScene();
+      scene.add(createStarMesh(await loadStarField(), { reversedDepth }));
+      return scene;
+    }
   }
 }
 
@@ -130,8 +146,9 @@ async function start(): Promise<void> {
     throw error;
   }
 
-  renderer.setClearColor(new Color(CLEAR_COLOUR), 1);
-  const scene = createScene(viewpoint.scene);
+  const background = viewpoint.background === 'space' ? SPACE_COLOUR : SCAFFOLD_COLOUR;
+  renderer.setClearColor(new Color(background), 1);
+  const scene = await createScene(viewpoint.scene, viewpoint.reversedDepthBuffer);
   const camera = createCamera(viewpoint.camera);
 
   // Render through a scene pass, never renderer.render(). In three r184 the default path

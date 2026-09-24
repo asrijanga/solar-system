@@ -466,7 +466,7 @@ Ground truth, all *machine*:
 - Polaris sits within one degree of the scene's celestial north pole
 - A canonical capture of Orion with celestial north up: Betelgeuse upper left, Rigel lower right, and the belt running Alnitak, Alnilam, Mintaka from east (left) to west. A mirrored sky fails this capture and nothing else
 
-**Your decision: stars and exposure.** In reality you cannot see stars and a sunlit Moon in the same exposure. Every Apollo surface photograph shows a black sky. The honest options are (a) physical exposure, where stars vanish whenever sunlit ground is in frame; (b) a labelled star boost, following the vertical-exaggeration rule, where stars are drawn brighter than physics allows and the screen says so; or (c) both, as a toggle. The recommendation is (c), defaulting to physical, because the disappearing sky is itself a lesson. This decision is made in SS-4's spec and applied in SS-6.
+**Your decision: stars and exposure.** *(Decided 2026-09-24: option (c), a toggle defaulting to physical exposure. See docs/stories/SS-4.md.)* In reality you cannot see stars and a sunlit Moon in the same exposure. Every Apollo surface photograph shows a black sky. The honest options are (a) physical exposure, where stars vanish whenever sunlit ground is in frame; (b) a labelled star boost, following the vertical-exaggeration rule, where stars are drawn brighter than physics allows and the screen says so; or (c) both, as a toggle. The recommendation is (c), defaulting to physical, because the disappearing sky is itself a lesson. This decision is made in SS-4's spec and applied in SS-6.
 
 Estimate: 1 to 2 sessions.
 

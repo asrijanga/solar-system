@@ -1,7 +1,21 @@
 // Canonical viewpoints for headless captures. Once a viewpoint has a committed baseline,
 // it never changes: a new view gets a new id. The harness and the app both read this list.
+import { raDecToScene } from '../core/frames.ts';
 
-export type SceneId = 'empty' | 'cube' | 'depth-test-10m' | 'depth-test-coplanar';
+export type SceneId =
+  | 'empty'
+  | 'cube'
+  | 'depth-test-10m'
+  | 'depth-test-coplanar'
+  | 'stars'
+  | 'stars-mirrored'
+  | 'cube-and-stars';
+
+/**
+ * 'space' is true black, as space is. 'scaffold' is the SS-1 colour, kept for the harness
+ * and depth viewpoints so a successful clear can never be mistaken for a failed one.
+ */
+export type Background = 'space' | 'scaffold';
 
 /** Kilometres, in the scene's frame. */
 export type Vec3 = readonly [number, number, number];
@@ -34,6 +48,32 @@ export interface PixelCheck {
   readonly minFraction: number;
 }
 
+/**
+ * Where a camera at the origin points on the sky, for the star-position checks. The harness
+ * projects expected star positions with its own gnomonic projection from these values,
+ * independently of the scene's axis mapping and of three.js.
+ */
+export interface SkyPointing {
+  readonly raDeg: number;
+  readonly decDeg: number;
+  /** Vertical field of view, degrees. Celestial north is up. */
+  readonly fovDeg: number;
+}
+
+/**
+ * A star that must appear where an independent catalogue says it is: the brightest pixel
+ * within `maxOffsetPx` of the expected position must be at least `minPeak` (0-255, max
+ * channel). Coordinates are SIMBAD's, copied from test/fixtures/simbad-stars.json; a test
+ * asserts they still match.
+ */
+export interface StarCheck {
+  readonly name: string;
+  readonly raDeg: number;
+  readonly decDeg: number;
+  readonly maxOffsetPx: number;
+  readonly minPeak: number;
+}
+
 export interface Viewpoint {
   readonly id: string;
   /** What the capture proves, in one sentence. */
@@ -47,7 +87,11 @@ export interface Viewpoint {
   /** null for scenes with nothing to look at. */
   readonly camera: CameraPose | null;
   readonly reversedDepthBuffer: boolean;
+  readonly background: Background;
+  /** For viewpoints with star checks: the camera's pointing on the sky. */
+  readonly sky: SkyPointing | null;
   readonly checks: readonly PixelCheck[];
+  readonly starChecks: readonly StarCheck[];
   /**
    * A negative control: its checks are expected to FAIL, proving they can detect the fault.
    * If they pass, the harness errors. Never baselined.
@@ -88,6 +132,39 @@ const backWinsTies: PixelCheck = {
   minFraction: 0.999,
 };
 
+const CUBE_CAMERA: CameraPose = {
+  position: [3.2, 2.4, 4],
+  target: [0, 0, 0],
+  up: [0, 1, 0],
+  fovDeg: 40,
+  near: 0.1,
+  far: 100,
+};
+
+/** Orion, centred between the belt and the sword, celestial north up. */
+const ORION_SKY: SkyPointing = { raDeg: 83.8, decDeg: -1.0, fovDeg: 40 };
+
+const ORION_CAMERA: CameraPose = {
+  position: [0, 0, 0],
+  target: raDecToScene(ORION_SKY.raDeg, ORION_SKY.decDeg),
+  // Scene +Y is the north celestial pole (core/frames.ts), so north is up on screen.
+  up: [0, 1, 0],
+  fovDeg: ORION_SKY.fovDeg,
+  near: 0.1,
+  far: 100,
+};
+
+/** SIMBAD ICRS J2000 (test/fixtures/simbad-stars.json). V magnitudes 0.5 to 2.2. */
+const ORION_STARS: readonly StarCheck[] = [
+  { name: 'Betelgeuse', raDeg: 88.79293899077537, decDeg: 7.407063995272694 },
+  { name: 'Rigel', raDeg: 78.63446706693006, decDeg: -8.201638364722209 },
+  { name: 'Bellatrix', raDeg: 81.28276355652378, decDeg: 6.3497032644440665 },
+  { name: 'Saiph', raDeg: 86.93912016833333, decDeg: -9.66960491861111 },
+  { name: 'Alnitak', raDeg: 85.18969642916667, decDeg: -1.9425723222222224 },
+  { name: 'Alnilam', raDeg: 84.05338894077023, decDeg: -1.2019191358333312 },
+  { name: 'Mintaka', raDeg: 83.00166705557675, decDeg: -0.29909510708333326 },
+].map((s) => ({ ...s, maxOffsetPx: 2, minPeak: 100 }));
+
 export const viewpoints: readonly Viewpoint[] = [
   {
     id: 'clear',
@@ -99,7 +176,10 @@ export const viewpoints: readonly Viewpoint[] = [
     epoch: null,
     camera: null,
     reversedDepthBuffer: true,
+    background: 'scaffold',
+    sky: null,
     checks: [],
+    starChecks: [],
     negativeControl: false,
   },
   {
@@ -110,16 +190,12 @@ export const viewpoints: readonly Viewpoint[] = [
     width: 1024,
     height: 1024,
     epoch: null,
-    camera: {
-      position: [3.2, 2.4, 4],
-      target: [0, 0, 0],
-      up: [0, 1, 0],
-      fovDeg: 40,
-      near: 0.1,
-      far: 100,
-    },
+    camera: CUBE_CAMERA,
     reversedDepthBuffer: true,
+    background: 'scaffold',
+    sky: null,
     checks: [],
+    starChecks: [],
     negativeControl: false,
   },
   {
@@ -132,7 +208,10 @@ export const viewpoints: readonly Viewpoint[] = [
     epoch: null,
     camera: DEPTH_TEST_CAMERA,
     reversedDepthBuffer: true,
+    background: 'scaffold',
+    sky: null,
     checks: [frontWins],
+    starChecks: [],
     negativeControl: false,
   },
   {
@@ -145,7 +224,10 @@ export const viewpoints: readonly Viewpoint[] = [
     epoch: null,
     camera: DEPTH_TEST_CAMERA,
     reversedDepthBuffer: false,
+    background: 'scaffold',
+    sky: null,
     checks: [frontWins],
+    starChecks: [],
     negativeControl: true,
   },
   {
@@ -158,7 +240,58 @@ export const viewpoints: readonly Viewpoint[] = [
     epoch: null,
     camera: DEPTH_TEST_CAMERA,
     reversedDepthBuffer: true,
+    background: 'scaffold',
+    sky: null,
     checks: [backWinsTies],
+    starChecks: [],
+    negativeControl: false,
+  },
+  {
+    id: 'orion',
+    description:
+      'Orion from the Bright Star Catalogue, celestial north up. Seven bright stars must land where SIMBAD puts them: Betelgeuse upper left, Rigel lower right, the belt running Alnitak to Mintaka from east (left) to west.',
+    scene: 'stars',
+    width: 1024,
+    height: 1024,
+    epoch: null,
+    camera: ORION_CAMERA,
+    reversedDepthBuffer: true,
+    background: 'space',
+    sky: ORION_SKY,
+    checks: [],
+    starChecks: ORION_STARS,
+    negativeControl: false,
+  },
+  {
+    id: 'orion-mirrored',
+    description:
+      'Negative control: the same view with the sky mirrored, as a determinant −1 axis mapping would do. The star checks must fail, proving orion can see a mirrored sky.',
+    scene: 'stars-mirrored',
+    width: 1024,
+    height: 1024,
+    epoch: null,
+    camera: ORION_CAMERA,
+    reversedDepthBuffer: true,
+    background: 'space',
+    sky: ORION_SKY,
+    checks: [],
+    starChecks: ORION_STARS,
+    negativeControl: true,
+  },
+  {
+    id: 'app',
+    description:
+      'What the interactive app shows on load: the test cube against the real sky on true black.',
+    scene: 'cube-and-stars',
+    width: 1024,
+    height: 1024,
+    epoch: null,
+    camera: CUBE_CAMERA,
+    reversedDepthBuffer: true,
+    background: 'space',
+    sky: null,
+    checks: [],
+    starChecks: [],
     negativeControl: false,
   },
 ];

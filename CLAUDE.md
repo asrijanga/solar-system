@@ -18,6 +18,7 @@ The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story
 - `npm run build && npm run capture` renders every canonical viewpoint headlessly (WebGPU on SwiftShader) into `captures/`. Read the PNGs: that is how you see what you built.
 - `npm run capture:diff` compares `captures/` against `baselines/`; CI fails on any difference past tolerance.
 - `npm run alloc` measures allocation in the interactive frame loop over 600 frames (CI runs it).
+- `npm run pipeline:stars` re-derives `public/data/stars/` from the pinned catalogue; `npm run pipeline:test` runs the pipeline's unit tests. Python is managed by `uv` in `pipeline/`. CI re-runs the pipeline and fails if the committed data differs.
 - `npm run capture:accept -- <id>` is the only way to change a baseline. Never run it to make a failing diff pass unless the change is intended and shown in the PR.
 
 ## Rules

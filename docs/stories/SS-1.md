@@ -10,7 +10,7 @@ As the director, I want a TypeScript app that clears a real WebGPU canvas to a c
 | --- | --- | --- | --- |
 | 1 | Vite + TypeScript, `strict` and `noUncheckedIndexedAccess` (plus `exactOptionalPropertyTypes`); ESLint, Prettier, Vitest; Node pinned in `.nvmrc` and `engines` | machine | Done; `npm run check` |
 | 2 | `three` pinned exactly (0.184.0) with matching `@types/three` (0.184.1); lockfile committed | machine | Done |
-| 3 | Canvas clears to a non-default, non-black colour | machine + eyes | `#1b3a5c`; centre pixel measured exactly `#1b3a5c` in headless Chromium |
+| 3 | Canvas clears to a non-default, non-black colour | machine + eyes | `#1b3a5c`; centre pixel measured exactly `#1b3a5c` in headless Chromium. Owner confirmed by eye on real hardware, 2026-09-24 |
 | 4 | After `init()`, the backend is asserted to be WebGPU; otherwise the renderer is disposed and the actual reason shown | machine | Done; see refusal table |
 | 5 | Renderer options go through one typed factory, so a misspelling is a type error | machine | `src/gpu/renderer.typetest.ts`; removing its `@ts-expect-error` lines fails typecheck (checked) |
 | 6 | Adapter info, features and depended-on limits logged once | machine | Done; `[gpu]` console lines |
@@ -47,7 +47,7 @@ The plan put the first deployment at SS-7, as a private link. At the owner's req
 
 ## Not verified
 
-- Anything on a real GPU. The owner checks criterion 3 by eye in a real browser.
+- Anything on a real GPU beyond the owner's by-eye check of criterion 3 (done).
 - The compatibility-only and WebGL 2 fallback paths in a real browser (unit-tested only).
 - Firefox and Safari.
 

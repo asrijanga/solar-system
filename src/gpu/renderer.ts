@@ -20,7 +20,7 @@ export class WebGL2FallbackError extends Error {
   }
 }
 
-function isWebGPUBackend(renderer: WebGPURenderer): boolean {
+export function isWebGPUBackend(renderer: WebGPURenderer): boolean {
   const backend = renderer.backend as { isWebGPUBackend?: boolean };
   return backend.isWebGPUBackend === true;
 }

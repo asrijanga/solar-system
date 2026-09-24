@@ -10,22 +10,24 @@
     "checks": [],
     "starChecks": [],
     "moon": {
-      "epoch": "first-quarter-2026-01",
+      "epoch": "full-2026-01",
       "vantage": {
-        "kind": "earth"
+        "kind": "over",
+        "lonDeg": -16,
+        "latDeg": 33
       },
-      "distanceKm": 6949.6,
-      "fovDeg": 40,
+      "distanceKm": 2606.1000000000004,
+      "fovDeg": 90,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "albedo",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical"
     },
     "moonChecks": [],
     "negativeControl": false,
-    "id": "app",
-    "description": "What the interactive app shows on load: the first-quarter Moon from Earth, lunar north up, stars at physical exposure (so none show).",
+    "id": "moon-limb",
+    "description": "From 1.5 radii with a 90° field, unlit albedo, over Mare Imbrium: the closest the app allows. Towards the limb the surface is seen edge-on, where anisotropic filtering keeps detail that isotropic filtering blurs. For eyes: no automated check.",
     "scene": "moon"
   },
   "environment": {

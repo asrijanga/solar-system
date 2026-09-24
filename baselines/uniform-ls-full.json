@@ -10,22 +10,33 @@
     "checks": [],
     "starChecks": [],
     "moon": {
-      "epoch": "first-quarter-2026-01",
+      "epoch": "full-2026-01",
       "vantage": {
         "kind": "earth"
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
-      "albedo": "map",
+      "albedo": {
+        "uniform": 0.96
+      },
       "shading": "lommel-seeliger",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical"
     },
-    "moonChecks": [],
+    "moonChecks": [
+      {
+        "kind": "photometry",
+        "name": "Lommel–Seeliger per pixel",
+        "albedo": 0.96,
+        "tolerance": 2,
+        "minFraction": 0.99,
+        "limbInsetPx": 2
+      }
+    ],
     "negativeControl": false,
-    "id": "app",
-    "description": "What the interactive app shows on load: the first-quarter Moon from Earth, lunar north up, stars at physical exposure (so none show).",
+    "id": "uniform-ls-full",
+    "description": "A uniform Moon (ϖ = 0.96, geometric albedo 0.12) at the full-Moon geometry. Every pixel must match Lommel–Seeliger from core/photometry.ts: a flat disc to the limb.",
     "scene": "moon"
   },
   "environment": {
@@ -52,7 +63,13 @@
   "checks": {
     "negativeControl": false,
     "ok": true,
-    "results": []
+    "results": [
+      {
+        "name": "Lommel–Seeliger per pixel: 408636 disc pixels, worst 1 levels",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
   },
   "git": {
     "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",

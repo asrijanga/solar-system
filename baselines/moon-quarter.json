@@ -22,10 +22,17 @@
       "seamFix": true,
       "stars": "physical"
     },
-    "moonChecks": [],
+    "moonChecks": [
+      {
+        "kind": "night",
+        "name": "night side is black",
+        "minDepthDeg": 0.5,
+        "minFraction": 0.999
+      }
+    ],
     "negativeControl": false,
-    "id": "app",
-    "description": "What the interactive app shows on load: the first-quarter Moon from Earth, lunar north up, stars at physical exposure (so none show).",
+    "id": "moon-quarter",
+    "description": "The first-quarter Moon of 2026-01-26 seen from Earth. The terminator runs north–south near the centre, the lit half to the right, and the night side is black: no ambient light.",
     "scene": "moon"
   },
   "environment": {
@@ -52,7 +59,13 @@
   "checks": {
     "negativeControl": false,
     "ok": true,
-    "results": []
+    "results": [
+      {
+        "name": "night side is black: 200200 night pixels",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
   },
   "git": {
     "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",

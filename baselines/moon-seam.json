@@ -10,22 +10,30 @@
     "checks": [],
     "starChecks": [],
     "moon": {
-      "epoch": "first-quarter-2026-01",
+      "epoch": "full-2026-01",
       "vantage": {
-        "kind": "earth"
+        "kind": "over",
+        "lonDeg": 165,
+        "latDeg": 25
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "albedo",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical"
     },
-    "moonChecks": [],
+    "moonChecks": [
+      {
+        "kind": "seam",
+        "name": "no line at ±180°",
+        "maxRatio": 1.5
+      }
+    ],
     "negativeControl": false,
-    "id": "app",
-    "description": "What the interactive app shows on load: the first-quarter Moon from Earth, lunar north up, stars at physical exposure (so none show).",
+    "id": "moon-seam",
+    "description": "The ±180° meridian from over 165°E 25°N, unlit albedo, so the wrap crosses 2x2 pixel quads the way it does for anyone orbiting. The texture wrap must leave no line.",
     "scene": "moon"
   },
   "environment": {
@@ -52,7 +60,13 @@
   "checks": {
     "negativeControl": false,
     "ok": true,
-    "results": []
+    "results": [
+      {
+        "name": "no line at ±180°: 677 crossed rows, step at the meridian 2.54 vs 2.47 beside it (ratio 1.03)",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
   },
   "git": {
     "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",

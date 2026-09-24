@@ -1,0 +1,145 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "moon": {
+      "epoch": "full-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 6949.6,
+      "fovDeg": 40,
+      "albedo": "map",
+      "shading": "lommel-seeliger",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical"
+    },
+    "moonChecks": [
+      {
+        "kind": "feature",
+        "name": "Tycho",
+        "lonDeg": -11.2153,
+        "latDeg": -43.2958,
+        "coreKm": 30,
+        "against": [
+          80,
+          160
+        ],
+        "expect": "brighter"
+      },
+      {
+        "kind": "feature",
+        "name": "Copernicus",
+        "lonDeg": -20.0786,
+        "latDeg": 9.6209,
+        "coreKm": 30,
+        "against": [
+          80,
+          160
+        ],
+        "expect": "brighter"
+      },
+      {
+        "kind": "feature",
+        "name": "Aristarchus",
+        "lonDeg": -47.4901,
+        "latDeg": 23.7299,
+        "coreKm": 15,
+        "against": [
+          40,
+          80
+        ],
+        "expect": "brighter"
+      },
+      {
+        "kind": "feature",
+        "name": "Mare Crisium",
+        "lonDeg": 59.1037,
+        "latDeg": 16.1774,
+        "coreKm": 150,
+        "against": [
+          350,
+          450
+        ],
+        "expect": "darker"
+      },
+      {
+        "kind": "feature",
+        "name": "Statio Tranquillitatis",
+        "lonDeg": 23.4732,
+        "latDeg": 0.6741,
+        "coreKm": 20,
+        "against": "disc-median",
+        "expect": "darker"
+      }
+    ],
+    "negativeControl": false,
+    "id": "moon-full",
+    "description": "The full Moon of 2026-01-03 seen from Earth, lunar north up. Tycho, Copernicus and Aristarchus must be bright, Mare Crisium and the Apollo 11 site dark, each where the IAU Gazetteer puts it.",
+    "scene": "moon"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Tycho brighter (113 px): ratio 1.084",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Copernicus brighter (154 px): ratio 1.253",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Aristarchus brighter (13 px): ratio 1.475",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Mare Crisium darker (1135 px): ratio 0.759",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Statio Tranquillitatis darker (76 px): ratio 0.696",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",
+    "dirty": false
+  }
+}

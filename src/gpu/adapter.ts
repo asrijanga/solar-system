@@ -51,16 +51,20 @@ export async function requestDevice(adapter: GPUAdapter): Promise<GPUDevice> {
   return adapter.requestDevice({ requiredFeatures: [...adapter.features] as GPUFeatureName[] });
 }
 
-export function logAdapter(adapter: GPUAdapter): void {
+export function describeAdapter(adapter: GPUAdapter): {
+  vendor: string;
+  architecture: string;
+  device: string;
+  description: string;
+  isFallbackAdapter: boolean;
+} {
   const { vendor, architecture, device, description } = adapter.info;
+  return { vendor, architecture, device, description, isFallbackAdapter: isFallback(adapter) };
+}
+
+export function logAdapter(adapter: GPUAdapter): void {
   const limits = Object.fromEntries(LOGGED_LIMITS.map((name) => [name, adapter.limits[name]]));
-  console.info('[gpu] adapter', {
-    vendor,
-    architecture,
-    device,
-    description,
-    isFallbackAdapter: isFallback(adapter),
-  });
+  console.info('[gpu] adapter', describeAdapter(adapter));
   console.info('[gpu] features', [...adapter.features].sort());
   console.info('[gpu] limits', limits);
 }

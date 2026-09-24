@@ -1,0 +1,35 @@
+{
+  "viewpoint": {
+    "id": "clear",
+    "description": "The SS-1 clear colour. Proves the harness end to end: build, serve, WebGPU on SwiftShader, ready signal, capture, compare.",
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "git": {
+    "sha": "9d30eca86e45779c66d4001b42d8d685077bf90a",
+    "dirty": false
+  }
+}

@@ -13,6 +13,9 @@ The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story
 
 - `npm run check` runs everything CI runs: typecheck, lint, format check, tests, build, and the bundle-size budget.
 - `npm run dev` for a dev server; `npm run preview` serves the production build.
+- `npm run build && npm run capture` renders every canonical viewpoint headlessly (WebGPU on SwiftShader) into `captures/`. Read the PNGs: that is how you see what you built.
+- `npm run capture:diff` compares `captures/` against `baselines/`; CI fails on any difference past tolerance.
+- `npm run capture:accept -- <id>` is the only way to change a baseline. Never run it to make a failing diff pass unless the change is intended and shown in the PR.
 
 ## Rules
 

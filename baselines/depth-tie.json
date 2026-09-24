@@ -1,0 +1,86 @@
+{
+  "viewpoint": {
+    "id": "depth-tie",
+    "description": "Tie control: the quads coplanar with reversed-Z. The later-drawn back quad must win, proving the front quad in depth-reversed wins by resolved depth, not by draw order.",
+    "scene": "depth-test-coplanar",
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": {
+      "position": [
+        0,
+        0,
+        10000
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "fovDeg": 30,
+      "near": 1,
+      "far": 100000
+    },
+    "reversedDepthBuffer": true,
+    "checks": [
+      {
+        "name": "back quad wins exact ties across the centre",
+        "region": {
+          "x": 410,
+          "y": 410,
+          "width": 204,
+          "height": 204
+        },
+        "colour": [
+          64,
+          160,
+          208
+        ],
+        "tolerance": 2,
+        "minFraction": 0.999
+      }
+    ],
+    "negativeControl": false
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "back quad wins exact ties across the centre",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "17ea8ae90cdc58d5a3d3806a7b2ef29722e5b4d4",
+    "dirty": false
+  }
+}

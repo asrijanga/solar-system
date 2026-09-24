@@ -18,7 +18,8 @@ function readSidecar(dir: string, id: string): Sidecar | null {
 
 function main(): number {
   const requested = process.argv.slice(2);
-  const known = viewpoints.map((v) => v.id);
+  // Negative controls stage a fault on purpose and are never baselined.
+  const known = viewpoints.filter((v) => !v.negativeControl).map((v) => v.id);
   const ids = requested.length > 0 ? requested : known;
   let failures = 0;
 
@@ -72,7 +73,7 @@ function main(): number {
     for (const file of readdirSync(baselinesDir).filter((f) => f.endsWith('.png'))) {
       const id = file.slice(0, -'.png'.length);
       if (!known.includes(id)) {
-        console.log(`FAIL ${id}: baseline exists but the viewpoint does not`);
+        console.log(`FAIL ${id}: baseline exists but no baselined viewpoint has that id`);
         failures++;
       }
     }

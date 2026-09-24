@@ -1,23 +1,48 @@
-import { Color, PerspectiveCamera, REVISION, Scene } from 'three/webgpu';
+import {
+  Color,
+  FloatType,
+  PerspectiveCamera,
+  REVISION,
+  RenderPipeline,
+  Scene,
+  type WebGPURenderer,
+} from 'three/webgpu';
+import { pass } from 'three/tsl';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { CaptureReport } from './capture/protocol';
-import { findViewpoint } from './capture/viewpoints';
+import { findViewpoint, type CameraPose, type SceneId } from './capture/viewpoints';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
+import { KM, METRE } from './core/units';
+import { DebugOverlay } from './debug/overlay';
 import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/adapter';
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
+import { createCubeScene } from './scenes/cube';
+import { createDepthTestScene } from './scenes/depthTest';
 
 /**
- * Scaffolding colour for SS-1: deliberately not black and not three.js's default,
- * so a successful clear can never be mistaken for a blank or failed canvas.
- * Space becomes true black in SS-4.
+ * Scaffolding colour: deliberately not black and not three.js's default, so a successful
+ * clear can never be mistaken for a blank or failed canvas. Space becomes true black in SS-4.
  */
 export const CLEAR_COLOUR = '#1b3a5c';
 
 /** Sharper than 2x costs fill rate for detail nobody can see. */
 const MAX_PIXEL_RATIO = 2;
 
+/** Orbit limits around the test cube, in kilometres. */
+const MIN_DISTANCE = 1.5 * KM;
+const MAX_DISTANCE = 30 * KM;
+
 const params = new URLSearchParams(location.search);
 /** Set by the headless harness: `?capture=<viewpoint id>`. */
 const captureId = params.get('capture');
+const debug = params.has('debug');
+
+/** The interactive app shows the cube viewpoint's scene and pose. */
+const INTERACTIVE = findViewpoint('cube');
+
+/** A frame counter the allocation test reads. A number property: incrementing never allocates. */
+const stats = { frames: 0 };
+window.__stats = stats;
 
 function report(result: CaptureReport): void {
   if (captureId !== null) window.__capture = result;
@@ -39,10 +64,32 @@ function showRefusal(refusal: Refusal): void {
   report({ status: 'refused', reason: refusal });
 }
 
+function createScene(id: SceneId): Scene {
+  switch (id) {
+    case 'empty':
+      return new Scene();
+    case 'cube':
+      return createCubeScene();
+    case 'depth-test-10m':
+      return createDepthTestScene(10 * METRE);
+    case 'depth-test-coplanar':
+      return createDepthTestScene(0);
+  }
+}
+
+function createCamera(pose: CameraPose | null): PerspectiveCamera {
+  if (pose === null) return new PerspectiveCamera(50, 1, 0.1, 10);
+  const camera = new PerspectiveCamera(pose.fovDeg, 1, pose.near, pose.far);
+  camera.position.set(...pose.position);
+  camera.up.set(...pose.up);
+  camera.lookAt(...pose.target);
+  return camera;
+}
+
 async function start(): Promise<void> {
-  const viewpoint = captureId === null ? undefined : findViewpoint(captureId);
-  if (captureId !== null && viewpoint === undefined) {
-    report({ status: 'refused', reason: `unknown viewpoint: ${captureId}` });
+  const viewpoint = captureId === null ? INTERACTIVE : findViewpoint(captureId);
+  if (viewpoint === undefined) {
+    report({ status: 'refused', reason: `unknown viewpoint: ${String(captureId)}` });
     return;
   }
 
@@ -61,14 +108,14 @@ async function start(): Promise<void> {
   const device = await requestDevice(probe.adapter);
   const canvas = document.getElementById('app') as HTMLCanvasElement;
 
-  let renderer;
+  let renderer: WebGPURenderer;
   try {
     renderer = await createRenderer({
       canvas,
       device,
       antialias: true,
-      // Enabled in SS-3, together with the capture that proves it works.
-      reversedDepthBuffer: false,
+      reversedDepthBuffer: viewpoint.reversedDepthBuffer,
+      trackTimestamp: debug,
     });
   } catch (error) {
     if (error instanceof WebGL2FallbackError) {
@@ -79,10 +126,17 @@ async function start(): Promise<void> {
   }
 
   renderer.setClearColor(new Color(CLEAR_COLOUR), 1);
-  const scene = new Scene();
-  const camera = new PerspectiveCamera(50, 1, 0.1, 10);
+  const scene = createScene(viewpoint.scene);
+  const camera = createCamera(viewpoint.camera);
 
-  const draw = (): void => {
+  // Render through a scene pass, never renderer.render(). In three r184 the default path
+  // draws the scene into an intermediate target for sRGB output whose depth is always
+  // depth24plus, even with reversed-Z on, which throws away reversed-Z's precision.
+  // PassNode switches its depth to float under reversed-Z (docs/stories/SS-3.md).
+  const scenePass = pass(scene, camera);
+  const pipeline = new RenderPipeline(renderer, scenePass);
+
+  const resize = (): void => {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
     if (width === 0 || height === 0) return;
@@ -90,16 +144,13 @@ async function start(): Promise<void> {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.render(scene, camera);
   };
 
-  new ResizeObserver(draw).observe(canvas);
-  draw();
-  document.documentElement.dataset['ready'] = 'true';
-
-  if (viewpoint !== undefined) {
-    // Ready means the GPU has finished this frame and the compositor has had a chance to
-    // present it, never "some time has passed".
+  if (captureId !== null) {
+    // Capture mode: exactly one frame, no clock, no controls. Ready means the GPU has
+    // finished it and the compositor has had a chance to present it.
+    resize();
+    pipeline.render();
     await device.queue.onSubmittedWorkDone();
     await new Promise(requestAnimationFrame);
     const { vendor, architecture, isFallbackAdapter } = describeAdapter(probe.adapter);
@@ -108,11 +159,53 @@ async function start(): Promise<void> {
       viewpoint: viewpoint.id,
       backend: isWebGPUBackend(renderer) ? 'webgpu' : 'other',
       threeRevision: REVISION,
+      sceneDepth: scenePass.renderTarget.depthTexture?.type === FloatType ? 'float32' : 'other',
       adapter: { vendor, architecture, isFallbackAdapter },
       canvas: { width: canvas.width, height: canvas.height },
       devicePixelRatio: window.devicePixelRatio,
     });
+    return;
   }
+
+  const controls = new OrbitControls(camera, canvas);
+  if (viewpoint.camera !== null) controls.target.set(...viewpoint.camera.target);
+  controls.minDistance = MIN_DISTANCE;
+  controls.maxDistance = MAX_DISTANCE;
+  controls.enableDamping = true;
+  controls.update();
+
+  const overlay = debug ? new DebugOverlay(renderer, device.features.has('timestamp-query')) : null;
+
+  let resizePending = true;
+  new ResizeObserver(() => {
+    resizePending = true;
+  }).observe(canvas);
+
+  // The per-frame path. It allocates nothing: no `new`, no closures, no array or object
+  // literals, and no fractional numbers stored in captured variables, which V8 boxes on the
+  // heap on every write. Timing state lives in a Float64Array for that reason.
+  // tools/perf/alloc.ts measures this on every PR.
+  const clock = new Float64Array(1);
+  clock[0] = -1; // previous frame's timestamp, ms
+  const frame = (time: number): void => {
+    if (resizePending) {
+      resizePending = false;
+      resize();
+    }
+    controls.update();
+    if (overlay === null) {
+      pipeline.render();
+    } else {
+      const start = performance.now();
+      pipeline.render();
+      const previous = clock[0] ?? -1;
+      if (previous >= 0) overlay.frame(time, time - previous, performance.now() - start);
+      clock[0] = time;
+    }
+    stats.frames++;
+  };
+  await renderer.setAnimationLoop(frame);
+  document.documentElement.dataset['ready'] = 'true';
 }
 
 start().catch((error: unknown) => {

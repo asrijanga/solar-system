@@ -14,6 +14,8 @@ export type CaptureReport =
       /** Read back from the live renderer, not assumed. */
       readonly backend: 'webgpu' | 'other';
       readonly threeRevision: string;
+      /** The scene pass's depth texture type, read back after rendering. */
+      readonly sceneDepth: 'float32' | 'other';
       readonly adapter: CaptureAdapter;
       /** Drawing-buffer size in device pixels. */
       readonly canvas: { readonly width: number; readonly height: number };
@@ -24,5 +26,7 @@ export type CaptureReport =
 declare global {
   interface Window {
     __capture?: CaptureReport;
+    /** Frames rendered by the interactive loop, read by tools/perf/alloc.ts. */
+    __stats?: { frames: number };
   }
 }

@@ -9,6 +9,7 @@ import { PNG } from 'pngjs';
 import { preview } from 'vite';
 import type { CaptureReport } from '../../src/capture/protocol.ts';
 import { findViewpoint, viewpoints, type Viewpoint } from '../../src/capture/viewpoints.ts';
+import { judge } from './checks.ts';
 import { compareImages, identicalPixels } from './compare.ts';
 import { capturesDir, distDir, pngPath, root, sidecarPath } from './paths.ts';
 import { verifyReport, type Ready } from './verify.ts';
@@ -92,6 +93,7 @@ async function main(): Promise<void> {
   try {
     const sha = git('rev-parse', 'HEAD');
     const dirty = git('status', '--porcelain').length > 0;
+    const failures: string[] = [];
     for (const viewpoint of selected as Viewpoint[]) {
       const first = await render(browser, baseUrl, viewpoint);
       const second = await render(browser, baseUrl, viewpoint);
@@ -103,6 +105,7 @@ async function main(): Promise<void> {
         : compareImages(a, b, { threshold: 0, maxDiffRatio: 0, maxMeanChannelDelta: 0 });
 
       writeFileSync(pngPath(capturesDir, viewpoint.id), first.png);
+      const verdict = judge(a, viewpoint);
       const sidecar = {
         viewpoint,
         environment: {
@@ -119,6 +122,11 @@ async function main(): Promise<void> {
           identical,
           differingPixels: typeof repeatDiff === 'number' ? 0 : repeatDiff.differingPixels,
         },
+        checks: {
+          negativeControl: viewpoint.negativeControl,
+          ok: verdict.ok,
+          results: verdict.results,
+        },
         git: { sha, dirty },
       };
       writeFileSync(
@@ -127,11 +135,21 @@ async function main(): Promise<void> {
       );
       const note = identical ? 'identical across 2 renders' : 'NOT identical across 2 renders';
       console.log(`captured ${viewpoint.id} (${viewpoint.width}x${viewpoint.height}), ${note}`);
+      for (const result of verdict.results) {
+        const expected = viewpoint.negativeControl ? 'expected to fail' : 'expected to pass';
+        console.log(
+          `  check "${result.name}": ${result.pass ? 'pass' : 'fail'} (${(result.fraction * 100).toFixed(2)}% matching, ${expected})`,
+        );
+      }
+      if (!verdict.ok) failures.push(`${viewpoint.id}: ${verdict.message ?? 'checks failed'}`);
       if (!identical) {
         console.warn(
           `  warning: ${sidecar.determinism.differingPixels} pixels differ between two renders on this machine`,
         );
       }
+    }
+    if (failures.length > 0) {
+      throw new Error(`pixel checks failed:\n  ${failures.join('\n  ')}`);
     }
   } finally {
     await browser.close();

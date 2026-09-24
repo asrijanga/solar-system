@@ -1,0 +1,86 @@
+{
+  "viewpoint": {
+    "id": "depth-reversed",
+    "description": "Two face-on quads 10 m apart seen from 10,000 km, reversed-Z (depth32float). The nearer quad must win, drawn first so a tie would lose.",
+    "scene": "depth-test-10m",
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": {
+      "position": [
+        0,
+        0,
+        10000
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "fovDeg": 30,
+      "near": 1,
+      "far": 100000
+    },
+    "reversedDepthBuffer": true,
+    "checks": [
+      {
+        "name": "front quad wins across the centre",
+        "region": {
+          "x": 410,
+          "y": 410,
+          "width": 204,
+          "height": 204
+        },
+        "colour": [
+          208,
+          64,
+          64
+        ],
+        "tolerance": 2,
+        "minFraction": 0.999
+      }
+    ],
+    "negativeControl": false
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "front quad wins across the centre",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "17ea8ae90cdc58d5a3d3806a7b2ef29722e5b4d4",
+    "dirty": false
+  }
+}

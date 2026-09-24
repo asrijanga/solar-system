@@ -10,6 +10,7 @@ export const valid: RendererOptions = {
   device,
   antialias: true,
   reversedDepthBuffer: false,
+  trackTimestamp: false,
 };
 
 export async function misspelled(): Promise<void> {
@@ -18,6 +19,7 @@ export async function misspelled(): Promise<void> {
     device,
     antialias: true,
     reversedDepthBuffer: false,
+    trackTimestamp: false,
     // @ts-expect-error The WebGL renderer's spelling; WebGPURenderer would silently ignore it.
     reverseDepthBuffer: true,
   });
@@ -25,5 +27,10 @@ export async function misspelled(): Promise<void> {
 
 export async function missingDevice(): Promise<void> {
   // @ts-expect-error The device must come from the adapter we checked.
-  await createRenderer({ canvas, antialias: true, reversedDepthBuffer: false });
+  await createRenderer({
+    canvas,
+    antialias: true,
+    reversedDepthBuffer: false,
+    trackTimestamp: false,
+  });
 }

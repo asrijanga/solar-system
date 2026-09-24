@@ -1,6 +1,8 @@
 # SS-2 · Claude can see it
 
-Status: **done, pending owner approval of the tolerance** · Release 1 · 2026-09-24
+Status: **done** · Release 1 · 2026-09-24
+
+The owner moved on to SS-3 without objecting to the tolerance below, and PR #4 was merged on that basis. That is recorded as acceptance, not as an explicit sign-off; raise it any time.
 
 As the director, I want Claude to render the app headlessly and read the image, so that "does this look right" is checkable in every later story without me at the desk.
 

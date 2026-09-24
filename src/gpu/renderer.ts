@@ -10,7 +10,10 @@ export interface RendererOptions {
   /** Created by us, from the adapter we checked, so three cannot pick a different one. */
   readonly device: GPUDevice;
   readonly antialias: boolean;
+  /** Reversed-Z. With it, three gives the canvas a depth32float buffer instead of depth24plus. */
   readonly reversedDepthBuffer: boolean;
+  /** GPU timestamp queries, for the debug overlay. Ignored if the device lacks the feature. */
+  readonly trackTimestamp: boolean;
 }
 
 export class WebGL2FallbackError extends Error {
@@ -35,6 +38,7 @@ export async function createRenderer(options: RendererOptions): Promise<WebGPURe
     device: options.device,
     antialias: options.antialias,
     reversedDepthBuffer: options.reversedDepthBuffer,
+    trackTimestamp: options.trackTimestamp,
   });
   await renderer.init();
   if (!isWebGPUBackend(renderer)) {

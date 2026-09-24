@@ -306,17 +306,19 @@ async function start(): Promise<void> {
 
   const overlay = debug ? new DebugOverlay(renderer, device.features.has('timestamp-query')) : null;
 
-  let resizePending = true;
-  new ResizeObserver(() => {
-    resizePending = true;
-  }).observe(canvas);
+  // Resizing happens here, never in the frame loop: it stores fractional numbers (aspect,
+  // star exposure) in object fields, which allocates. ResizeObserver callbacks run after
+  // layout and before paint, so the next frame already renders at the new size. The
+  // observer also fires once on observe(), which sizes the first frame.
+  resize();
+  new ResizeObserver(resize).observe(canvas);
 
   if (stage.caption !== null) {
     const { evenLight } = stage;
     createMoonControls(stage.caption, {
       onBoost: (boosted) => {
         starBoost[0] = boosted ? STAR_BOOST : 1;
-        resizePending = true;
+        resize();
       },
       onEvenLight: (even) => {
         if (evenLight !== null) evenLight.value = even ? 1 : 0;
@@ -332,10 +334,6 @@ async function start(): Promise<void> {
   clock[0] = -1; // previous frame's timestamp, ms
   const frame = (time: number): void => {
     if (stats.frames === 0) overlay?.firstFrame(performance.now());
-    if (resizePending) {
-      resizePending = false;
-      resize();
-    }
     controls.update();
     if (overlay === null) {
       pipeline.render();

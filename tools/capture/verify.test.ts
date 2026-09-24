@@ -8,6 +8,7 @@ const good: Ready = {
   viewpoint: viewpoint.id,
   backend: 'webgpu',
   threeRevision: '184',
+  sceneDepth: 'float32',
   adapter: { vendor: 'google', architecture: 'swiftshader', isFallbackAdapter: true },
   canvas: { width: viewpoint.width, height: viewpoint.height },
   devicePixelRatio: 1,
@@ -16,6 +17,12 @@ const good: Ready = {
 describe('verifyReport', () => {
   it('accepts WebGPU on SwiftShader at the exact size', () => {
     expect(verifyReport(good, viewpoint)).toEqual([]);
+  });
+
+  it('refuses a reversed-Z viewpoint that did not render with float depth', () => {
+    expect(verifyReport({ ...good, sceneDepth: 'other' }, viewpoint)).toEqual([
+      'reversed-Z viewpoint rendered with other depth, not float32',
+    ]);
   });
 
   it('refuses the WebGL 2 backend', () => {

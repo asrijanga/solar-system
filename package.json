@@ -21,7 +21,8 @@
     "size": "node scripts/check-bundle-size.mjs",
     "capture": "node tools/capture/run.ts",
     "capture:diff": "node tools/capture/diff.ts",
-    "capture:accept": "node tools/capture/accept.ts"
+    "capture:accept": "node tools/capture/accept.ts",
+    "alloc": "node tools/perf/alloc.ts"
   },
   "dependencies": {
     "three": "0.184.0"

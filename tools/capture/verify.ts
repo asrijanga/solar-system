@@ -15,6 +15,10 @@ export function verifyReport(report: Ready, viewpoint: Viewpoint): string[] {
   if (report.adapter.architecture !== 'swiftshader' || !report.adapter.isFallbackAdapter) {
     problems.push(`adapter is ${JSON.stringify(report.adapter)}, not SwiftShader`);
   }
+  if (viewpoint.reversedDepthBuffer && report.sceneDepth !== 'float32') {
+    // Reversed-Z on anything but float depth loses its precision (docs/stories/SS-3.md).
+    problems.push(`reversed-Z viewpoint rendered with ${report.sceneDepth} depth, not float32`);
+  }
   if (report.devicePixelRatio !== 1)
     problems.push(`devicePixelRatio is ${report.devicePixelRatio}`);
   if (report.canvas.width !== viewpoint.width || report.canvas.height !== viewpoint.height) {

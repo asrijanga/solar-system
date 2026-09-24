@@ -8,6 +8,8 @@ The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story
 - WebGPU only. The app refuses to run on the WebGL 2 fallback or a software adapter. `?software` allows a software adapter, for headless captures only.
 - `src/core/` is pure TypeScript and must not import three.js (enforced by lint and by `test/core-boundary.test.ts`). Truth-critical code lives there: ephemeris, orbits, geodesy, photometry, tile maths, support decisions.
 - Units are kilometres. Every renderer option goes through `createRenderer` in `src/gpu/renderer.ts`.
+- Draw the scene through the `RenderPipeline` scene pass in `src/main.ts`, never `renderer.render()`. In three r184 the default path draws into an intermediate target with 24-bit depth even under reversed-Z. Captures refuse a reversed-Z viewpoint that did not render with float32 depth.
+- The frame loop allocates nothing. `npm run alloc` fails on any sampled allocation from `src/` on the frame path. Fractional numbers stored in captured variables allocate in V8: keep per-frame numeric state in typed arrays.
 
 ## Commands
 
@@ -15,6 +17,7 @@ The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story
 - `npm run dev` for a dev server; `npm run preview` serves the production build.
 - `npm run build && npm run capture` renders every canonical viewpoint headlessly (WebGPU on SwiftShader) into `captures/`. Read the PNGs: that is how you see what you built.
 - `npm run capture:diff` compares `captures/` against `baselines/`; CI fails on any difference past tolerance.
+- `npm run alloc` measures allocation in the interactive frame loop over 600 frames (CI runs it).
 - `npm run capture:accept -- <id>` is the only way to change a baseline. Never run it to make a failing diff pass unless the change is intended and shown in the PR.
 
 ## Rules

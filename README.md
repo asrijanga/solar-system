@@ -367,7 +367,7 @@ These are expensive to reverse once there is a codebase. Everything else can be 
 | Scene frame | Per-world inertial frame: axes aligned to ICRF/J2000, origin at the world's centre. The world rotates within it; stars are fixed | Stars, sun, and context bodies all come from SPICE in J2000. A body-fixed scene frame would rotate the whole sky every frame |
 | Axis mapping | One tested function maps ICRF (Z to the celestial north pole) to three.js's Y-up space. A test asserts its determinant is +1 | A permutation with determinant −1 is a mirror, and it produces a sky that looks fine and is backwards |
 | Units | Kilometres, f64 on the CPU, camera-relative f32 on the GPU | SPICE works in km, and km are readable in overlays and test failures. The earlier "planet radius as unit" choice made heights unreadable |
-| Depth | Reversed-Z (`reversedDepthBuffer: true`), proven by a capture | Naive depth fails at planetary scale. The option name has already been shown to fail silently |
+| Depth | Reversed-Z (`reversedDepthBuffer: true`) on `depth32float`, with the scene drawn through a `RenderPipeline` scene pass; proven by captures | Naive depth fails at planetary scale. The option name fails silently, and three r184's default output path quietly uses 24-bit depth even with reversed-Z on (SS-3) |
 | Ephemerides | Offline SpiceyPy to per-world Chebyshev files; a pure-TS evaluator in `core/` | Keeps kernels and CSPICE out of the page, and makes the runtime testable against Horizons |
 | Asset delivery | Your own tile pyramid on object storage, streamed; textures as KTX2 | Source archives are terabytes; nothing usable can be bundled with the app |
 | Data provenance | Source, product ID, version, mission, resolution, and processing steps recorded per asset and per tile | An education tool has to cite itself, and the coverage overlay (SS-16) is impossible to retrofit without it |
@@ -436,7 +436,7 @@ As the director, I want a 3D camera, a test cube, orbit controls, and a frame-ti
 
 - [ ] A perspective camera at a known pose looks at the origin. A lit test cube there is visibly three-dimensional
 - [ ] Units are kilometres, declared once in `core/units.ts`
-- [ ] Reversed-Z is enabled through the typed factory and proven by a canonical capture: two coplanar-looking quads 10 m apart, seen from 10,000 km, occlude correctly with no z-fighting. The same capture with reversed-Z off must fail, which proves the capture tests the right thing
+- [ ] Reversed-Z is enabled through the typed factory and proven by canonical captures: two face-on quads 10 m apart, seen from 10,000 km, occlude correctly with no z-fighting. The same capture with reversed-Z off must fail (a negative control), and a coplanar version must give ties to the later-drawn quad (a tie control), which together prove the capture tests the right thing
 - [ ] Drag rotates, scroll zooms, within limits. three's `OrbitControls` is fine for now; the real camera is SS-11
 - [ ] `?debug` overlay: frame-time histogram over a rolling 300 frames, with p50, p95, and p99; GPU time from timestamp queries where the adapter supports them, with the overlay saying so when it doesn't; draw calls and triangles from `renderer.info`; JS heap where the browser exposes it
 - [ ] The render loop allocates nothing per frame: no `new`, no closures, no array literals. Checked by a Playwright test that samples heap allocations over 600 frames through the Chrome DevTools Protocol

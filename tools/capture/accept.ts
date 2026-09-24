@@ -11,11 +11,18 @@ function main(): number {
     console.error('Name the viewpoints to accept, or pass --all. Nothing is accepted by default.');
     return 1;
   }
-  const ids = args.includes('--all') ? viewpoints.map((v) => v.id) : args;
+  const ids = args.includes('--all')
+    ? viewpoints.filter((v) => !v.negativeControl).map((v) => v.id)
+    : args;
 
   for (const id of ids) {
-    if (findViewpoint(id) === undefined) {
+    const viewpoint = findViewpoint(id);
+    if (viewpoint === undefined) {
       console.error(`unknown viewpoint: ${id}`);
+      return 1;
+    }
+    if (viewpoint.negativeControl) {
+      console.error(`${id} is a negative control: it stages a fault and is never baselined`);
       return 1;
     }
     if (!existsSync(pngPath(capturesDir, id)) || !existsSync(sidecarPath(capturesDir, id))) {

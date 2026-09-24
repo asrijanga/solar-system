@@ -2,6 +2,8 @@
 
 2026-09-24 · @Someone · rewritten for three.js on WebGPU, built by Claude
 
+This plan is published at <https://asrijanga.github.io/solar-system/>, rebuilt from `main` on every push. Until SS-1 there is no app, so the site is the plan itself.
+
 ## The pivot
 
 A test repo built with Rust and Bevy, with Claude writing the code, went badly. This plan replaces that one. Three things change and everything else stays.

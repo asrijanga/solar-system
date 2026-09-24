@@ -36,7 +36,7 @@
       {
         "format": "webp-lossless",
         "bytes": 13387362,
-        "psnrDb": Infinity,
+        "psnrDb": null,
         "maxAbsError": 0
       },
       {
@@ -71,5 +71,15 @@
       }
     ]
   },
-  "masterSha256": "8dd70ca47c23a71b5d01d3817d0ce405db867556f6427a2dd4e6e0f02401d788"
+  "masterSha256": "8dd70ca47c23a71b5d01d3817d0ce405db867556f6427a2dd4e6e0f02401d788",
+  "calibration": {
+    "geometricAlbedo": 0.12,
+    "source": "NASA Moon Fact Sheet, 'Visual geometric albedo 0.12' (https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html)",
+    "model": "Lommel-Seeliger, I/F = (w/4) mu0/(mu0+mu), w = albedoScale * texture value in [0, 1]",
+    "method": "zero-phase disc mean of I/F equals the geometric albedo: albedoScale = 8p / mean(v), v weighted by projected area over the hemisphere facing longitude 0, latitude 0, gaps excluded",
+    "discMeanTextureValue": 0.121788,
+    "albedoScale": 7.882559,
+    "script": "pipeline/calibrate.py",
+    "decodedMean": 43.9234
+  }
 }

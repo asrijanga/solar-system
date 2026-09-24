@@ -508,7 +508,7 @@ As the director, I want the Moon rendered from SS-5's data with a correct sun, s
 - [ ] No seam at the ±180° longitude wrap. Per-fragment longitude breaks mip selection there, so derivatives are handled explicitly (Tarini's method, or explicit gradients). A canonical capture looks straight at the wrap line
 - [ ] Mipmaps are correct for the chosen format; if it is compressed, they are generated offline. Anisotropic filtering is at the adapter's maximum, and a limb capture shows it
 - [ ] Shading is **Lommel–Seeliger**, not Lambert, implemented as a pure function in `core/`, unit-tested, and mirrored in TSL. Lambert gives a full Moon that darkens towards its edge like a ball; the real full Moon stays nearly uniformly bright to the limb. It is a one-line difference and the most visible accuracy win in the release. Hapke comes later (SS-8b)
-- [ ] The sun's irradiance scales with the Moon–sun distance at the epoch. Exposure and tonemapping (three's AgX or Neutral) are chosen once and documented, along with the radiometric units they assume. There is no ambient term, because the Moon is airless and earthshine is a later story
+- [ ] The sun's irradiance scales with the Moon–sun distance at the epoch. Exposure and tonemapping (three's AgX or Neutral) are chosen once and documented, along with the radiometric units they assume. There is no ambient term, because the Moon is airless and earthshine is a later story *(SS-6: exposure 2 in I/F units, the "looney 11" rule, and no tone mapping, because the Moon stays below display white at that exposure. Reasons in docs/stories/SS-6.md.)*
 - [ ] SS-4's starfield and exposure decision are applied
 - [ ] Drag and scroll work within limits, with the closest approach at about 1.5 lunar radii
 - [ ] The test cube is deleted
@@ -516,7 +516,7 @@ As the director, I want the Moon rendered from SS-5's data with a correct sun, s
 
 Ground truth:
 
-- *machine*: a debug marker at Horizons' sub-solar point sits at the brightest point of a Lommel–Seeliger render, and the terminator lies 90° from it
+- *machine*: a debug marker at Horizons' sub-solar point sits at the brightest point of a Lommel–Seeliger render, and the terminator lies 90° from it *(SS-6: replaced by a per-pixel photometry check. Lommel–Seeliger's brightest point is the bright limb, not the sub-solar point. See docs/stories/SS-6.md.)*
 - *machine*: debug markers at IAU Gazetteer coordinates for Tycho, Copernicus, Mare Crisium, and the Apollo 11 site land on the right landforms
 - *eyes*: seen from Earth's direction, with lunar north up, the Moon looks the way it does from Earth's northern hemisphere. Mare Crisium is near the right-hand limb and Tycho's rays are in the south. You will spot a mirrored Moon instantly, which is the point
 - *eyes*: at the full-Moon epoch the disc is nearly flat-lit to the limb, with no relief shadows. Baked-in shading from the wrong mosaic shows up here

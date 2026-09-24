@@ -38,6 +38,8 @@ const viewpoint = (negativeControl: boolean, checks = [check]): Viewpoint => ({
   epoch: null,
   camera: null,
   reversedDepthBuffer: true,
+  moon: null,
+  moonChecks: [],
   background: 'scaffold',
   sky: null,
   checks,

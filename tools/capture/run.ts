@@ -10,6 +10,7 @@ import { preview } from 'vite';
 import type { CaptureReport } from '../../src/capture/protocol.ts';
 import { findViewpoint, viewpoints, type Viewpoint } from '../../src/capture/viewpoints.ts';
 import { judge } from './checks.ts';
+import type { EphemerisFile } from './moon.ts';
 import { compareImages, identicalPixels } from './compare.ts';
 import { capturesDir, distDir, pngPath, root, sidecarPath } from './paths.ts';
 import { verifyReport, type Ready } from './verify.ts';
@@ -23,7 +24,18 @@ const SWIFTSHADER_FLAGS = [
   '--use-angle=swiftshader',
 ];
 
-const READY_TIMEOUT_MS = 60_000;
+/** The Moon's 8192 x 4096 map is decoded and mipmapped on the CPU under SwiftShader. */
+const READY_TIMEOUT_MS = 180_000;
+
+const moonData = join(root, 'public', 'data', 'moon');
+const ephemeris = JSON.parse(
+  readFileSync(join(moonData, 'ephemeris.json'), 'utf8'),
+) as EphemerisFile;
+const albedoDecodedMean = (
+  JSON.parse(readFileSync(join(moonData, 'albedo.json'), 'utf8')) as {
+    calibration: { decodedMean: number };
+  }
+).calibration.decodedMean;
 
 function git(...args: string[]): string {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
@@ -60,7 +72,7 @@ async function render(
       throw new Error(`${viewpoint.id}: app refused: ${report.reason}`);
     }
     if (errors.length > 0) throw new Error(`${viewpoint.id}: page errors: ${errors.join(' | ')}`);
-    const problems = verifyReport(report, viewpoint);
+    const problems = verifyReport(report, viewpoint, albedoDecodedMean);
     if (problems.length > 0) {
       throw new Error(`refusing to write ${viewpoint.id}: ${problems.join('; ')}`);
     }
@@ -105,7 +117,7 @@ async function main(): Promise<void> {
         : compareImages(a, b, { threshold: 0, maxDiffRatio: 0, maxMeanChannelDelta: 0 });
 
       writeFileSync(pngPath(capturesDir, viewpoint.id), first.png);
-      const verdict = judge(a, viewpoint);
+      const verdict = judge(a, viewpoint, ephemeris);
       const sidecar = {
         viewpoint,
         environment: {

@@ -134,7 +134,7 @@ def build() -> dict:
         "epochs": epochs,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(result, indent=2) + "\n")
+    OUT.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
     return result
 
 

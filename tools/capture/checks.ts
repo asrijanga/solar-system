@@ -5,6 +5,7 @@ import type {
   StarCheck,
   Viewpoint,
 } from '../../src/capture/viewpoints.ts';
+import { castMoonRays, runMoonCheck, type EphemerisFile } from './moon.ts';
 
 export interface CheckResult {
   readonly name: string;
@@ -111,13 +112,26 @@ export interface ViewpointVerdict {
  * A normal viewpoint is ok when every check passes. A negative control is ok only when at
  * least one check FAILS: if the fault it stages goes undetected, the check is worthless.
  */
-export function judge(png: PNG, viewpoint: Viewpoint): ViewpointVerdict {
+export function judge(
+  png: PNG,
+  viewpoint: Viewpoint,
+  ephemeris: EphemerisFile | null = null,
+): ViewpointVerdict {
+  const moonResults: CheckResult[] = [];
+  if (viewpoint.moonChecks.length > 0) {
+    if (viewpoint.moon === null || ephemeris === null) {
+      throw new Error(`${viewpoint.id} has Moon checks but no Moon setup or ephemeris`);
+    }
+    const pixels = castMoonRays(viewpoint.moon, ephemeris, png.width, png.height);
+    for (const check of viewpoint.moonChecks) moonResults.push(runMoonCheck(png, pixels, check));
+  }
   const results = [
     ...viewpoint.checks.map((check) => runCheck(png, check)),
     ...viewpoint.starChecks.map((check) => {
       if (viewpoint.sky === null) throw new Error(`${viewpoint.id} has star checks but no sky`);
       return runStarCheck(png, viewpoint.sky, check);
     }),
+    ...moonResults,
   ];
   if (viewpoint.negativeControl) {
     if (results.length === 0) {

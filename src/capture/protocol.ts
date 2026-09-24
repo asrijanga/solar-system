@@ -20,6 +20,8 @@ export type CaptureReport =
       /** Drawing-buffer size in device pixels. */
       readonly canvas: { readonly width: number; readonly height: number };
       readonly devicePixelRatio: number;
+      /** Mean of the decoded Moon albedo bytes (0-255), or null when the map was not loaded. */
+      readonly albedoDecodedMean: number | null;
     }
   | { readonly status: 'refused'; readonly reason: string };
 

@@ -53,7 +53,7 @@ async function main(): Promise<number> {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`${base}?software`);
     await page.waitForFunction(() => document.documentElement.dataset['ready'] === 'true', null, {
-      timeout: 60_000,
+      timeout: 180_000,
     });
     await page.waitForFunction((n) => (window.__stats?.frames ?? 0) >= n, WARMUP_FRAMES, {
       timeout: 120_000,
@@ -72,7 +72,9 @@ async function main(): Promise<number> {
     await page.waitForFunction(
       (n) => (window.__stats?.frames ?? 0) >= n,
       startFrame + MEASURED_FRAMES,
-      { timeout: 300_000, polling: 250 },
+      // SwiftShader draws the textured Moon at under 3 frames a second: 600 frames took
+      // 225 s locally (docs/stories/SS-6.md). A wait limit, not a pass criterion.
+      { timeout: 900_000, polling: 250 },
     );
     const { profile } = (await cdp.send('HeapProfiler.stopSampling')) as {
       profile: SamplingProfile;

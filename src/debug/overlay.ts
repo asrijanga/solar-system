@@ -34,6 +34,8 @@ export class DebugOverlay {
   private gpuMs = Number.NaN;
   private lastRefresh = 0;
   private drawCalls = 0;
+  /** Milliseconds from navigation start to the first rendered frame; NaN until then. */
+  private readonly firstFrameMs = new Float64Array([Number.NaN]);
   private triangles = 0;
 
   private readonly renderer: WebGPURenderer;
@@ -56,6 +58,11 @@ export class DebugOverlay {
     this.text.style.margin = '0';
     panel.append(canvas, this.text);
     document.body.append(panel);
+  }
+
+  /** Called once, on the first frame. */
+  firstFrame(msSinceNavigation: number): void {
+    this.firstFrameMs[0] = msSinceNavigation;
   }
 
   /** Called once per frame, after rendering. Allocation-free except when it redraws. */
@@ -82,6 +89,13 @@ export class DebugOverlay {
     this.drawHistogram();
 
     const heap = (performance as Performance & { memory?: HeapInfo }).memory;
+    // Bytes over the wire for the page and everything it fetched. Safari reports
+    // transferSize for same-origin resources; 0 means served from cache.
+    let transferred = 0;
+    for (const entry of performance.getEntriesByType('navigation'))
+      transferred += (entry as PerformanceNavigationTiming).transferSize;
+    for (const entry of performance.getEntriesByType('resource'))
+      transferred += (entry as PerformanceResourceTiming).transferSize;
     this.text.textContent = [
       row('interval', this.intervalP),
       row('cpu work', this.workP),
@@ -93,6 +107,7 @@ export class DebugOverlay {
         ? `js heap   ${(heap.usedJSHeapSize / 1048576).toFixed(1)} MB`
         : 'js heap   not exposed by this browser',
       `window    last ${this.intervalP.count} frames`,
+      `load      first frame ${format(this.firstFrameMs[0] ?? Number.NaN)} ms, ${(transferred / 1048576).toFixed(2)} MB transferred`,
       `build     ${BUILD_ID}`,
     ].join('\n');
   }

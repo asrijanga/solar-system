@@ -12,6 +12,7 @@ const good: Ready = {
   adapter: { vendor: 'google', architecture: 'swiftshader', isFallbackAdapter: true },
   canvas: { width: viewpoint.width, height: viewpoint.height },
   devicePixelRatio: 1,
+  albedoDecodedMean: null,
 };
 
 describe('verifyReport', () => {
@@ -42,5 +43,13 @@ describe('verifyReport', () => {
     expect(
       verifyReport({ ...good, canvas: { width: 1024, height: 1023 } }, viewpoint),
     ).toHaveLength(1);
+  });
+
+  it('refuses a Moon map viewpoint whose albedo decoded differently from the pipeline', () => {
+    const moon = findViewpoint('moon-full') as Viewpoint;
+    const report: Ready = { ...good, viewpoint: moon.id, albedoDecodedMean: 43.9234 };
+    expect(verifyReport(report, moon, 43.9234)).toEqual([]);
+    expect(verifyReport({ ...report, albedoDecodedMean: 44.5 }, moon, 43.9234)).toHaveLength(1);
+    expect(verifyReport({ ...report, albedoDecodedMean: null }, moon, 43.9234)).toHaveLength(1);
   });
 });

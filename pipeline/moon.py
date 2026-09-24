@@ -41,7 +41,7 @@ SOURCE_URL = (
     "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2.1.tif"
 )
 SOURCE_MD5 = "8f2709140f810b64b3d2703a53ab4074"  # published by USGS alongside the file
-SOURCE_SHA256: str | None = None  # pinned after the first verified download
+SOURCE_SHA256: str | None = "51b2367ecbcc939c03a92297ecff7e35c592b17c12141e4ff152dd7e30459120"  # pinned 2026-09-24 after the publisher MD5 matched
 SOURCE_LABEL = (
     "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2_pds3.lbl"
 )

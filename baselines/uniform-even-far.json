@@ -1,0 +1,82 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "moon": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": 180,
+        "latDeg": 0
+      },
+      "distanceKm": 6949.6,
+      "fovDeg": 40,
+      "albedo": {
+        "uniform": 0.96
+      },
+      "shading": "lommel-seeliger",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "even"
+    },
+    "moonChecks": [
+      {
+        "kind": "photometry",
+        "name": "even lighting per pixel",
+        "model": "even",
+        "albedo": 0.96,
+        "tolerance": 2,
+        "minFraction": 0.99,
+        "limbInsetPx": 2
+      }
+    ],
+    "negativeControl": false,
+    "id": "uniform-even-far",
+    "description": "The uniform Moon from over the far side at first quarter, where the sun has set, with the labelled even lighting on. Every pixel must be ϖ/8, the zero-phase value: the far side is fully visible.",
+    "scene": "moon"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "even lighting per pixel: 408636 disc pixels, worst 0 levels",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "a47724b0a32556c4061a3de94c868c7cc4513073",
+    "dirty": false
+  }
+}

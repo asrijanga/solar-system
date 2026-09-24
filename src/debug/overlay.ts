@@ -1,5 +1,6 @@
 import type { WebGPURenderer } from 'three/webgpu';
 import { FrameStats, type Percentiles } from '../core/frameStats';
+import { BUILD_ID } from './errors';
 
 /** Redraw twice a second. The overlay allocates when it redraws; the frame path never does. */
 const REFRESH_MS = 500;
@@ -92,6 +93,7 @@ export class DebugOverlay {
         ? `js heap   ${(heap.usedJSHeapSize / 1048576).toFixed(1)} MB`
         : 'js heap   not exposed by this browser',
       `window    last ${this.intervalP.count} frames`,
+      `build     ${BUILD_ID}`,
     ].join('\n');
   }
 

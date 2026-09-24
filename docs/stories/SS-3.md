@@ -72,6 +72,18 @@ three.js allocates about 15.5 KB per frame for a one-cube scene: child-list arra
 - Anything on a real GPU. The overlay's numbers here are SwiftShader's and mean nothing about performance; the owner checks criteria 1, 4 and 5 by eye.
 - That real hardware's `depth24plus` fails `depth-standard` harder than SwiftShader does. It can only be worse, since SwiftShader stores it as float32.
 
+## After merge: no cube on the owner's iPhone
+
+The owner saw no cube on an iPhone after deploy. The cause is not yet known, and there was no way to find out: phones have no console, and three.js reports shader and pipeline failures only by logging them and then silently skipping the draw. The app could fail on Safari and show an empty scene with no explanation.
+
+Added in response:
+
+- **On-screen error reporting** (`src/debug/errors.ts`): three.js's own error log (via `setConsoleFunction`), uncaught exceptions and rejections, uncaptured WebGPU validation errors, and device loss all put the first error on screen with the build ID and user agent. In capture mode the same errors become a refusal, so the harness fails on them.
+- **A build ID** (short git SHA) on error reports and in `?debug`, so a screenshot says which build it came from.
+- Verified by planting an invalid WGSL fragment shader: the panel shows the WebGPU parse error, build and browser. With the output pass's shader broken the whole screen goes dark, not blue, which is itself a diagnostic.
+
+Bundle: 162.5 KB → 178.2 KB brotli (400 KB budget).
+
 ## Effort
 
 Estimate: 1 session. Actual: 1 long session. The depth test needed three redesigns, and each one found something real.

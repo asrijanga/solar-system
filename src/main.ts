@@ -13,6 +13,7 @@ import type { CaptureReport } from './capture/protocol';
 import { findViewpoint, type CameraPose, type SceneId } from './capture/viewpoints';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
 import { KM, METRE } from './core/units';
+import { installErrorReporting, showFatal, watchDevice } from './debug/errors';
 import { DebugOverlay } from './debug/overlay';
 import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/adapter';
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
@@ -45,8 +46,11 @@ const stats = { frames: 0 };
 window.__stats = stats;
 
 function report(result: CaptureReport): void {
-  if (captureId !== null) window.__capture = result;
+  // The first report wins: a later error must not overwrite a refusal, or vice versa.
+  if (captureId !== null && window.__capture === undefined) window.__capture = result;
 }
+
+installErrorReporting((message) => report({ status: 'refused', reason: message }));
 
 function showRefusal(refusal: Refusal): void {
   const { title, detail } = refusalMessages[refusal];
@@ -106,6 +110,7 @@ async function start(): Promise<void> {
 
   logAdapter(probe.adapter);
   const device = await requestDevice(probe.adapter);
+  watchDevice(device);
   const canvas = document.getElementById('app') as HTMLCanvasElement;
 
   let renderer: WebGPURenderer;
@@ -209,6 +214,7 @@ async function start(): Promise<void> {
 }
 
 start().catch((error: unknown) => {
-  console.error('[app] failed to start', error);
-  report({ status: 'refused', reason: `startup error: ${String(error)}` });
+  showFatal(
+    `failed to start: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`,
+  );
 });

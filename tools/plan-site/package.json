@@ -1,0 +1,13 @@
+{
+  "name": "plan-site",
+  "private": true,
+  "type": "module",
+  "description": "Renders the plan documents to a static site for GitHub Pages",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "marked": "18.0.14",
+    "mermaid": "12.0.0"
+  }
+}

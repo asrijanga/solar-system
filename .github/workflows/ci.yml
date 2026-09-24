@@ -60,6 +60,8 @@ jobs:
       # means the committed binary no longer comes from the script, and fails the build.
       - run: npm run pipeline:stars
       - run: npm run pipeline:ephemeris
+      # The albedo calibration is re-derived from the committed texture and mask.
+      - run: npm run pipeline:calibrate
       # The Moon texture's 4.25 GB source is too large to fetch on every run; it is checked
       # against the IAU Gazetteer by pipeline:test instead, and rebuilt locally by pipeline:moon.
-      - run: git diff --exit-code -- public/data/stars public/data/moon/ephemeris.json
+      - run: git diff --exit-code -- public/data/stars public/data/moon/ephemeris.json public/data/moon/albedo.json

@@ -138,7 +138,8 @@ def format_trials(master: np.ndarray) -> list[dict]:
             {
                 "format": "webp-lossless" if options.get("lossless") else f"webp-q{options['quality']}",
                 "bytes": buffer.tell(),
-                "psnrDb": round(psnr(master[valid], decoded[valid]), 2),
+                # Lossless is infinite PSNR, which JSON cannot hold: recorded as null.
+                "psnrDb": None if math.isinf(p := psnr(master[valid], decoded[valid])) else round(p, 2),
                 "maxAbsError": int(error.max()),
                 "_data": buffer.getvalue(),
             }
@@ -157,7 +158,9 @@ def encode_mask(master: np.ndarray) -> bytes:
 
 def choose(trials: list[dict], mask_bytes: int) -> dict:
     eligible = [
-        t for t in trials if t["bytes"] + mask_bytes <= MAX_BYTES and t["psnrDb"] >= MIN_PSNR_DB
+        t
+        for t in trials
+        if t["bytes"] + mask_bytes <= MAX_BYTES and (t["psnrDb"] is None or t["psnrDb"] >= MIN_PSNR_DB)
     ]
     if not eligible:
         raise RuntimeError("no encoding meets the size and quality rules; see the trials")
@@ -220,7 +223,7 @@ def build() -> dict:
         },
         "masterSha256": sha256(MASTER),
     }
-    (OUT_DIR / "albedo.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (OUT_DIR / "albedo.json").write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
     return manifest
 
 

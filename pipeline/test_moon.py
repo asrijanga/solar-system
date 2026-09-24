@@ -57,6 +57,13 @@ def contrast(lon: float, lat: float, core_km: float, ring: tuple[float, float]) 
 
 
 class Integrity(unittest.TestCase):
+    def test_manifests_are_strict_json_that_a_browser_can_parse(self) -> None:
+        def refuse(constant: str) -> None:
+            raise ValueError(f"{constant} is not JSON")
+
+        for name in ("albedo.json", "ephemeris.json"):
+            json.loads((ROOT / "public/data/moon" / name).read_text(), parse_constant=refuse)
+
     def test_file_matches_its_manifest(self) -> None:
         self.assertEqual(hashlib.sha256(TEXTURE_PATH.read_bytes()).hexdigest(), MANIFEST["texture"]["sha256"])
         self.assertEqual((W, H), (MANIFEST["texture"]["width"], MANIFEST["texture"]["height"]))

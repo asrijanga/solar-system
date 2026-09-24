@@ -5,6 +5,7 @@ import {
   InstancedBufferGeometry,
   Mesh,
   MeshBasicNodeMaterial,
+  type UniformNode,
 } from 'three/webgpu';
 import {
   cameraProjectionMatrix,
@@ -34,10 +35,18 @@ const QUAD_RADIUS_SIGMAS = 3;
  * Integrated brightness of a magnitude-0 star, in linear display units times CSS pixels².
  * With σ = 0.7 px this peaks near 3 (a saturated core, as in a photograph) and leaves the
  * naked-eye limit around magnitude 6.5 just visible on black. An authored nominal exposure
- * for a sky with nothing sunlit in it. SS-6 applies the owner's decision: physical exposure
- * by default, with a labelled star boost (docs/stories/SS-4.md).
+ * for a sky with nothing sunlit in it, used only by the star-only viewpoints. Wherever the
+ * Moon is in the scene, stars use physical exposure (core/photometry.ts) and an optional,
+ * labelled boost: the owner's decision in docs/stories/SS-4.md.
  */
-export const STAR_EXPOSURE = 9.2;
+export const NOMINAL_STAR_EXPOSURE = 9.2;
+
+/**
+ * The labelled star boost: 10^5, exactly 12.5 magnitudes. At a 40° field on a phone-sized
+ * screen it brings physical exposure to about the nominal one, so the sky reads again.
+ */
+export const STAR_BOOST = 100_000;
+export const STAR_BOOST_MAGNITUDES = 12.5;
 
 export async function loadStarField(): Promise<StarField> {
   const response = await fetch(`${import.meta.env.BASE_URL}data/stars/bsc5.bin`);
@@ -53,6 +62,11 @@ export interface StarMeshOptions {
    * determinant −1 axis mapping would make. Never used outside the orion-mirrored viewpoint.
    */
   readonly mirrored?: boolean;
+  /**
+   * Integrated display value of a magnitude-0 star. A uniform when it changes with the view
+   * (physical exposure depends on pixel solid angle); a number when fixed.
+   */
+  readonly exposure: number | UniformNode<'float', number>;
 }
 
 /** Every star in one draw call: one instanced quad per star. */
@@ -106,7 +120,9 @@ export function createStarMesh(field: StarField, options: StarMeshOptions): Mesh
   // times the device pixels at the same peak, and the star looks equally bright everywhere.
   const r2 = dot(corner, corner).mul(QUAD_RADIUS_SIGMAS * QUAD_RADIUS_SIGMAS);
   const psf = exp(r2.mul(-0.5));
-  const peak = flux.mul(STAR_EXPOSURE / (2 * Math.PI * PSF_SIGMA_CSS * PSF_SIGMA_CSS));
+  const exposure =
+    typeof options.exposure === 'number' ? float(options.exposure) : options.exposure;
+  const peak = flux.mul(exposure).mul(1 / (2 * Math.PI * PSF_SIGMA_CSS * PSF_SIGMA_CSS));
   material.colorNode = vec4(colour.mul(peak).mul(psf), 1);
 
   material.transparent = true;

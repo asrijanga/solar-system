@@ -169,7 +169,7 @@ def build() -> dict:
         },
         "output": {"sha256": sha256(binary), "bytes": binary.stat().st_size},
     }
-    (OUT_DIR / "bsc5.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (OUT_DIR / "bsc5.json").write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
     return manifest
 
 

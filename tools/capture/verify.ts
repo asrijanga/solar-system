@@ -8,7 +8,18 @@ export type Ready = Extract<CaptureReport, { status: 'ready' }>;
  * provably come from WebGPU on SwiftShader, at the viewpoint's exact size, is worthless
  * as a baseline and misleading as evidence. Returns the problems; empty means valid.
  */
-export function verifyReport(report: Ready, viewpoint: Viewpoint): string[] {
+/** The browser's decode of the albedo map may differ from the pipeline's by this much. */
+export const ALBEDO_DECODE_TOLERANCE = 0.05;
+
+/**
+ * `albedoDecodedMean` is the pipeline's mean of the decoded map (albedo.json,
+ * calibration.decodedMean); required for viewpoints that load the map.
+ */
+export function verifyReport(
+  report: Ready,
+  viewpoint: Viewpoint,
+  albedoDecodedMean: number | null = null,
+): string[] {
   const problems: string[] = [];
   if (report.viewpoint !== viewpoint.id) problems.push(`app rendered ${report.viewpoint}`);
   if (report.backend !== 'webgpu') problems.push(`backend is ${report.backend}, not webgpu`);
@@ -25,6 +36,16 @@ export function verifyReport(report: Ready, viewpoint: Viewpoint): string[] {
     problems.push(
       `canvas is ${report.canvas.width}x${report.canvas.height}, expected ${viewpoint.width}x${viewpoint.height}`,
     );
+  }
+  if (viewpoint.moon?.albedo === 'map') {
+    if (report.albedoDecodedMean === null || albedoDecodedMean === null) {
+      problems.push('Moon map viewpoint without a decoded albedo mean to compare');
+    } else if (Math.abs(report.albedoDecodedMean - albedoDecodedMean) > ALBEDO_DECODE_TOLERANCE) {
+      // A colour-managed, premultiplied or resampled decode shifts the mean.
+      problems.push(
+        `albedo decoded to mean ${report.albedoDecodedMean.toFixed(4)}, pipeline says ${albedoDecodedMean}`,
+      );
+    }
   }
   return problems;
 }

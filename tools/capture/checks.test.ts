@@ -1,7 +1,7 @@
 import { PNG } from 'pngjs';
 import { describe, expect, it } from 'vitest';
 import type { PixelCheck, Viewpoint } from '../../src/capture/viewpoints.ts';
-import { judge, runCheck } from './checks.ts';
+import { findPeak, judge, projectStar, runCheck } from './checks.ts';
 
 const RED = [0xd0, 0x40, 0x40] as const;
 const BLUE = [0x40, 0xa0, 0xd0] as const;
@@ -38,7 +38,10 @@ const viewpoint = (negativeControl: boolean, checks = [check]): Viewpoint => ({
   epoch: null,
   camera: null,
   reversedDepthBuffer: true,
+  background: 'scaffold',
+  sky: null,
   checks,
+  starChecks: [],
   negativeControl,
 });
 
@@ -75,5 +78,38 @@ describe('judge', () => {
 
   it('rejects a negative control with no checks', () => {
     expect(judge(image(8, RED), viewpoint(true, [])).ok).toBe(false);
+  });
+});
+
+describe('projectStar (gnomonic, north up, east left)', () => {
+  const sky = { raDeg: 83.8, decDeg: -1, fovDeg: 40 };
+
+  it('puts the pointing at the image centre', () => {
+    expect(projectStar(sky, 1024, 1024, 83.8, -1)).toEqual({ x: 511.5, y: 511.5 });
+  });
+
+  it('puts a star east of centre (larger RA) on the left, and north of centre above', () => {
+    const east = projectStar(sky, 1024, 1024, 88.8, -1)!;
+    const north = projectStar(sky, 1024, 1024, 83.8, 4)!;
+    expect(east.x).toBeLessThan(511.5);
+    expect(north.y).toBeLessThan(511.5);
+  });
+
+  it('puts a star at the top edge of a 40° field 20° north of centre', () => {
+    const top = projectStar({ raDeg: 0, decDeg: 0, fovDeg: 40 }, 1024, 1024, 0, 20)!;
+    expect(top.y).toBeCloseTo(-0.5, 6);
+  });
+
+  it('rejects a star behind the camera', () => {
+    expect(projectStar(sky, 1024, 1024, 83.8 + 180, 1)).toBeNull();
+  });
+});
+
+describe('findPeak', () => {
+  it('finds the brightest pixel in the window', () => {
+    const png = image(8, BLUE);
+    const i = (5 * 8 + 6) * 4;
+    png.data[i] = png.data[i + 1] = png.data[i + 2] = 255;
+    expect(findPeak(png, 5, 5, 2)).toEqual({ x: 6, y: 5, value: 255 });
   });
 });

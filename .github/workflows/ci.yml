@@ -46,3 +46,17 @@ jobs:
           name: captures
           path: captures/
           if-no-files-found: ignore
+
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - run: python -m pip install uv==0.8.17
+      - run: npm run pipeline:test
+      # Re-derive the committed star data from the pinned, checksummed source. Any difference
+      # means the committed binary no longer comes from the script, and fails the build.
+      - run: npm run pipeline:stars
+      - run: git diff --exit-code -- public/data/stars

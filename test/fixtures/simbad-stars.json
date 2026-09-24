@@ -1,0 +1,93 @@
+{
+  "source": "SIMBAD (CDS), basic table: ICRS coordinates at epoch J2000",
+  "retrieved": "2026-09-24",
+  "service": "https://simbad.cds.unistra.fr/simbad/sim-tap/sync",
+  "query": "SELECT b.main_id, b.ra, b.dec, i.id FROM basic AS b JOIN ident AS i ON i.oidref = b.oid WHERE b.main_id IN (...) AND i.id LIKE 'HR %'; Alnitak by HR 1948",
+  "purpose": "Independent ground truth for star positions: a different catalogue from the Bright Star Catalogue the app renders.",
+  "stars": [
+    {
+      "name": "Polaris",
+      "simbadId": "* alf UMi",
+      "hr": 424,
+      "raDeg": 37.954560670189856,
+      "decDeg": 89.26410896994187
+    },
+    {
+      "name": "Rigel",
+      "simbadId": "* bet Ori",
+      "hr": 1713,
+      "raDeg": 78.63446706693006,
+      "decDeg": -8.201638364722209
+    },
+    {
+      "name": "Bellatrix",
+      "simbadId": "* gam Ori",
+      "hr": 1790,
+      "raDeg": 81.28276355652378,
+      "decDeg": 6.3497032644440665
+    },
+    {
+      "name": "Mintaka",
+      "simbadId": "* del Ori",
+      "hr": 1852,
+      "raDeg": 83.00166705557675,
+      "decDeg": -0.29909510708333326
+    },
+    {
+      "name": "Alnilam",
+      "simbadId": "* eps Ori",
+      "hr": 1903,
+      "raDeg": 84.05338894077023,
+      "decDeg": -1.2019191358333312
+    },
+    {
+      "name": "Alnitak",
+      "simbadId": "* zet Ori A",
+      "hr": 1948,
+      "raDeg": 85.18969642916667,
+      "decDeg": -1.9425723222222224
+    },
+    {
+      "name": "Saiph",
+      "simbadId": "* kap Ori",
+      "hr": 2004,
+      "raDeg": 86.93912016833333,
+      "decDeg": -9.66960491861111
+    },
+    {
+      "name": "Betelgeuse",
+      "simbadId": "* alf Ori",
+      "hr": 2061,
+      "raDeg": 88.79293899077537,
+      "decDeg": 7.407063995272694
+    },
+    {
+      "name": "Sirius",
+      "simbadId": "* alf CMa",
+      "hr": 2491,
+      "raDeg": 101.28715533333335,
+      "decDeg": -16.71611586111111
+    },
+    {
+      "name": "Merak",
+      "simbadId": "* bet UMa",
+      "hr": 4295,
+      "raDeg": 165.46033229797294,
+      "decDeg": 56.382433649496384
+    },
+    {
+      "name": "Dubhe",
+      "simbadId": "* alf UMa",
+      "hr": 4301,
+      "raDeg": 165.9319646738126,
+      "decDeg": 61.751034687818226
+    },
+    {
+      "name": "Vega",
+      "simbadId": "* alf Lyr",
+      "hr": 7001,
+      "raDeg": 279.234734787025,
+      "decDeg": 38.783688956244
+    }
+  ]
+}

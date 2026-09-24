@@ -10,6 +10,11 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   {
+    // In tests a wrong assumption should crash the test, which is what `!` does.
+    files: ['**/*.test.ts'],
+    rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+  },
+  {
     // core/ holds every truth-critical pure function. It must stay renderer-free,
     // so it can be tested in Node and survive three.js upgrades untouched.
     files: ['src/core/**/*.ts'],

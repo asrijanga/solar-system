@@ -84,6 +84,22 @@ Added in response:
 
 Bundle: 162.5 KB → 178.2 KB brotli (400 KB budget).
 
-## Effort
+## First real-hardware measurement
+
+The owner's iPhone, Safari, build `1921dd3`, `?debug`, 144 frames, 2026-09-24:
+
+| Measure | p50 | p95 | p99 | max |
+| --- | --- | --- | --- | --- |
+| Frame interval | 17.0 ms | 19.0 ms | 26.0 ms | 67.0 ms |
+| CPU work | 1.0 ms | 2.0 ms | 3.0 ms | 3.0 ms |
+
+GPU 1.4 ms (last resolved frame). 2 draws, 13 triangles. JS heap not exposed by Safari.
+
+Reading it:
+
+- The renderer is nearly idle: 1.4 ms GPU and at most 3 ms CPU against a 16.7 ms frame.
+- The interval p95 of 19 ms is over the 16.7 ms budget, but it is not render cost. Safari reports time in whole milliseconds, so a 16.67 ms frame reads as 16 or 17 and ordinary jitter as 18 to 19. **Open question for SS-12**: the frame-time budget needs a definition that survives a 1 ms clock, for example counting frames that miss a vsync rather than a millisecond percentile.
+- The single 67 ms frame at the start is almost certainly first-use shader compilation, which the plan already assigns to SS-12 (precompile pipelines at load).
+
 
 Estimate: 1 session. Actual: 1 long session. The depth test needed three redesigns, and each one found something real.

@@ -5,3 +5,5 @@ README.md
 docs/
 baselines/
 captures/
+public/data/
+pipeline/.venv/

@@ -1,0 +1,156 @@
+{
+  "viewpoint": {
+    "id": "orion",
+    "description": "Orion from the Bright Star Catalogue, celestial north up. Seven bright stars must land where SIMBAD puts them: Betelgeuse upper left, Rigel lower right, the belt running Alnitak to Mintaka from east (left) to west.",
+    "scene": "stars",
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": {
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "target": [
+        0.10798290688104241,
+        -0.01745240643728351,
+        -0.9939995499652241
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "fovDeg": 40,
+      "near": 0.1,
+      "far": 100
+    },
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": {
+      "raDeg": 83.8,
+      "decDeg": -1,
+      "fovDeg": 40
+    },
+    "checks": [],
+    "starChecks": [
+      {
+        "name": "Betelgeuse",
+        "raDeg": 88.79293899077537,
+        "decDeg": 7.407063995272694,
+        "maxOffsetPx": 2,
+        "minPeak": 100
+      },
+      {
+        "name": "Rigel",
+        "raDeg": 78.63446706693006,
+        "decDeg": -8.201638364722209,
+        "maxOffsetPx": 2,
+        "minPeak": 100
+      },
+      {
+        "name": "Bellatrix",
+        "raDeg": 81.28276355652378,
+        "decDeg": 6.3497032644440665,
+        "maxOffsetPx": 2,
+        "minPeak": 100
+      },
+      {
+        "name": "Saiph",
+        "raDeg": 86.93912016833333,
+        "decDeg": -9.66960491861111,
+        "maxOffsetPx": 2,
+        "minPeak": 100
+      },
+      {
+        "name": "Alnitak",
+        "raDeg": 85.18969642916667,
+        "decDeg": -1.9425723222222224,
+        "maxOffsetPx": 2,
+        "minPeak": 100
+      },
+      {
+        "name": "Alnilam",
+        "raDeg": 84.05338894077023,
+        "decDeg": -1.2019191358333312,
+        "maxOffsetPx": 2,
+        "minPeak": 100
+      },
+      {
+        "name": "Mintaka",
+        "raDeg": 83.00166705557675,
+        "decDeg": -0.29909510708333326,
+        "maxOffsetPx": 2,
+        "minPeak": 100
+      }
+    ],
+    "negativeControl": false
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Betelgeuse at (388.3, 302.9): peak 255 at 0.9 px",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Rigel at (638.4, 690.1): peak 255 at 1.1 px",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Bellatrix at (573.5, 329.9): peak 240 at 0.5 px",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Saiph at (434.6, 726.4): peak 192 at 0.6 px",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Alnitak at (477.4, 534.7): peak 205 at 0.5 px",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Alnilam at (505.3, 516.5): peak 225 at 0.5 px",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Mintaka at (531.1, 494.3): peak 202 at 0.3 px",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "8822f50db61884fa7ec5c8b0660e2545ee47142c",
+    "dirty": false
+  }
+}

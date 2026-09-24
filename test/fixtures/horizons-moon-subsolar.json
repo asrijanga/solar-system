@@ -1,0 +1,24 @@
+{
+  "source": "JPL Horizons API (https://ssd.jpl.nasa.gov/api/horizons.api)",
+  "retrieved": "2026-09-24",
+  "request": "COMMAND='301' CENTER='500@399' EPHEM_TYPE=OBSERVER QUANTITIES='15' ANG_FORMAT=DEG, one epoch per query (UT)",
+  "frameStatedByHorizons": "MOON_ME",
+  "epochs": [
+    {
+      "id": "full-2026-01",
+      "utc": "2026-01-03 10:00",
+      "horizonsEphemeris": "DE441",
+      "row": "2026-Jan-03 10:00       3.218947  -1.305498",
+      "subSolarLonDeg": 3.218947,
+      "subSolarLatDeg": -1.305498
+    },
+    {
+      "id": "first-quarter-2026-01",
+      "utc": "2026-01-26 05:00",
+      "horizonsEphemeris": "DE441",
+      "row": "2026-Jan-26 05:00      85.960077  -0.888145",
+      "subSolarLonDeg": 85.960077,
+      "subSolarLatDeg": -0.888145
+    }
+  ]
+}

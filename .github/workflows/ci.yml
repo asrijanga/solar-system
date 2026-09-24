@@ -59,4 +59,7 @@ jobs:
       # Re-derive the committed star data from the pinned, checksummed source. Any difference
       # means the committed binary no longer comes from the script, and fails the build.
       - run: npm run pipeline:stars
-      - run: git diff --exit-code -- public/data/stars
+      - run: npm run pipeline:ephemeris
+      # The Moon texture's 4.25 GB source is too large to fetch on every run; it is checked
+      # against the IAU Gazetteer by pipeline:test instead, and rebuilt locally by pipeline:moon.
+      - run: git diff --exit-code -- public/data/stars public/data/moon/ephemeris.json

@@ -1,0 +1,66 @@
+{
+  "viewpoint": {
+    "id": "app",
+    "description": "What the interactive app shows on load: the test cube against the real sky on true black.",
+    "scene": "cube-and-stars",
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": {
+      "position": [
+        3.2,
+        2.4,
+        4
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "fovDeg": 40,
+      "near": 0.1,
+      "far": 100
+    },
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "negativeControl": false
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": []
+  },
+  "git": {
+    "sha": "8822f50db61884fa7ec5c8b0660e2545ee47142c",
+    "dirty": false
+  }
+}

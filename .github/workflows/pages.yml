@@ -1,4 +1,4 @@
-name: Deploy site to GitHub Pages
+name: Deploy app to GitHub Pages
 
 on:
   push:
@@ -22,19 +22,15 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: tools/plan-site/package-lock.json
-      - name: Install
-        working-directory: tools/plan-site
-        run: npm ci
-      - name: Build
-        working-directory: tools/plan-site
-        run: npm run build
+      - run: npm ci
+      # Nothing deploys that would fail CI.
+      - run: npm run check
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: _site
+          path: dist
 
   deploy:
     needs: build

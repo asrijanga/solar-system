@@ -2,7 +2,7 @@
 
 2026-09-24 · @Someone · rewritten for three.js on WebGPU, built by Claude
 
-This plan is published at <https://asrijanga.github.io/solar-system/>, rebuilt from `main` on every push. Until SS-1 there is no app, so the site is the plan itself.
+The app is deployed at <https://asrijanga.github.io/solar-system/> from `main` on every push. Story specs and their outcomes live in [`docs/stories/`](docs/stories/).
 
 ## The pivot
 
@@ -581,6 +581,8 @@ Sketched, not specified. Real acceptance criteria get written in the story contr
 | SS-24 | As a learner, I want a cinematic mode with no interface and a slow camera, so that I can leave it running | 4 |
 | SS-25 | As a learner, I want thrusters that change my orbit, so that I can feel how orbital mechanics actually behaves | 5 |
 | SS-26 | As a player, I want to design my own station from parts, so that the thing in orbit is mine | Separate |
+
+SS-7 was partly pulled forward: at the owner's request, the app has deployed publicly to GitHub Pages since SS-1. A private preview link is still SS-7's job.
 
 SS-8 is where WebGPU starts paying for itself. Relief is vertex displacement in TSL from a height texture, and normals come from a compute pass over the height data rather than from finite differences in the fragment shader. Horizon maps for terrain shadows are computed offline in the pipeline (see Terrain shadows) and simply sampled at runtime.
 

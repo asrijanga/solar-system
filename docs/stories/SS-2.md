@@ -43,9 +43,12 @@ Other refusals checked: a missing baseline fails the diff; an unknown viewpoint 
 - **The harness is TypeScript run directly by Node** (type stripping, Node ≥ 22.18), so it is typechecked and linted like the app.
 - **Capture mode allows the software adapter.** `?capture=<id>` implies `?software`. That is the only way capture mode differs from production, and the harness separately insists the adapter *is* SwiftShader.
 
+## Cross-machine result
+
+The first CI run on PR #4 rendered `clear` on a GitHub Actions runner and matched the baseline made in the Claude container exactly: 0 of 1,048,576 pixels differing, mean shift 0.00, and identical across its own two renders. SwiftShader on Chromium 141 is deterministic across these two machines for this viewpoint. Scenes with real geometry and filtering may not be; later stories re-measure.
+
 ## Not verified
 
-- Whether GitHub's runners produce pixel-identical output to the container that made the baseline. The first CI run on this PR answers it.
 - Performance. SwiftShader timings are meaningless, and the harness records none.
 
 ## Effort

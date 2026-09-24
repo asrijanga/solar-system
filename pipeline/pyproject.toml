@@ -3,4 +3,8 @@ name = "solar-system-pipeline"
 version = "0.0.0"
 description = "Scripted, checksummed conversion of planetary and stellar data into app assets"
 requires-python = ">=3.11,<3.12"
-dependencies = []
+dependencies = [
+    "pillow>=12.3.0",
+    "rasterio>=1.4.4",
+    "spiceypy>=8.2.0",
+]

@@ -24,7 +24,9 @@
     "capture:accept": "node tools/capture/accept.ts",
     "alloc": "node tools/perf/alloc.ts",
     "pipeline:stars": "uv run --project pipeline python pipeline/stars.py",
-    "pipeline:test": "cd pipeline && uv run python -m unittest -v"
+    "pipeline:test": "cd pipeline && uv run python -m unittest -v",
+    "pipeline:ephemeris": "uv run --project pipeline python pipeline/ephemeris.py",
+    "pipeline:moon": "uv run --project pipeline python pipeline/moon.py"
   },
   "dependencies": {
     "three": "0.184.0"

@@ -1,0 +1,63 @@
+{
+  "source": "Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MOON_nomenclature_center_pts.zip",
+  "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip",
+  "sha256": "46319aeef399b4f76f64a864a4e6df0828584e5e82b8cd8bd3ad45892e4f5cef",
+  "retrieved": "2026-09-24",
+  "longitudeConvention": "Gazetteer gives 0 to 360 east. lonEastDeg below keeps that value; lonDeg is the same longitude in -180 to 180, the texture's convention.",
+  "features": [
+    {
+      "name": "Tycho",
+      "lonEastDeg": 348.7847,
+      "lonDeg": -11.2153,
+      "latDeg": -43.2958,
+      "diameterKm": 85.29,
+      "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6163",
+      "expect": "bright rayed crater: centre brighter than surroundings"
+    },
+    {
+      "name": "Copernicus",
+      "lonEastDeg": 339.9214,
+      "lonDeg": -20.0786,
+      "latDeg": 9.6209,
+      "diameterKm": 96.07,
+      "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1296",
+      "expect": "bright rayed crater"
+    },
+    {
+      "name": "Aristarchus",
+      "lonEastDeg": 312.5099,
+      "lonDeg": -47.4901,
+      "latDeg": 23.7299,
+      "diameterKm": 39.99,
+      "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/380",
+      "expect": "brightest large crater on the near side"
+    },
+    {
+      "name": "Mare Crisium",
+      "lonEastDeg": 59.1037,
+      "lonDeg": 59.1037,
+      "latDeg": 16.1774,
+      "diameterKm": 555.92,
+      "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3671",
+      "expect": "mare: darker than the surrounding highlands"
+    },
+    {
+      "name": "Mare Serenitatis",
+      "lonEastDeg": 18.3596,
+      "lonDeg": 18.3596,
+      "latDeg": 27.2879,
+      "diameterKm": 674.28,
+      "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3686",
+      "expect": "mare"
+    },
+    {
+      "name": "Statio Tranquillitatis",
+      "lonEastDeg": 23.4732,
+      "lonDeg": 23.4732,
+      "latDeg": 0.6741,
+      "diameterKm": 0.009,
+      "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5684",
+      "expect": "Apollo 11 site, in Mare Tranquillitatis"
+    }
+  ]
+}

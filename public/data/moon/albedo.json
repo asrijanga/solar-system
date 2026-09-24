@@ -1,0 +1,75 @@
+{
+  "product": {
+    "name": "Clementine UVVIS 750 nm Global Mosaic 118 m v2.1 (USGS Astrogeology)",
+    "url": "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2.1.tif",
+    "md5": "8f2709140f810b64b3d2703a53ab4074",
+    "sha256": "51b2367ecbcc939c03a92297ecff7e35c592b17c12141e4ff152dd7e30459120",
+    "label": "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2_pds3.lbl",
+    "chosen": "owner, 2026-09-24, over LRO WAC morphology mosaic (baked shading)"
+  },
+  "conventions": {
+    "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
+    "latitude": "planetocentric (identical to planetographic on a sphere)",
+    "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
+    "rows": "row 0 = +90 deg latitude",
+    "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
+    "values": "relative albedo 1-255, linear in source pixel value; no reflectance scale in the label",
+    "gaps": "albedo-mask.png is authoritative: white = never imaged. Albedo values there are compression filler"
+  },
+  "texture": {
+    "file": "albedo.webp",
+    "width": 8192,
+    "height": 4096,
+    "kmPerPixelAtEquator": 1.333,
+    "missingPixels": 297275,
+    "missingFraction": 0.008859,
+    "sha256": "21d6d7c69365af4b83a180544bcc39c800807eb38869ddefafa3d3d4d877d079",
+    "mask": "albedo-mask.png",
+    "maskSha256": "3d3ad7a96df52e0c7cf4e3796504c575dea280ad1e27462ded67cd66b539c346",
+    "gpuBytesR8WithMips": 44739242
+  },
+  "formatChoice": {
+    "rule": "smallest albedo with albedo + mask <= 6291456 bytes and PSNR >= 40.0 dB over imaged pixels",
+    "maskBytes": 21523,
+    "chosen": "webp-q85",
+    "trials": [
+      {
+        "format": "webp-lossless",
+        "bytes": 13387362,
+        "psnrDb": Infinity,
+        "maxAbsError": 0
+      },
+      {
+        "format": "webp-q95",
+        "bytes": 6094878,
+        "psnrDb": 46.01,
+        "maxAbsError": 9
+      },
+      {
+        "format": "webp-q90",
+        "bytes": 3998142,
+        "psnrDb": 42.08,
+        "maxAbsError": 46
+      },
+      {
+        "format": "webp-q85",
+        "bytes": 2574554,
+        "psnrDb": 41.0,
+        "maxAbsError": 28
+      },
+      {
+        "format": "webp-q80",
+        "bytes": 1972594,
+        "psnrDb": 39.84,
+        "maxAbsError": 37
+      },
+      {
+        "format": "webp-q70",
+        "bytes": 1436954,
+        "psnrDb": 38.14,
+        "maxAbsError": 50
+      }
+    ]
+  },
+  "masterSha256": "8dd70ca47c23a71b5d01d3817d0ce405db867556f6427a2dd4e6e0f02401d788"
+}

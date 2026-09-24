@@ -156,9 +156,17 @@ const SEAM_CONTROL_OFFSETS = [-10, -6, 6, 10] as const;
 const channel = (png: PNG, i: number, c: number): number => png.data[i * 4 + c] ?? 0;
 
 /** The 8-bit value core/photometry.ts predicts for a uniform Lommel–Seeliger Moon. */
-export function predictedLevel(pixels: MoonPixels, i: number, albedo: number): number {
-  const ls = lommelSeeliger(albedo, pixels.mu0[i] ?? 0, pixels.mu[i] ?? 0);
-  return Math.round(linearToSrgb(displayValue(ls, pixels.sunDistanceKm)) * 255);
+export function predictedLevel(
+  pixels: MoonPixels,
+  i: number,
+  albedo: number,
+  model: 'lommel-seeliger' | 'even' = 'lommel-seeliger',
+): number {
+  const radianceFactor =
+    model === 'even'
+      ? lommelSeeliger(albedo, 1, 1) // zero phase: ϖ/8
+      : lommelSeeliger(albedo, pixels.mu0[i] ?? 0, pixels.mu[i] ?? 0);
+  return Math.round(linearToSrgb(displayValue(radianceFactor, pixels.sunDistanceKm)) * 255);
 }
 
 function median(values: number[]): number {
@@ -177,7 +185,7 @@ export function runMoonCheck(png: PNG, pixels: MoonPixels, check: MoonCheck): Ch
       for (let i = 0; i < n; i++) {
         if (inside[i] === 0) continue;
         total++;
-        const expected = predictedLevel(pixels, i, check.albedo);
+        const expected = predictedLevel(pixels, i, check.albedo, check.model);
         let off = 0;
         for (let c = 0; c < 3; c++) off = Math.max(off, Math.abs(channel(png, i, c) - expected));
         worst = Math.max(worst, off);

@@ -31,6 +31,8 @@ export interface MoonSetup {
   readonly seamFix: boolean;
   /** Physical exposure, or the labelled boost (docs/stories/SS-4.md). */
   readonly stars: 'physical' | 'boosted';
+  /** Sunlight, or the labelled even lighting that shows the night and far sides. */
+  readonly lighting: 'sun' | 'even';
 }
 
 /**
@@ -47,6 +49,8 @@ export type MoonCheck =
        */
       readonly kind: 'photometry';
       readonly name: string;
+      /** 'even': ϖ/8 everywhere, the zero-phase value, with no dependence on the sun. */
+      readonly model: 'lommel-seeliger' | 'even';
       readonly albedo: number;
       readonly tolerance: number;
       readonly minFraction: number;
@@ -248,6 +252,7 @@ const MOON_SETUP: MoonSetup = {
   mirrored: false,
   seamFix: true,
   stars: 'physical',
+  lighting: 'sun',
 };
 
 /**
@@ -307,9 +312,13 @@ const GAZETTEER_CHECKS: readonly MoonCheck[] = (
   ] as const
 ).map((f) => ({ kind: 'feature', ...f }));
 
-const photometry = (name: string): MoonCheck => ({
+const photometry = (
+  name: string,
+  model: 'lommel-seeliger' | 'even' = 'lommel-seeliger',
+): MoonCheck => ({
   kind: 'photometry',
   name,
+  model,
   albedo: UNIFORM_ALBEDO,
   tolerance: 2,
   minFraction: 0.99,
@@ -453,6 +462,49 @@ export const viewpoints: readonly Viewpoint[] = [
     scene: 'moon',
     moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', albedo: { uniform: UNIFORM_ALBEDO } },
     moonChecks: [photometry('Lommel–Seeliger per pixel')],
+  },
+  {
+    ...SPACE,
+    id: 'uniform-even-far',
+    description:
+      'The uniform Moon from over the far side at first quarter, where the sun has set, with the labelled even lighting on. Every pixel must be ϖ/8, the zero-phase value: the far side is fully visible.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
+      albedo: { uniform: UNIFORM_ALBEDO },
+      lighting: 'even',
+    },
+    moonChecks: [photometry('even lighting per pixel', 'even')],
+  },
+  {
+    ...SPACE,
+    id: 'uniform-even-far-sunlit',
+    description:
+      'Negative control: the same far-side view under real sunlight, where the sun has set. The even-lighting check must fail, proving the switch changes what is drawn.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
+      albedo: { uniform: UNIFORM_ALBEDO },
+    },
+    moonChecks: [photometry('even lighting per pixel', 'even')],
+    negativeControl: true,
+  },
+  {
+    ...SPACE,
+    id: 'moon-even-far',
+    description:
+      'The far side at first quarter with even lighting on: the whole hemisphere visible at its zero-phase brightness. For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
+      lighting: 'even',
+    },
   },
   {
     ...SPACE,

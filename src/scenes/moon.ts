@@ -13,6 +13,7 @@ import {
   SphereGeometry,
   UnsignedByteType,
   Vector3,
+  type UniformNode,
 } from 'three/webgpu';
 import {
   abs,
@@ -168,6 +169,12 @@ export interface MoonOptions {
    * control that proves the seam check can see a seam.
    */
   readonly seamFix?: boolean;
+  /**
+   * 0 for sunlight. 1 for even lighting: every point at its zero-phase brightness, as if the
+   * Sun were behind the viewer everywhere at once. Not physical, and labelled as such on
+   * screen; it lets the night side and the far side be seen. A uniform when it can change.
+   */
+  readonly evenLight?: number | UniformNode<'float', number>;
 }
 
 /** Hue for never-imaged surface: shaded like the Moon, coloured like nothing on it. */
@@ -262,12 +269,16 @@ export function createMoonMesh(options: MoonOptions): Mesh {
     const mu = dot(n, normalize(cameraPosition.sub(positionWorld)));
     let radianceFactor;
     switch (options.shading) {
-      case 'lommel-seeliger':
-        radianceFactor = albedo
+      case 'lommel-seeliger': {
+        const sunlit = albedo
           .div(4)
           .mul(max(mu0, 0))
           .div(max(max(mu0, 0).add(max(mu, 0)), 1e-6));
+        const even = options.evenLight ?? 0;
+        radianceFactor =
+          typeof even === 'number' && even === 0 ? sunlit : mix(sunlit, albedo.div(8), even);
         break;
+      }
       case 'lambert':
         // Negative control: equal to Lommel–Seeliger at the disc centre at zero phase.
         radianceFactor = albedo.div(8).mul(max(mu0, 0));

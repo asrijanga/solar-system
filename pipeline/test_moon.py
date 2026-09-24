@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = json.loads((ROOT / "public/data/moon/albedo.json").read_text())
 TEXTURE_PATH = ROOT / "public/data/moon" / MANIFEST["texture"]["file"]
 TEXTURE = np.array(Image.open(TEXTURE_PATH).convert("L")).astype(np.float64)
+MASK_PATH = ROOT / "public/data/moon" / MANIFEST["texture"]["mask"]
+GAP = np.array(Image.open(MASK_PATH).convert("L")) > 0
 GAZETTEER = {
     f["name"]: f
     for f in json.loads((ROOT / "test/fixtures/iau-gazetteer-moon.json").read_text())["features"]
@@ -44,7 +46,7 @@ def region_mean(lon: float, lat: float, r_min_km: float, r_max_km: float) -> flo
     )
     dist = R_KM * np.arccos(np.clip(cos_d, -1, 1))
     patch = TEXTURE[row0:row1]
-    select = (dist >= r_min_km) & (dist < r_max_km) & (patch > 0)
+    select = (dist >= r_min_km) & (dist < r_max_km) & ~GAP[row0:row1]
     if not np.any(select):
         raise AssertionError(f"no valid pixels near {lon}, {lat}")
     return float(np.mean(patch[select]))
@@ -59,10 +61,19 @@ class Integrity(unittest.TestCase):
         self.assertEqual(hashlib.sha256(TEXTURE_PATH.read_bytes()).hexdigest(), MANIFEST["texture"]["sha256"])
         self.assertEqual((W, H), (MANIFEST["texture"]["width"], MANIFEST["texture"]["height"]))
 
+    def test_mask_matches_its_manifest(self) -> None:
+        self.assertEqual(hashlib.sha256(MASK_PATH.read_bytes()).hexdigest(), MANIFEST["texture"]["maskSha256"])
+        self.assertEqual(GAP.shape, TEXTURE.shape)
+
     def test_gaps_are_kept_and_rare(self) -> None:
-        missing = MANIFEST["texture"]["missingFraction"]
-        self.assertGreater(missing, 0, "Clementine has unimaged gaps; they must survive as 0")
+        missing = float(GAP.mean())
+        self.assertAlmostEqual(missing, MANIFEST["texture"]["missingFraction"], places=6)
+        self.assertGreater(missing, 0, "Clementine has unimaged gaps; they must survive")
         self.assertLess(missing, 0.01)
+
+    def test_south_polar_gap_is_where_clementine_is_known_to_be_thin(self) -> None:
+        lat = 90 - (np.arange(H) + 0.5) * 180 / H
+        self.assertGreater(GAP[lat < -80].mean(), 10 * GAP[np.abs(lat) < 60].mean())
 
 
 class AgainstTheGazetteer(unittest.TestCase):
@@ -84,8 +95,7 @@ class AgainstTheGazetteer(unittest.TestCase):
 
     def test_apollo_11_site_is_on_dark_mare(self) -> None:
         lon, lat = self.feature("Statio Tranquillitatis")
-        valid = TEXTURE[TEXTURE > 0]
-        self.assertLess(region_mean(lon, lat, 0, 20), float(np.median(valid)))
+        self.assertLess(region_mean(lon, lat, 0, 20), float(np.median(TEXTURE[~GAP])))
 
     def test_a_mirrored_map_would_fail(self) -> None:
         """Aristarchus is a brilliant crater in dark Oceanus Procellarum. Mirroring the map in

@@ -91,6 +91,8 @@ So for each world the pipeline gathers every usable source and builds the best c
 
 This does not relax "never invent data". A composite of real measurements is not invention; interpolating across a region nobody measured is. Where no source covers a region, it stays a visible gap.
 
+**Gather first, then build.** *(Added 2026-09-25 at the owner's direction.)* Each world starts with a data inventory, before any rendering work: every available dataset from every mission and instrument (imagery, albedo, elevation, polar products, radar, and so on), each with its coverage, resolution, wavelength, frame, known artefacts and licence, recorded in `docs/data/<world>.md`. From the whole inventory the world's terrain and features are then recreated as real geometry (shape from elevation data, down to the finest resolution available) with true, unshaded albedo on it, so that lighting works out of the box: the sun, the terminator, shadows and phase all emerge from the geometry and the photometry for any sun angle, and nothing is ever baked into a texture. The Moon was built the other way round, one product at a time as each story needed it, so it is due its own inventory and a rebuild from it.
+
 ### Working in the open
 
 If the point is letting other people learn, then the learning should be visible while it happens rather than only at the end.
@@ -316,6 +318,7 @@ These go into `CLAUDE.md` in SS-1, so every session inherits them.
 - **Cite conventions.** Longitude sign, latitude definition, vertical datum, projection parameters, body frame, and units are cited from the dataset's own label or documentation in the PR, every time.
 - **Never invent data.** No procedural noise, hallucinated coordinates, or gap-filling. A missing value is a visible missing value.
 - **Combine every available source.** Build each world from all usable real datasets: best source per region, cross-calibrated where they overlap, blended at transitions, provenance kept. See "Combine every available source".
+- **Gather first, then build.** Before building a world, inventory every available dataset for it in `docs/data/<world>.md`, then recreate its terrain and features as real geometry with unshaded albedo from the whole inventory, so lighting works out of the box for any sun angle.
 - **Never tune a check to pass.** Tolerances and thresholds change only with your approval in the PR description. The same goes for skipping or loosening tests.
 - **Baselines change deliberately.** Capture baselines are updated only by `npm run capture:accept`, in a commit of their own, with before and after images in the PR.
 - **Say what was not verified.** A PR lists what was checked by machine, what needs your eyes, and what was not checked at all.

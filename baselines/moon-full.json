@@ -20,7 +20,8 @@
       "shading": "lommel-seeliger",
       "mirrored": false,
       "seamFix": true,
-      "stars": "physical"
+      "stars": "physical",
+      "lighting": "sun"
     },
     "moonChecks": [
       {
@@ -117,12 +118,12 @@
         "fraction": 1
       },
       {
-        "name": "Copernicus brighter (154 px): ratio 1.253",
+        "name": "Copernicus brighter (154 px): ratio 1.251",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Aristarchus brighter (13 px): ratio 1.475",
+        "name": "Aristarchus brighter (13 px): ratio 1.468",
         "pass": true,
         "fraction": 1
       },
@@ -132,14 +133,14 @@
         "fraction": 1
       },
       {
-        "name": "Statio Tranquillitatis darker (76 px): ratio 0.696",
+        "name": "Statio Tranquillitatis darker (76 px): ratio 0.699",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",
+    "sha": "14f4f9c848f4b033ce293d1d6c8c79da7258913e",
     "dirty": false
   }
 }

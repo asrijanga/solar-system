@@ -10,30 +10,25 @@
     "checks": [],
     "starChecks": [],
     "moon": {
-      "epoch": "first-quarter-2026-01",
+      "epoch": "full-2026-01",
       "vantage": {
-        "kind": "earth"
+        "kind": "over",
+        "lonDeg": 0,
+        "latDeg": -80
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "albedo",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun"
     },
-    "moonChecks": [
-      {
-        "kind": "night",
-        "name": "night side is black",
-        "minDepthDeg": 0.5,
-        "minFraction": 0.999
-      }
-    ],
+    "moonChecks": [],
     "negativeControl": false,
-    "id": "moon-quarter",
-    "description": "The first-quarter Moon of 2026-01-26 seen from Earth. The terminator runs north–south near the centre, the lit half to the right, and the night side is black: no ambient light.",
+    "id": "moon-south-pole",
+    "description": "Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 75° the albedo is LOLA laser albedo, blended into Clementine across 65–75° (docs/stories/SS-6b.md): no gaps, no step at the blend. For eyes.",
     "scene": "moon"
   },
   "environment": {
@@ -60,13 +55,7 @@
   "checks": {
     "negativeControl": false,
     "ok": true,
-    "results": [
-      {
-        "name": "night side is black: 200200 night pixels",
-        "pass": true,
-        "fraction": 1
-      }
-    ]
+    "results": []
   },
   "git": {
     "sha": "14f4f9c848f4b033ce293d1d6c8c79da7258913e",

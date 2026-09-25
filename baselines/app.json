@@ -20,7 +20,8 @@
       "shading": "lommel-seeliger",
       "mirrored": false,
       "seamFix": true,
-      "stars": "physical"
+      "stars": "physical",
+      "lighting": "sun"
     },
     "moonChecks": [],
     "negativeControl": false,
@@ -55,7 +56,7 @@
     "results": []
   },
   "git": {
-    "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",
+    "sha": "14f4f9c848f4b033ce293d1d6c8c79da7258913e",
     "dirty": false
   }
 }

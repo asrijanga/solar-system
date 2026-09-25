@@ -11,6 +11,7 @@ import { readFile, writeFile, rename } from 'node:fs/promises';
 import { extname, join, normalize, dirname } from 'node:path';
 import { BlockStore } from './grids.ts';
 import { Ladder, availability, MAX_LEVEL } from './ladder.ts';
+import { APPROX_MAX_LEVEL, Approximation, approxAvailability } from './approximate.ts';
 import { encodeTile } from '../terrain/quantizedMesh.ts';
 
 const root = join(import.meta.dirname, '..', '..');
@@ -21,21 +22,36 @@ const port = Number(process.env['PORT'] ?? 5178);
 const log = (message: string): void => console.log(`[moon] ${message}`);
 const store = new BlockStore(cacheDir, 4, log);
 const ladder = new Ladder(store, cacheDir, log);
+const approximation = new Approximation(ladder, store);
 
-const layer = JSON.stringify({
-  tilejson: '2.1.0',
-  name: 'moon-local',
-  format: 'quantized-mesh-1.0',
-  version: '1.0.0',
-  scheme: 'tms',
-  projection: 'EPSG:4326',
-  bounds: [-180, -90, 180, 90],
-  tiles: ['{z}/{x}/{y}.terrain'],
-  available: availability(),
-  extensions: ['octvertexnormals'],
-  attribution:
-    'LOLA LDEM_16/64/128/512 and SLDEM2015 (NASA PDS); SELENE TC DTM_MAP_02 (JAXA DARTS)',
-});
+const layerJson = (name: string, available: unknown, attribution: string): string =>
+  JSON.stringify({
+    tilejson: '2.1.0',
+    name,
+    format: 'quantized-mesh-1.0',
+    version: '1.0.0',
+    scheme: 'tms',
+    projection: 'EPSG:4326',
+    bounds: [-180, -90, 180, 90],
+    tiles: ['{z}/{x}/{y}.terrain'],
+    available,
+    extensions: ['octvertexnormals'],
+    attribution,
+  });
+const SOURCES =
+  'LOLA LDEM_16/64/128/512 and SLDEM2015 (NASA PDS); SELENE TC DTM_MAP_02 (JAXA DARTS)';
+const layers = {
+  terrain: { json: layerJson('moon-local', availability(), SOURCES), maxLevel: MAX_LEVEL },
+  // The labelled approximation (docs/stories/SS-10b.md): the same measured levels, then 14-16.
+  'terrain-approx': {
+    json: layerJson(
+      'moon-local-approx',
+      approxAvailability(),
+      `${SOURCES}; below 10 m, an APPROXIMATION: roughness from LROC NAC DTM statistics and craters from NASA DSNE (SLS-SPEC-159)`,
+    ),
+    maxLevel: APPROX_MAX_LEVEL,
+  },
+} as const;
 
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -49,15 +65,22 @@ const TYPES: Record<string, string> = {
 
 const building = new Map<string, Promise<Uint8Array>>();
 
-async function tile(z: number, x: number, y: number): Promise<Uint8Array> {
-  const path = join(cacheDir, 'tiles', String(z), String(x), `${y}.terrain`);
+/**
+ * A tile of either layer. Measured levels are the same in both; approximated ones (14-16) are
+ * cached apart, under tiles-approx/, so the measured cache never holds generated heights.
+ */
+async function tile(approx: boolean, z: number, x: number, y: number): Promise<Uint8Array> {
+  const generated = approx && z > MAX_LEVEL;
+  const dir = generated ? 'tiles-approx' : 'tiles';
+  const path = join(cacheDir, dir, String(z), String(x), `${y}.terrain`);
   if (existsSync(path)) return readFile(path);
-  const key = `${z}/${x}/${y}`;
+  const key = `${dir}/${z}/${x}/${y}`;
   let promise = building.get(key);
   if (promise === undefined) {
     promise = (async () => {
       const started = performance.now();
-      const bytes = await encodeTile(z, x, y, ladder.heightsFor(z));
+      const heights = generated ? approximation.heightsFor(z) : ladder.heightsFor(z);
+      const bytes = await encodeTile(z, x, y, heights);
       mkdirSync(dirname(path), { recursive: true });
       await writeFile(`${path}.partial`, bytes);
       await rename(`${path}.partial`, path);
@@ -82,12 +105,18 @@ if (!existsSync(join(dist, 'index.html'))) {
 createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const path = decodeURIComponent(url.pathname);
-  if (path === '/terrain/layer.json') return send(res, 200, 'application/json', layer);
-  const match = /^\/terrain\/(\d+)\/(\d+)\/(\d+)\.terrain$/.exec(path);
+  const layerMatch = /^\/(terrain|terrain-approx)\/layer\.json$/.exec(path);
+  if (layerMatch !== null) {
+    return send(res, 200, 'application/json', layers[layerMatch[1] as keyof typeof layers].json);
+  }
+  const match = /^\/(terrain|terrain-approx)\/(\d+)\/(\d+)\/(\d+)\.terrain$/.exec(path);
   if (match !== null) {
-    const [z, x, y] = [Number(match[1]), Number(match[2]), Number(match[3])];
-    if (z > MAX_LEVEL || x >= 2 ** (z + 1) || y >= 2 ** z) return send(res, 404, 'text/plain', '');
-    tile(z, x, y).then(
+    const name = match[1] as keyof typeof layers;
+    const [z, x, y] = [Number(match[2]), Number(match[3]), Number(match[4])];
+    if (z > layers[name].maxLevel || x >= 2 ** (z + 1) || y >= 2 ** z) {
+      return send(res, 404, 'text/plain', '');
+    }
+    tile(name === 'terrain-approx', z, x, y).then(
       (bytes) => send(res, 200, 'application/octet-stream', bytes),
       (error: unknown) => {
         log(`tile ${z}/${x}/${y} failed: ${String(error)}`);

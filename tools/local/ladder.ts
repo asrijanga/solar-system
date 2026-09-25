@@ -99,9 +99,24 @@ export class Ladder {
   }
 
   heightsFor(level: number): HeightSource {
+    const withSource = this.heightsWithSource(level);
+    return async (lat, lon) => (await withSource(lat, lon)).heights;
+  }
+
+  /**
+   * Heights, and 1 where they came from Kaguya: the approximation (SS-10b) is pinned to
+   * Kaguya's sample lattice, so it is added only there.
+   */
+  heightsWithSource(
+    level: number,
+  ): (
+    lat: Float64Array,
+    lon: Float64Array,
+  ) => Promise<{ heights: Float64Array; kaguya: Uint8Array }> {
     const products = productsFor(level);
     return async (lat, lon) => {
       const out = new Float64Array(lat.length).fill(Number.NaN);
+      const kaguya = new Uint8Array(lat.length);
       for (const product of products) {
         const missing: number[] = [];
         out.forEach((v, i) => {
@@ -113,10 +128,13 @@ export class Ladder {
         const values = await sampleProduct(product, this.store, la, lo);
         const usable = product === KAGUYA_TC ? await this.kaguyaUsable(la, lo) : null;
         missing.forEach((i, k) => {
-          if (usable === null || usable[k] === 1) out[i] = values[k] ?? Number.NaN;
+          if (usable === null || usable[k] === 1) {
+            out[i] = values[k] ?? Number.NaN;
+            if (product === KAGUYA_TC && !Number.isNaN(out[i] ?? Number.NaN)) kaguya[i] = 1;
+          }
         });
       }
-      return out;
+      return { heights: out, kaguya };
     };
   }
 

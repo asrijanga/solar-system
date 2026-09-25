@@ -60,7 +60,7 @@ const MAX_DISTANCE_RADII = 60;
  * where the data is coarser it stops higher (core/terrain.ts, minAltitudeKm). The real
  * camera, with collision against the terrain, is SS-11.
  */
-const MIN_ALTITUDE_KM = 0.3;
+const MIN_ALTITUDE_KM = 0.05;
 /**
  * The highest point on the Moon above the 1737.4 km sphere, km: LOLA +10.757 km at 5.441°N,
  * 158.656°W (docs/stories/SS-8.md). Where no terrain is under the camera yet, it is kept
@@ -78,6 +78,13 @@ const captureId = params.get('capture');
 const debug = params.has('debug');
 /** `?epoch=full` shows the full Moon; the default is the app viewpoint's first quarter. */
 const epochParam: MoonEpochId | null = params.get('epoch') === 'full' ? 'full-2026-01' : null;
+/**
+ * `?detail=approx`: below the finest measurement, the labelled approximation
+ * (docs/stories/SS-10b.md), served only by `npm run local`. Off unless asked for; never in a check.
+ */
+const detailApprox = params.get('detail') === 'approx';
+const APPROXIMATION_NOTE =
+  'Approximation: below what was measured (about 10 m), small craters and roughness are generated from the Moon\u2019s statistics (NASA DSNE crater counts, NASA LRO stereo models). They are not the real craters here.';
 
 /**
  * `?at=lon,lat,height,tilt`: start over any place instead of the Earth view. Longitude and
@@ -146,6 +153,10 @@ interface Stage {
   readonly terrain: TilesRenderer | null;
   readonly terrainAvailable: readonly (readonly TileRange[])[] | null;
   readonly caption: string | null;
+  /** The terrain layer's name ('moon-local…' when `npm run local` serves it). */
+  readonly terrainLayer: string | null;
+  /** The labelled approximation is shown. */
+  readonly approximated: boolean;
   /** 0 sunlight, 1 the labelled even lighting. */
   readonly evenLight: UniformNode<'float', number> | null;
 }
@@ -165,6 +176,28 @@ function createCamera(pose: CameraPose | null): PerspectiveCamera {
   return camera;
 }
 
+interface TerrainLayer {
+  readonly path: string;
+  readonly name: string;
+  readonly available: TileRange[][];
+  readonly approximated: boolean;
+}
+
+/** The measured terrain, or with `?detail=approx` the approximation layer where it is served. */
+async function loadTerrainLayer(): Promise<TerrainLayer> {
+  type Layer = { name: string; available: TileRange[][] };
+  if (detailApprox) {
+    try {
+      const layer = await loadJson<Layer>('terrain-approx/layer.json');
+      return { ...layer, path: 'terrain-approx/', approximated: true };
+    } catch {
+      console.warn('[terrain] no approximation layer here (only `npm run local` serves it)');
+    }
+  }
+  const layer = await loadJson<Layer>('terrain/layer.json');
+  return { ...layer, path: 'terrain/', approximated: false };
+}
+
 async function createStage(
   viewpoint: Viewpoint,
   reversedDepth: boolean,
@@ -179,6 +212,8 @@ async function createStage(
     terrain: null,
     terrainAvailable: null,
     caption: null,
+    terrainLayer: null,
+    approximated: false,
     evenLight: null,
   });
   switch (viewpoint.scene) {
@@ -205,9 +240,7 @@ async function createStage(
         loadJson<MoonEphemeris>('data/moon/ephemeris.json'),
         loadStarField(),
         setup.albedo === 'map' ? loadMoonTextures(maxAnisotropy) : null,
-        setup.relief
-          ? loadJson<{ name: string; available: TileRange[][] }>('terrain/layer.json')
-          : null,
+        setup.relief ? loadTerrainLayer() : null,
       ]);
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
@@ -225,7 +258,8 @@ async function createStage(
       };
       // With relief the Moon is its measured shape, streamed as polygons (SS-10); without,
       // the smooth sphere the photometry checks are written for.
-      const terrain = setup.relief ? createMoonTerrain(moon) : null;
+      const terrain =
+        layer === null ? null : createMoonTerrain(moon, `${import.meta.env.BASE_URL}${layer.path}`);
       scene.add(terrain === null ? createMoonMesh(moon) : terrain.group);
       const starExposure = uniform(0);
       scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
@@ -249,10 +283,15 @@ async function createStage(
         albedoDecodedMean: textures?.decodedMean ?? null,
         terrain,
         terrainAvailable: layer?.available ?? null,
+        terrainLayer: layer?.name ?? null,
+        approximated: layer?.approximated ?? false,
         caption:
           `The Moon from Earth · ${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°` +
           // `npm run local` serves the whole Moon at full measured detail (tools/local/server.ts).
-          (layer?.name === 'moon-local' ? ' · full measured detail, streamed locally' : ''),
+          (layer?.name.startsWith('moon-local') === true
+            ? ' · full measured detail, streamed locally'
+            : '') +
+          (layer?.approximated === true ? ' · APPROXIMATED below 10 m' : ''),
       };
     }
   }
@@ -263,6 +302,17 @@ async function start(): Promise<void> {
   const viewpoint = listed === undefined ? undefined : placedAt(listed);
   if (viewpoint === undefined) {
     report({ status: 'refused', reason: `unknown viewpoint: ${String(captureId)}` });
+    return;
+  }
+  // The approximation is never checked against anything (docs/stories/SS-10b.md).
+  if (
+    captureId !== null &&
+    detailApprox &&
+    (viewpoint.moonChecks.length > 0 ||
+      viewpoint.checks.length > 0 ||
+      viewpoint.starChecks.length > 0)
+  ) {
+    report({ status: 'refused', reason: 'the approximation is never used in a checked capture' });
     return;
   }
 
@@ -396,7 +446,7 @@ async function start(): Promise<void> {
 
   if (stage.caption !== null) {
     const { evenLight } = stage;
-    createMoonControls(stage.caption, {
+    createMoonControls(stage.caption, stage.terrainLayer, stage.approximated, {
       onBoost: (boosted) => {
         starBoost[0] = boosted ? STAR_BOOST : 1;
         resize();
@@ -613,11 +663,17 @@ const ABOUT = [
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 2.7 km apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
+  'Detail (local mode only): measured shows only measurements. + approximation adds, below about 10 m, small craters and roughness generated from the Moon\u2019s statistics: crater numbers and shapes from NASA\u2019s lunar environment specification, roughness from NASA\u2019s 2 m stereo terrain models. The surface still passes through every measurement, but these are not the real craters there, and the screen says so while it is on.',
   'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',
 ];
 
 /** The caption, the epoch switch, the lighting and star switches, and the map key. */
-function createMoonControls(caption: string, handlers: MoonControlHandlers): void {
+function createMoonControls(
+  caption: string,
+  terrainLayer: string | null,
+  approximated: boolean,
+  handlers: MoonControlHandlers,
+): void {
   const panel = document.createElement('div');
   panel.id = 'moon-controls';
   const text = document.createElement('p');
@@ -648,6 +704,24 @@ function createMoonControls(caption: string, handlers: MoonControlHandlers): voi
   const row = document.createElement('div');
   row.className = 'row';
   row.append(link, lighting, stars);
+  // The approximation exists only where `npm run local` serves it.
+  if (terrainLayer?.startsWith('moon-local') === true) {
+    const detail = document.createElement('a');
+    const toggled = new URLSearchParams(location.search);
+    if (approximated) toggled.delete('detail');
+    else toggled.set('detail', 'approx');
+    const q = toggled.toString();
+    detail.href = q === '' ? location.pathname : `?${q}`;
+    detail.textContent = approximated ? 'Detail: + approximation' : 'Detail: measured';
+    row.append(detail);
+  }
+  if (approximated) {
+    // Shown for as long as the approximation is (docs/stories/SS-10b.md).
+    const note = document.createElement('p');
+    note.className = 'note warning';
+    note.textContent = APPROXIMATION_NOTE;
+    notes.append(note);
+  }
 
   const about = document.createElement('details');
   const summary = document.createElement('summary');

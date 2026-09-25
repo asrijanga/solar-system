@@ -1,6 +1,6 @@
 # SS-10b · Approximated detail below the measurements (optional, labelled)
 
-Status: **approved, not started** · Release 3 · 2026-09-25
+Status: **in review** · Release 3 · 2026-09-25
 
 As a learner zooming past what any mission measured, I want the ground to keep looking like the Moon rather than smooth polygons. When the app shows me detail that is an approximation and not a measurement, I want to be told.
 
@@ -39,6 +39,41 @@ When the mode is on and the camera is closer than the finest measured level supp
 - **Plugin:** a 3d-tiles-renderer plugin extends the layer's availability below the measured levels. It answers fetches for those tiles by decoding the measured ancestor tile, subdividing it, adding the detail, and encoding a quantized-mesh tile with normals.
 - **Code split:** a TypeScript port of the pipeline's encoder does the encoding. The pure maths goes in `src/core/` (detail spectrum, crater field, band-limit), unit-tested, with no three.js.
 - **Frame loop:** stays allocation-free. Generation happens in the tile loader, not per frame.
+
+## As built (2026-09-25)
+
+Three things changed from the plan above. Each is noted here rather than rewritten above.
+
+**1. The measurements set the roughness, and it is small.** `npm run pipeline:roughness` measures the RMS height difference against distance in NASA's LROC NAC stereo terrain models (2 m spacing). It used Apollo 11 (mare) and Apollo 16 (highland), both MD5-verified against their PDS4 labels.
+- **Same shape at both sites:** once scaled by their 64 m value, the sites agree within 14% at every distance.
+- **Anchored locally:** the model is scaled at each place by Kaguya's own roughness over 67 m.
+- **Calibrated on real ground** (Kaguya at Albategnius): it lands within 4% of its target at 1.3, 2.6 and 5.2 m.
+- **The finding:** interpolating Kaguya already supplies 91–95% of that target, so the faithful roughness is only about 0.1 m. Stereo matching smooths every height model. So the fine bumps are largely absent from all of them, and roughness statistics alone add almost nothing visible.
+
+**2. So the owner chose craters from published counts** ("Craters from counts"). The source is NASA's *Design Specification for Natural Environments*, SLS-SPEC-159 Revision I (2021), section 3.4.1 (NTRS 20210024522), read for this and quoted in `src/core/approximation.ts`.
+- **Density:** the Trask equilibrium function, N(≥D) = 0.079433 D⁻² per km² (D in km; 794 craters of 10 m or more per km², the table's own value). The DSNE calls it valid on every part of the Moon except very young surfaces, and appropriate to extend below 10 m.
+- **Shape:** five classes from freshest to degraded, with their fractions and depth/diameter ratios (Table 3.4.1.2-2). The open-ended entries "0.12–0.2+" and "<0.07" are taken as 0.12–0.20 and 0.02–0.07.
+- **Sizes:** 2 m up to 16.8 m, twice Kaguya's sample spacing. Larger craters are Kaguya's to measure.
+- **Profile:** parabolic bowls. Their rim slopes (22° at d/D 0.1, 39° at 0.2) fall within the DSNE's maximum wall slopes for those classes.
+- **No raised rims:** no verified number was found for them.
+- **Coverage check:** the fraction of ground inside a crater is 23.3%, matching the analytic value for the law.
+- **Not modelled:** the DSNE notes that slopes retain fewer craters; it gives no number for this.
+
+**3. Generated in the local server, not in the browser.** `npm run local` already makes every tile, and only it has 10 m data to approximate below.
+- **Separate layer:** levels 14–16 (5.2, 2.6 and 1.3 m vertex spacing) wherever Kaguya measured, as the layer `terrain-approx/`, cached apart in `.cache/local/tiles-approx/`.
+- **Never published:** the tiles are never committed or deployed.
+- **Speed:** about 1 s per tile on the cloud machine.
+
+**The honesty constraint, made exact.** Both kinds of detail are value noise or craters minus their own bilinear interpolation from Kaguya's sample lattice. So the approximated surface passes exactly through every Kaguya measurement (unit test: under 10⁻⁶ m at random samples). The approximation is only added where Kaguya is the height source.
+
+**Labelled.**
+- **Switch:** "Detail: measured / + approximation" appears only in local mode, and the URL is `?detail=approx`.
+- **While on:** the caption ends "APPROXIMATED below 10 m", and an amber note explains what is generated and from what.
+- **Checks:** a checked capture with the mode on is refused.
+
+![Mare at 32.3°E 2.0°N from 200 m: measured and approximated](ss10b-mare.png)
+
+![The live app with the approximation on, and its label](ss10b-live-label.png)
 
 ## Checks
 

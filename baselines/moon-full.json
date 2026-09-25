@@ -118,12 +118,12 @@
         "fraction": 1
       },
       {
-        "name": "Copernicus brighter (154 px): ratio 1.251",
+        "name": "Copernicus brighter (154 px): ratio 1.253",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Aristarchus brighter (13 px): ratio 1.468",
+        "name": "Aristarchus brighter (13 px): ratio 1.469",
         "pass": true,
         "fraction": 1
       },
@@ -140,7 +140,7 @@
     ]
   },
   "git": {
-    "sha": "14f4f9c848f4b033ce293d1d6c8c79da7258913e",
+    "sha": "4f6d7ffaaef5a8d0d7634d9da889fc4b2374fa9d",
     "dirty": false
   }
 }

@@ -63,14 +63,14 @@
     "ok": true,
     "results": [
       {
-        "name": "no line at ±180°: 677 crossed rows, step at the meridian 1.85 vs 1.81 beside it (ratio 1.02)",
+        "name": "no line at ±180°: 677 crossed rows, step at the meridian 2.01 vs 2.07 beside it (ratio 0.97)",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "14f4f9c848f4b033ce293d1d6c8c79da7258913e",
+    "sha": "4f6d7ffaaef5a8d0d7634d9da889fc4b2374fa9d",
     "dirty": false
   }
 }

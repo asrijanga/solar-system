@@ -41,6 +41,7 @@ from rasterio.enums import Resampling
 from rasterio.windows import Window
 
 from download import CACHE, fetch, sha256
+from lola_poles import combine
 
 SOURCE_URL = (
     "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2.1.tif"
@@ -175,6 +176,10 @@ def build() -> dict:
         master = downsample(source)
         Image.fromarray(master, mode="L").save(MASTER, optimize=True)
 
+    clementine_missing = int(np.sum(master == 0))
+    # Every available source (README): LOLA's laser albedo at the poles (lola_poles.py).
+    master, poles = combine(master)
+
     mask_data = encode_mask(master)
     trials = format_trials(master)
     chosen = choose(trials, len(mask_data))
@@ -194,13 +199,20 @@ def build() -> dict:
             "label": SOURCE_LABEL,
             "chosen": "owner, 2026-09-24, over LRO WAC morphology mosaic (baked shading)",
         },
+        "poles": {
+            "source": "LOLA LDAM polar normal albedo, Lemelin et al. (2016), PDS LRO-L-LOLA-4-GDR-V1.0",
+            "chosen": "owner, 2026-09-25: replace Clementine poleward of ~70 deg (docs/stories/SS-6b.md)",
+            "conventions": "polar stereographic, R = 1737.4 km, 1000 m/px, planetocentric, east-positive, MEAN EARTH/POLAR AXIS OF DE421, 1064 nm normal albedo",
+            "clementineMissingPixels": clementine_missing,
+            **poles,
+        },
         "conventions": {
             "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
             "latitude": "planetocentric (identical to planetographic on a sphere)",
             "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
             "rows": "row 0 = +90 deg latitude",
             "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
-            "values": "relative albedo 1-255, linear in source pixel value; no reflectance scale in the label",
+            "values": "relative albedo 1-255 on Clementine's scale, linear; LOLA mapped onto it by the fits under poles",
             "gaps": "albedo-mask.png is authoritative: white = never imaged. Albedo values there are compression filler",
         },
         "texture": {
@@ -231,6 +243,6 @@ if __name__ == "__main__":
     m = build()
     print(f"chose {m['formatChoice']['chosen']}; missing {m['texture']['missingFraction']:.4%} of pixels")
     for t in m["formatChoice"]["trials"]:
-        print(f"  {t['format']:18} {t['bytes'] / 1e6:6.2f} MB  PSNR {t['psnrDb']:>6} dB  max err {t['maxAbsError']:>3}")
+        print(f"  {t['format']:18} {t['bytes'] / 1e6:6.2f} MB  PSNR {'lossless' if t['psnrDb'] is None else t['psnrDb']:>6} dB  max err {t['maxAbsError']:>3}")
     print(f"  mask {m['formatChoice']['maskBytes'] / 1e6:.3f} MB")
     sys.exit(0)

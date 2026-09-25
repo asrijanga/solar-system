@@ -128,7 +128,9 @@ async function main(): Promise<void> {
   };
   const altitude = Number(params.get('alt') ?? 60);
   const camera = new PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.05, 1e6);
-  camera.position.copy(place(4.0092 - 1.2, -11.24 - 1.6, altitude));
+  const dLon = Number(params.get('dlon') ?? -1.2);
+  const dLat = Number(params.get('dlat') ?? -1.6);
+  camera.position.copy(place(4.0092 + dLon, -11.24 + dLat, altitude));
   camera.up.copy(camera.position).normalize();
   camera.lookAt(place(4.0092, -11.24, 0));
   camera.updateMatrixWorld();

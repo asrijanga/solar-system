@@ -46,6 +46,34 @@ def heights_m(km: np.ndarray, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
     return v.astype(np.float64) * 1000.0
 
 
+class Region:
+    """A finer measured grid over part of the Moon (LOLA LDEM_512, 59 m), used where it exists.
+
+    `rows` holds km heights for latitudes lat_top downwards at 512 px/deg, pixel-registered,
+    first column at lon_west. Outside it, callers fall back to the global grid.
+    """
+
+    def __init__(self, rows: np.ndarray, lat_top: float, lon_west: float, ppd: int = 512) -> None:
+        self.rows, self.lat_top, self.lon_west, self.ppd = rows, lat_top, lon_west, ppd
+        self.lat_bottom = lat_top - rows.shape[0] / ppd
+        self.lon_east = lon_west + rows.shape[1] / ppd
+
+    def contains(self, west: float, south: float, east: float, north: float) -> bool:
+        return west >= self.lon_west and east <= self.lon_east and south >= self.lat_bottom and north <= self.lat_top
+
+    def heights_m(self, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+        col = (lon - self.lon_west) * self.ppd - 0.5
+        row = (self.lat_top - lat) * self.ppd - 0.5
+        h, w = self.rows.shape
+        c0 = np.clip(np.floor(col).astype(np.int64), 0, w - 2)
+        r0 = np.clip(np.floor(row).astype(np.int64), 0, h - 2)
+        fc = np.clip(col - c0, 0, 1)
+        fr = np.clip(row - r0, 0, 1)
+        g = self.rows
+        v = g[r0, c0] * (1 - fc) * (1 - fr) + g[r0, c0 + 1] * fc * (1 - fr) + g[r0 + 1, c0] * (1 - fc) * fr + g[r0 + 1, c0 + 1] * fc * fr
+        return v.astype(np.float64) * 1000.0
+
+
 def ecef(lat: np.ndarray, lon: np.ndarray, h: np.ndarray) -> np.ndarray:
     la = np.radians(lat)
     lo = np.radians(lon)
@@ -65,13 +93,16 @@ def tile_bounds(z: int, x: int, y: int) -> tuple[float, float, float, float]:
     return west, south, west + size, south + size
 
 
-def encode_tile(km: np.ndarray, z: int, x: int, y: int, grid: int) -> bytes:
+def encode_tile(km: np.ndarray, z: int, x: int, y: int, grid: int, region: Region | None = None) -> bytes:
     west, south, east, north = tile_bounds(z, x, y)
     t = np.linspace(0.0, 1.0, grid)
     uu, vv = np.meshgrid(t, t)  # vv rows go south -> north
     lon = west + uu * (east - west)
     lat = south + vv * (north - south)
-    h = heights_m(km, lat, lon)
+    if region is not None and region.contains(west, south, east, north):
+        h = region.heights_m(lat, lon)
+    else:
+        h = heights_m(km, lat, lon)
     hmin, hmax = float(h.min()), float(h.max())
     span = max(hmax - hmin, 1.0)
 
@@ -128,26 +159,40 @@ def encode_tile(km: np.ndarray, z: int, x: int, y: int, grid: int) -> bytes:
     return bytes(out)
 
 
-def build(out_dir: Path, max_global: int, box: tuple[float, float, float, float], max_box: int, grid: int) -> None:
+def build(
+    out_dir: Path,
+    max_global: int,
+    boxes: list[tuple[int, tuple[float, float, float, float]]],
+    grid: int,
+    region: Region | None = None,
+) -> None:
+    """Levels 0..max_global everywhere; then each (max level, box) adds deeper tiles."""
     km = np.asarray(load_source())
+    max_box = max(level for level, _ in boxes)
     available = []
     count = 0
     for z in range(max_box + 1):
         nx, ny = 2 << z, 1 << z
         size = 180.0 / (1 << z)
         if z <= max_global:
-            xs, ys = (0, nx - 1), (0, ny - 1)
+            ranges = [((0, nx - 1), (0, ny - 1))]
         else:
-            w, s, e, n = box
-            xs = (int((w + 180) // size), int((e + 180) // size))
-            ys = (int((s + 90) // size), int((n + 90) // size))
-        available.append([{"startX": xs[0], "startY": ys[0], "endX": xs[1], "endY": ys[1]}])
-        for x in range(xs[0], xs[1] + 1):
-            for y in range(ys[0], ys[1] + 1):
-                path = out_dir / str(z) / str(x) / f"{y}.terrain"
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(encode_tile(km, z, x, y, grid))
-                count += 1
+            ranges = []
+            for level, (w, s_, e, n) in boxes:
+                if z <= level:
+                    ranges.append(((int((w + 180) // size), int((e + 180) // size)), (int((s_ + 90) // size), int((n + 90) // size))))
+        available.append([{"startX": xs[0], "startY": ys[0], "endX": xs[1], "endY": ys[1]} for xs, ys in ranges])
+        done = set()
+        for xs, ys in ranges:
+            for x in range(xs[0], xs[1] + 1):
+                for y in range(ys[0], ys[1] + 1):
+                    if (x, y) in done:
+                        continue
+                    done.add((x, y))
+                    path = out_dir / str(z) / str(x) / f"{y}.terrain"
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(encode_tile(km, z, x, y, grid, region))
+                    count += 1
     layer = {
         "tilejson": "2.1.0",
         "name": "moon-lola-ldem64-spike",
@@ -166,5 +211,13 @@ def build(out_dir: Path, max_global: int, box: tuple[float, float, float, float]
 
 if __name__ == "__main__":
     out = Path(sys.argv[1])
-    # Around Albategnius (4.0 E, 11.2 S): a 12 x 12 degree box.
-    build(out, max_global=3, box=(-2.0, -17.0, 10.0, -5.0), max_box=7, grid=65)
+    region = None
+    if len(sys.argv) > 2:
+        # LDEM_512 rows 2560..8704 of tile 45S-0S, 0-90E: latitude -5 to -17, first 10 degrees of
+        # longitude kept (pipeline/.cache/ldem512_rows_2560_8704.img, a range of the PDS file).
+        raw = np.fromfile(sys.argv[2], dtype="<f4").reshape(-1, 46080)[:, : 10 * 512]
+        region = Region(raw, lat_top=-5.0, lon_west=0.0)
+    # Around Albategnius (4.0 E, 11.2 S): levels to 7 over 10 x 12 degrees, to 10 (83 m vertex
+    # spacing) over the crater, to 11 (41 m, still interpolating 59 m data) at its central peak.
+    boxes = [(7, (0.1, -16.9, 9.9, -5.1)), (10, (1.5, -14.0, 6.5, -8.5)), (11, (3.4, -11.8, 4.6, -10.6))]
+    build(out, max_global=3, boxes=boxes, grid=65, region=region)

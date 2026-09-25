@@ -16,8 +16,8 @@
         "lonDeg": 4.0092,
         "latDeg": -11.24
       },
-      "distanceKm": 2606.1000000000004,
-      "fovDeg": 40,
+      "distanceKm": 1797.4,
+      "fovDeg": 50,
       "albedo": "map",
       "shading": "lommel-seeliger",
       "mirrored": false,
@@ -29,8 +29,8 @@
     },
     "moonChecks": [],
     "negativeControl": false,
-    "id": "moon-albategnius",
-    "description": "Albategnius and its neighbours near the first-quarter terminator, textured, with relief. For eyes: crater walls and rims should read as three-dimensional.",
+    "id": "moon-albategnius-60km",
+    "description": "Straight down on Albategnius from 60 km at first quarter, the closest view here: the crater's floor and central peak as LOLA 59 m polygons (docs/stories/SS-10.md). For eyes: small craters should be bowls lit from the east.",
     "scene": "moon"
   },
   "environment": {

@@ -2,6 +2,7 @@ import {
   Color,
   FloatType,
   PerspectiveCamera,
+  Quaternion,
   Raycaster,
   REVISION,
   RenderPipeline,
@@ -20,7 +21,7 @@ import {
   type MoonEpochId,
   type Viewpoint,
 } from './capture/viewpoints';
-import { findEpoch, moonViewPose, type MoonEphemeris } from './core/moon';
+import { findEpoch, maxTiltDeg, moonViewPose, type MoonEphemeris } from './core/moon';
 import { physicalStarExposure, pixelSolidAngle } from './core/photometry';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
 import { minAltitudeKm, type TileRange } from './core/terrain';
@@ -210,6 +211,7 @@ async function createStage(
       camera.position.set(...pose.position);
       camera.up.set(...pose.up);
       camera.lookAt(0, 0, 0);
+      camera.rotateX((setup.tiltDeg * Math.PI) / 180);
       const when = epoch.utc.replace('T', ' ').slice(0, 16);
       return {
         scene,
@@ -330,6 +332,8 @@ async function start(): Promise<void> {
 
   const controls = new OrbitControls(camera, canvas);
   if (viewpoint.camera !== null) controls.target.set(...viewpoint.camera.target);
+  /** Pitch applied after the controls aim at the target: identity unless a Moon view tilts. */
+  let tilt = new Quaternion();
   if (stage.radiusKm !== null) {
     // Fit the disc to the screen's shorter side, keeping the viewpoint's direction.
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
@@ -338,9 +342,13 @@ async function start(): Promise<void> {
     camera.position.setLength(distance);
     controls.minDistance = MIN_DISTANCE_RADII * stage.radiusKm;
     controls.maxDistance = MAX_DISTANCE_RADII * stage.radiusKm;
+    // Orbiting stays centred on the Moon: panning would move the target off its centre.
+    controls.enablePan = false;
+    const groundKm = new Float64Array([stage.radiusKm]);
     if (terrain !== null && stage.terrainAvailable !== null) {
-      followGround(controls, terrain, stage.terrainAvailable, stage.radiusKm);
+      followGround(controls, terrain, stage.terrainAvailable, stage.radiusKm, groundKm);
     }
+    tilt = createTilt(controls, canvas, viewpoint.moon?.tiltDeg ?? 0, groundKm);
   }
   controls.enableDamping = true;
   controls.update();
@@ -376,6 +384,8 @@ async function start(): Promise<void> {
   const frame = (time: number): void => {
     if (stats.frames === 0) overlay?.firstFrame(performance.now());
     controls.update();
+    // The controls aimed the camera at the Moon's centre; pitch it up by the tilt.
+    camera.quaternion.multiply(tilt);
     if (terrain !== null) {
       camera.updateMatrixWorld();
       terrain.update();
@@ -424,6 +434,7 @@ function followGround(
   terrain: TilesRenderer,
   available: readonly (readonly TileRange[])[],
   radiusKm: number,
+  groundKm: Float64Array,
 ): void {
   const camera = controls.object as PerspectiveCamera;
   const raycaster = new Raycaster();
@@ -438,6 +449,7 @@ function followGround(
     raycaster.set(camera.position, down);
     const hit = raycaster.intersectObject(terrain.group, true)[0];
     const ground = hit === undefined ? radiusKm + HIGHEST_POINT_KM : distance - hit.distance;
+    groundKm[0] = ground;
     body.copy(camera.position).applyMatrix4(sceneToBody);
     const lonDeg = (Math.atan2(body.y, body.x) * 180) / Math.PI;
     const latDeg = (Math.asin(body.z / body.length()) * 180) / Math.PI;
@@ -454,6 +466,78 @@ function followGround(
   controls.addEventListener('start', follow);
   controls.addEventListener('end', follow);
   follow();
+}
+
+/** Dragging the full height of the screen tilts the view this far, degrees. */
+const TILT_PER_SCREEN_DEG = 120;
+
+/**
+ * Tilting towards the horizon: two fingers dragged up together, or a mouse dragged up with
+ * the right button or with shift held. The tilt is a pitch about the camera's own right axis,
+ * applied every frame after the controls aim the camera at the Moon's centre, and limited by
+ * maxTiltDeg so the view never leaves the Moon. Recomputed only on gestures, never per frame.
+ * Returns the quaternion the frame loop applies.
+ */
+function createTilt(
+  controls: OrbitControls,
+  canvas: HTMLCanvasElement,
+  initialDeg: number,
+  groundKm: Float64Array,
+): Quaternion {
+  const camera = controls.object as PerspectiveCamera;
+  const quaternion = new Quaternion();
+  const axis = new Vector3(1, 0, 0);
+  const tilt = new Float64Array([initialDeg]);
+  const set = (deg: number): void => {
+    const max = maxTiltDeg(camera.position.length(), groundKm[0] ?? 0);
+    tilt[0] = Math.min(Math.max(deg, 0), max);
+    quaternion.setFromAxisAngle(axis, ((tilt[0] ?? 0) * Math.PI) / 180);
+  };
+  const perPixel = (): number => TILT_PER_SCREEN_DEG / Math.max(1, canvas.clientHeight);
+
+  const touches = new Map<number, { x: number; y: number }>();
+  let mouseY: number | null = null;
+  canvas.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'touch') {
+      touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    } else if (event.button === 2 || (event.button === 0 && event.shiftKey)) {
+      mouseY = event.clientY;
+    }
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (event.pointerType !== 'touch') {
+      if (mouseY === null) return;
+      set((tilt[0] ?? 0) - (event.clientY - mouseY) * perPixel());
+      mouseY = event.clientY;
+      return;
+    }
+    const moved = touches.get(event.pointerId);
+    if (moved === undefined) return;
+    const other = [...touches].find(([id]) => id !== event.pointerId)?.[1];
+    if (touches.size === 2 && other !== undefined) {
+      // Both fingers moving up or down together tilt; a pinch (the gap between them
+      // changing more than they move) is left to the controls' zoom.
+      const dy = event.clientY - moved.y;
+      const gapBefore = Math.hypot(moved.x - other.x, moved.y - other.y);
+      const gapAfter = Math.hypot(event.clientX - other.x, event.clientY - other.y);
+      if (Math.abs(gapAfter - gapBefore) < 0.5 * Math.abs(dy)) {
+        // Each finger reports its own moves, so each carries half the tilt.
+        set((tilt[0] ?? 0) - 0.5 * dy * perPixel());
+      }
+    }
+    moved.x = event.clientX;
+    moved.y = event.clientY;
+  });
+  const release = (event: PointerEvent): void => {
+    touches.delete(event.pointerId);
+    if (event.pointerType !== 'touch') mouseY = null;
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  // Zooming out lowers the limit; keep the tilt inside it.
+  controls.addEventListener('end', () => set(tilt[0] ?? 0));
+  set(initialDeg);
+  return quaternion;
 }
 
 /**
@@ -496,6 +580,7 @@ const ABOUT = [
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 2.7 km apart everywhere, and down to 41 m around the crater Albategnius, from LOLA's finest data. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
+  'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
   'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',
 ];
 

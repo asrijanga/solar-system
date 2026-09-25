@@ -81,10 +81,23 @@ export function castMoonRays(
     from[1] * setup.distanceKm,
     from[2] * setup.distanceKm,
   ];
-  const forward: V3 = [-from[0], -from[1], -from[2]];
+  const down: V3 = [-from[0], -from[1], -from[2]];
   const north = toJ2000([0, 0, 1]);
-  const right = unit(cross(forward, north));
-  const up = cross(right, forward);
+  const right = unit(cross(down, north));
+  const level = cross(right, down);
+  // Pitched up by the tilt, about the camera's right axis, towards lunar north.
+  const tilt = (setup.tiltDeg * Math.PI) / 180;
+  const [c, s] = [Math.cos(tilt), Math.sin(tilt)];
+  const forward: V3 = [
+    c * down[0] + s * level[0],
+    c * down[1] + s * level[1],
+    c * down[2] + s * level[2],
+  ];
+  const up: V3 = [
+    c * level[0] - s * down[0],
+    c * level[1] - s * down[1],
+    c * level[2] - s * down[2],
+  ];
   const tanHalf = Math.tan((setup.fovDeg * Math.PI) / 360);
   const aspect = width / height;
   const sun = epoch.sunDirectionJ2000;

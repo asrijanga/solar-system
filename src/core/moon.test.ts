@@ -6,6 +6,8 @@ import {
   bodyFixedToSceneMatrix,
   findEpoch,
   lonLatToBodyFixed,
+  MAX_TILT_DEG,
+  maxTiltDeg,
   moonViewPose,
   type MoonEphemeris,
   type Vec3,
@@ -101,5 +103,17 @@ describe('seen from Earth with lunar north up', () => {
     const a = screen('Aristarchus');
     expect(a.x).toBeLessThan(0);
     expect(a.y).toBeGreaterThan(0);
+  });
+});
+
+describe('maxTiltDeg', () => {
+  it('keeps the view centre on the Moon from far away', () => {
+    // From four radii the horizon is asin(1/4) = 14.48° from the centre.
+    expect(maxTiltDeg(4 * 1737.4, 1737.4)).toBeCloseTo(14.4775, 3);
+  });
+
+  it('allows almost level near the ground, capped at MAX_TILT_DEG', () => {
+    expect(maxTiltDeg(1737.4 + 2, 1737.4)).toBe(MAX_TILT_DEG);
+    expect(maxTiltDeg(1000, 1737.4)).toBe(MAX_TILT_DEG);
   });
 });

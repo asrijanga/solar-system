@@ -98,6 +98,20 @@ export function moonViewPose(
   };
 }
 
+/** The steepest a camera may pitch up from looking straight down, degrees. */
+export const MAX_TILT_DEG = 85;
+
+/**
+ * How far a camera looking at the Moon's centre from `distanceKm` may pitch up towards the
+ * horizon, degrees: until the view's centre reaches the horizon of a sphere through the ground
+ * beneath it, `groundRadiusKm`, and never past MAX_TILT_DEG. Far away that is a few degrees, so
+ * the Moon stays in view; near the ground it is almost level.
+ */
+export function maxTiltDeg(distanceKm: number, groundRadiusKm: number): number {
+  const horizon = (Math.asin(Math.min(1, groundRadiusKm / distanceKm)) * 180) / Math.PI;
+  return Math.min(MAX_TILT_DEG, horizon);
+}
+
 export function findEpoch(ephemeris: MoonEphemeris, id: string): MoonEpoch {
   const epoch = ephemeris.epochs.find((e) => e.id === id);
   if (epoch === undefined) throw new Error(`no Moon epoch "${id}" in the manifest`);

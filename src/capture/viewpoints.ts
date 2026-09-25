@@ -21,6 +21,11 @@ export interface MoonSetup {
   readonly distanceKm: number;
   /** Vertical field of view, degrees. */
   readonly fovDeg: number;
+  /**
+   * Pitch up from looking at the Moon's centre, towards lunar north, degrees. 0 looks straight
+   * down; near the ground, 80 looks across the terrain towards the horizon.
+   */
+  readonly tiltDeg: number;
   /** The Clementine map, or a uniform Lommel–Seeliger ϖ for photometry checks. */
   readonly albedo: 'map' | { readonly uniform: number };
   /** 'lambert' only in a negative control; 'albedo' is unlit, for checking the map itself. */
@@ -266,6 +271,7 @@ const MOON_SETUP: MoonSetup = {
   vantage: { kind: 'earth' },
   distanceKm: 4 * MOON_RADIUS_KM,
   fovDeg: 40,
+  tiltDeg: 0,
   albedo: 'map',
   shading: 'lommel-seeliger',
   mirrored: false,
@@ -637,6 +643,21 @@ export const viewpoints: readonly Viewpoint[] = [
       vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
       distanceKm: MOON_RADIUS_KM + 60,
       fovDeg: 50,
+    },
+  },
+  {
+    ...SPACE,
+    id: 'moon-albategnius-tilted',
+    description:
+      "From 6 km over Albategnius's floor, 12°S, looking north across the crater towards the horizon, tilted 80° from straight down, at first quarter. The central peak and the north rim stand up against black sky, lit from the east (right). For eyes.",
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: -12.0 },
+      distanceKm: MOON_RADIUS_KM + 6,
+      fovDeg: 60,
+      tiltDeg: 80,
     },
   },
   {

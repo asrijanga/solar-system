@@ -30,6 +30,7 @@ The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story
 - **Pins move together.** three.js is pinned exactly. Upgrade it only in a PR of its own, together with Playwright's Chromium, and re-run every capture. r185.1 and later fail on Chromium 141.
 - **Cite conventions.** Longitude sign, latitude definition, vertical datum, body frame, projection parameters and units are cited in the PR from the dataset's own label or documentation, every time.
 - **Never invent data.** No procedural noise, guessed coordinates, or gap-filling. A missing value is shown as missing.
+- **Combine every available source.** Build each world from all usable real datasets, not the single best one: best source per region, registered to one frame, cross-calibrated where they overlap (fit recorded), blended across a stated band, provenance kept per region. A composite of real measurements is not invented data; where nothing measured a region, it stays a gap (README, "Combine every available source").
 - **Never tune a check to pass.** Tolerances, thresholds, and skipped or loosened tests change only with the owner's approval, stated in the PR description.
 - **Baselines change deliberately**, in a commit of their own, with before and after images in the PR.
 - **Say what was not verified.** Every PR lists what was checked by machine, what needs the owner's eyes on real hardware, and what was not checked at all.

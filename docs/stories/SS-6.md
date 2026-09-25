@@ -132,3 +132,11 @@ So LOLA values cannot be made consistent with the Clementine pixels around each 
 2. **Fill only the gaps from LDAM**, scaled by a fit at 50–60° where the maps agree. Every gap becomes a visibly different patch, and each is labelled by source.
 3. **Replace Clementine poleward of about 70° with LDAM**, calibrated at 50–60° and blended across a band. No gaps at the poles, and it removes Clementine's baked polar shading (a limitation recorded in SS-5), at the cost of LOLA's track stripes and 1 km resolution there.
 4. **Wait for terrain.** With elevation and shadows (a later story), these crater floors render black under the real Sun, as they are, and the gaps only show under even lighting.
+
+### The allocation gate and V8's compiler
+
+After the lighting switch, CI's allocation gate twice sampled 96–180 B "in frame". The first run had a real cause: `resize()` ran inside the frame loop and stores fractional numbers in object fields. It now runs in the ResizeObserver callback. The second sample came after that fix, and nothing left in `frame` allocates. A V8 trace shows the frame function is compiled only after hundreds of calls, which at SwiftShader's few frames a second fell inside the measured window. **Owner approved on 2026-09-25:** the warm-up is now 600 frames, as long as the measurement. The pass rule (0 B from `src/`) is unchanged. Locally: 0 B in 601 frames.
+
+### Principle added
+
+At the owner's direction, the plan now says to combine every available source for each world (README, "Combine every available source"; rule in `CLAUDE.md`). The polar replacement with LOLA, chosen by the owner on 2026-09-25, is the first application.

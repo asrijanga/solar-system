@@ -1,6 +1,6 @@
 # Moon: data inventory
 
-The owner's rule of 2026-09-25: gather every available dataset first, then recreate the world from the whole inventory (README, "Gather first, then build"). This file is that inventory for the Moon. It was started after the Moon had been built product by product, and the rebuild from it is still to come.
+The owner's rule of 2026-09-25: gather every available dataset first, then recreate the world from the whole inventory (README, "Gather first, then build"). From the whole inventory the Moon's terrain and features are recreated as real geometry with true, unshaded albedo, so that lighting works out of the box for any sun angle. This file is that inventory for the Moon. It was started after the Moon had been built product by product, and the rebuild from it is still to come.
 
 **Status legend:**
 - **used:** shipped in the app.

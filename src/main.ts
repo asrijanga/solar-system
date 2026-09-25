@@ -26,7 +26,7 @@ import { DebugOverlay } from './debug/overlay';
 import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/adapter';
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
 import { createDepthTestScene } from './scenes/depthTest';
-import { createMoonMesh, loadMoonTextures } from './scenes/moon';
+import { createMoonMesh, loadMoonTextures, loadTerrain } from './scenes/moon';
 import {
   createStarMesh,
   loadStarField,
@@ -98,6 +98,7 @@ interface Stage {
   /** Physical star exposure follows the pixel's solid angle, so it changes on resize. */
   readonly starExposure: UniformNode<'float', number> | null;
   readonly albedoDecodedMean: number | null;
+  readonly heightDecodedSum: number | null;
   readonly caption: string | null;
   /** 0 sunlight, 1 the labelled even lighting. */
   readonly evenLight: UniformNode<'float', number> | null;
@@ -129,6 +130,7 @@ async function createStage(
     radiusKm: null,
     starExposure: null,
     albedoDecodedMean: null,
+    heightDecodedSum: null,
     caption: null,
     evenLight: null,
   });
@@ -152,10 +154,11 @@ async function createStage(
     case 'moon': {
       const setup = viewpoint.moon;
       if (setup === null) throw new Error(`${viewpoint.id} is a Moon scene without a Moon setup`);
-      const [ephemeris, field, textures] = await Promise.all([
+      const [ephemeris, field, textures, terrain] = await Promise.all([
         loadJson<MoonEphemeris>('data/moon/ephemeris.json'),
         loadStarField(),
         setup.albedo === 'map' ? loadMoonTextures(maxAnisotropy) : null,
+        setup.relief ? loadTerrain(maxAnisotropy) : null,
       ]);
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
@@ -170,6 +173,8 @@ async function createStage(
           mirrored: setup.mirrored,
           seamFix: setup.seamFix,
           evenLight,
+          relief: terrain,
+          reliefFlipped: setup.reliefFlipped,
         }),
       );
       const starExposure = uniform(0);
@@ -190,6 +195,7 @@ async function createStage(
         starExposure,
         evenLight,
         albedoDecodedMean: textures?.decodedMean ?? null,
+        heightDecodedSum: terrain?.heightDecodedSum ?? null,
         caption: `The Moon from Earth · ${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°`,
       };
     }
@@ -286,6 +292,7 @@ async function start(): Promise<void> {
       canvas: { width: canvas.width, height: canvas.height },
       devicePixelRatio: window.devicePixelRatio,
       albedoDecodedMean: stage.albedoDecodedMean,
+      heightDecodedSum: stage.heightDecodedSum,
     });
     return;
   }
@@ -389,6 +396,7 @@ const ABOUT = [
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
+  "Relief: heights from LOLA's laser altimeter shape the surface and light every slope, so craters and mountains catch the Sun and shade away from it. At full Moon the relief nearly vanishes, as it does in reality. Heights are true scale, not exaggerated.",
   'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',
 ];
 

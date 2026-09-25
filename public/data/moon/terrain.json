@@ -1,0 +1,101 @@
+{
+  "source": {
+    "product": "LOLA LDEM_64_FLOAT, PDS LRO-L-LOLA-4-GDR-V1.0",
+    "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/cylindrical/float_img/ldem_64_float.img",
+    "label": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/cylindrical/float_img/ldem_64_float.lbl",
+    "sha256": "4dd151f230984316602f13df36214563ff575683cb5612f1a7bc4699188ec25b"
+  },
+  "conventions": {
+    "source": "simple cylindrical, 64 px/deg, pixel-registered, column 0 at 0 E, east-positive, planetocentric; km above a 1737.4 km sphere; MEAN EARTH/POLAR AXIS OF DE421",
+    "outputs": "equirectangular, column 0 at -180 deg, row 0 at +90 deg, like the albedo",
+    "normals": "east and north components of the unit normal in local east-north-up; byte = round((sign(c)*sqrt(|c|)/2 + 0.5)*255); up = sqrt(1 - e^2 - n^2)",
+    "height": "metres above 1737.4 km in 1 m steps + 32768, 16-bit as red (high byte) and green (low byte) of a lossless WebP",
+    "slopes": "central differences on the 4096 x 2048 grid; east step widened near the poles to at least the north step"
+  },
+  "normals": {
+    "files": [
+      "normal-east.webp",
+      "normal-north.webp"
+    ],
+    "width": 4096,
+    "height": 2048,
+    "kmPerPixelAtEquator": 2.665,
+    "sha256": {
+      "normal-east.webp": "25c933e867a619fb4a73274cc774d836d0c43fb61a2dc44be611ea9c83a08389",
+      "normal-north.webp": "523e3812869ac1f7f698c9fcfb89eabbcd4f41ec00df630552e88c56975afbab"
+    },
+    "slopeDeg": {
+      "median": 3.28,
+      "p99": 19.21,
+      "max": 32.46
+    },
+    "choice": {
+      "rule": "smallest WebP quality with mean angular error <= 0.2 x median slope (0.656 deg)",
+      "chosen": 85,
+      "trials": [
+        {
+          "quality": 80,
+          "bytes": 3304208,
+          "meanErrorDeg": 0.742,
+          "p99ErrorDeg": 3.08,
+          "maxErrorDeg": 12.478
+        },
+        {
+          "quality": 85,
+          "bytes": 4003592,
+          "meanErrorDeg": 0.601,
+          "p99ErrorDeg": 2.464,
+          "maxErrorDeg": 9.71
+        },
+        {
+          "quality": 90,
+          "bytes": 5111188,
+          "meanErrorDeg": 0.44,
+          "p99ErrorDeg": 1.781,
+          "maxErrorDeg": 6.215
+        },
+        {
+          "quality": 95,
+          "bytes": 6498852,
+          "meanErrorDeg": 0.303,
+          "p99ErrorDeg": 1.219,
+          "maxErrorDeg": 3.959
+        }
+      ]
+    }
+  },
+  "height": {
+    "file": "height.webp",
+    "width": 1024,
+    "height": 512,
+    "stepM": 1.0,
+    "offset": 32768,
+    "sha256": "23b9a943dc45e266aa4adf984088c8ce5f68ae8daaf9d3a4dfa06f559e4013bb",
+    "rangeM": [
+      -8473.3,
+      9981.9
+    ],
+    "decodedSum": 16907506393
+  },
+  "groundTruth": {
+    "source": "Chang'E-1 laser altimetry, Li et al. (2010), Science China Earth Sciences 53(11):1582-1593, doi:10.1007/s11430-010-4020-1",
+    "extremes": {
+      "highest": {
+        "latDeg": 5.441,
+        "lonDeg": -158.656,
+        "heightKm": 10.629,
+        "lolaKm": 10.757,
+        "differenceKm": 0.128,
+        "searchRadiusKm": 2.0
+      },
+      "lowest": {
+        "latDeg": -70.368,
+        "lonDeg": -172.413,
+        "heightKm": -9.178,
+        "lolaKm": -9.115,
+        "differenceKm": 0.063,
+        "searchRadiusKm": 2.0
+      }
+    }
+  }
+}

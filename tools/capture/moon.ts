@@ -249,6 +249,45 @@ export function runMoonCheck(png: PNG, pixels: MoonPixels, check: MoonCheck): Ch
         fraction,
       };
     }
+    case 'walls': {
+      const inside = interior(pixels, 2);
+      const lon = (check.lonDeg * Math.PI) / 180;
+      const lat = (check.latDeg * Math.PI) / 180;
+      const centre: V3 = [
+        Math.cos(lat) * Math.cos(lon),
+        Math.cos(lat) * Math.sin(lon),
+        Math.sin(lat),
+      ];
+      const eastAxis: V3 = [-Math.sin(lon), Math.cos(lon), 0];
+      const northAxis: V3 = [
+        -Math.sin(lat) * Math.cos(lon),
+        -Math.sin(lat) * Math.sin(lon),
+        Math.cos(lat),
+      ];
+      const [r0, r1] = check.inner.map((f) => f * check.diameterKm);
+      const west: number[] = [];
+      const east: number[] = [];
+      for (let i = 0; i < n; i++) {
+        if (inside[i] === 0) continue;
+        const p = pixels.normal.subarray(i * 3, i * 3 + 3);
+        const km = Math.acos(Math.min(1, Math.max(-1, dot(p, centre)))) * pixels.radiusKm;
+        if (km < (r0 ?? 0) || km >= (r1 ?? 0)) continue;
+        const be = dot(p, eastAxis);
+        const bn = dot(p, northAxis);
+        if (Math.abs(bn) > Math.abs(be)) continue; // within 45° of due east or west
+        (be < 0 ? west : east).push(channel(png, i, 0));
+      }
+      const mean = (v: number[]): number => v.reduce((a, b) => a + b, 0) / v.length;
+      const enough = west.length >= 20 && east.length >= 20;
+      const [lit, dark] =
+        check.brighter === 'west' ? [mean(west), mean(east)] : [mean(east), mean(west)];
+      const pass = enough && lit > dark;
+      return {
+        name: `${check.name}: ${check.brighter} wall ${lit.toFixed(1)} vs ${dark.toFixed(1)} (${west.length} / ${east.length} px)`,
+        pass,
+        fraction: pass ? 1 : 0,
+      };
+    }
     case 'seam': {
       // A seam is a run of two pixels (one 2x2 quad) pulled towards a coarse mip. For each
       // row the meridian crosses, d is how far the pair either side of it sits from the pair

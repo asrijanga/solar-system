@@ -22,6 +22,8 @@ export type CaptureReport =
       readonly devicePixelRatio: number;
       /** Mean of the decoded Moon albedo bytes (0-255), or null when the map was not loaded. */
       readonly albedoDecodedMean: number | null;
+      /** Sum of the decoded 16-bit heights, or null without relief. Must match exactly. */
+      readonly heightDecodedSum: number | null;
     }
   | { readonly status: 'refused'; readonly reason: string };
 

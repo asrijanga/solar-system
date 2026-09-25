@@ -36,6 +36,11 @@ const albedoDecodedMean = (
     calibration: { decodedMean: number };
   }
 ).calibration.decodedMean;
+const heightDecodedSum = (
+  JSON.parse(readFileSync(join(moonData, 'terrain.json'), 'utf8')) as {
+    height: { decodedSum: number };
+  }
+).height.decodedSum;
 
 function git(...args: string[]): string {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
@@ -72,7 +77,7 @@ async function render(
       throw new Error(`${viewpoint.id}: app refused: ${report.reason}`);
     }
     if (errors.length > 0) throw new Error(`${viewpoint.id}: page errors: ${errors.join(' | ')}`);
-    const problems = verifyReport(report, viewpoint, albedoDecodedMean);
+    const problems = verifyReport(report, viewpoint, albedoDecodedMean, heightDecodedSum);
     if (problems.length > 0) {
       throw new Error(`refusing to write ${viewpoint.id}: ${problems.join('; ')}`);
     }

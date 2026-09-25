@@ -33,6 +33,10 @@ export interface MoonSetup {
   readonly stars: 'physical' | 'boosted';
   /** Sunlight, or the labelled even lighting that shows the night and far sides. */
   readonly lighting: 'sun' | 'even';
+  /** LOLA relief (SS-8). Off for the smooth-sphere photometry checks. */
+  readonly relief: boolean;
+  /** Negative control only: east-west flipped normals. */
+  readonly reliefFlipped: boolean;
 }
 
 /**
@@ -88,6 +92,21 @@ export type MoonCheck =
       readonly kind: 'seam';
       readonly name: string;
       readonly maxRatio: number;
+    }
+  | {
+      /**
+       * Relief lit from a low sun: a crater's sunward inner wall must be brighter than the
+       * opposite wall. Pixels are classed by the harness's own ray cast: great-circle distance
+       * from the Gazetteer centre between `inner` fractions of the diameter, and the bearing
+       * from the centre within 45° of west or of east.
+       */
+      readonly kind: 'walls';
+      readonly name: string;
+      readonly lonDeg: number;
+      readonly latDeg: number;
+      readonly diameterKm: number;
+      readonly inner: readonly [number, number];
+      readonly brighter: 'west' | 'east';
     };
 
 /**
@@ -253,6 +272,8 @@ const MOON_SETUP: MoonSetup = {
   seamFix: true,
   stars: 'physical',
   lighting: 'sun',
+  relief: true,
+  reliefFlipped: false,
 };
 
 /**
@@ -315,15 +336,28 @@ const GAZETTEER_CHECKS: readonly MoonCheck[] = (
 const photometry = (
   name: string,
   model: 'lommel-seeliger' | 'even' = 'lommel-seeliger',
+  minFraction = 0.99,
+  limbInsetPx = 2,
 ): MoonCheck => ({
   kind: 'photometry',
   name,
   model,
   albedo: UNIFORM_ALBEDO,
   tolerance: 2,
-  minFraction: 0.99,
-  limbInsetPx: 2,
+  minFraction,
+  limbInsetPx,
 });
+
+/**
+ * With relief, high ground catches sunlight past the terminator. The highest point in the
+ * shipped height map is 9.98 km (public/data/moon/terrain.json), which sees the Sun until
+ * it is acos(1737.4 / 1747.38) = 6.14° below the smooth horizon; add the Sun's angular
+ * radius, 0.27°. Beyond 6.5° nothing can be lit.
+ */
+const NIGHT_DEPTH_WITH_RELIEF_DEG = 6.5;
+
+/** Albategnius (test/fixtures/iau-gazetteer-moon.json): 7° of sun elevation at first quarter. */
+const ALBATEGNIUS = { lonDeg: 4.0092, latDeg: -11.24, diameterKm: 130.84 } as const;
 
 /** Natural detail varies; a seam doubles the step or worse. */
 const SEAM_CHECK: MoonCheck = { kind: 'seam', name: 'no line at ±180°', maxRatio: 1.5 };
@@ -420,7 +454,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Negative control: the same view with the map mirrored east–west. The Gazetteer checks must fail, proving moon-full can see a mirrored Moon.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, mirrored: true },
+    moon: { ...MOON_SETUP, relief: false, mirrored: true },
     moonChecks: GAZETTEER_CHECKS,
     negativeControl: true,
   },
@@ -432,7 +466,12 @@ export const viewpoints: readonly Viewpoint[] = [
     scene: 'moon',
     moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01' },
     moonChecks: [
-      { kind: 'night', name: 'night side is black', minDepthDeg: 0.5, minFraction: 0.999 },
+      {
+        kind: 'night',
+        name: 'night side is black',
+        minDepthDeg: NIGHT_DEPTH_WITH_RELIEF_DEG,
+        minFraction: 0.999,
+      },
     ],
   },
   {
@@ -441,7 +480,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'A uniform Moon (ϖ = 0.96, geometric albedo 0.12) at the full-Moon geometry. Every pixel must match Lommel–Seeliger from core/photometry.ts: a flat disc to the limb.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, albedo: { uniform: UNIFORM_ALBEDO } },
+    moon: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO } },
     moonChecks: [photometry('Lommel–Seeliger per pixel')],
   },
   {
@@ -450,7 +489,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Negative control: the uniform Moon shaded by Lambert, equal to Lommel–Seeliger at the disc centre. The photometry check must fail, proving it can tell the two apart.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, albedo: { uniform: UNIFORM_ALBEDO }, shading: 'lambert' },
+    moon: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO }, shading: 'lambert' },
     moonChecks: [photometry('Lommel–Seeliger per pixel')],
     negativeControl: true,
   },
@@ -460,7 +499,12 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The uniform Moon at first quarter. Every pixel must match Lommel–Seeliger, which puts the terminator exactly 90° from the sub-solar point.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', albedo: { uniform: UNIFORM_ALBEDO } },
+    moon: {
+      ...MOON_SETUP,
+      relief: false,
+      epoch: 'first-quarter-2026-01',
+      albedo: { uniform: UNIFORM_ALBEDO },
+    },
     moonChecks: [photometry('Lommel–Seeliger per pixel')],
   },
   {
@@ -471,6 +515,7 @@ export const viewpoints: readonly Viewpoint[] = [
     scene: 'moon',
     moon: {
       ...MOON_SETUP,
+      relief: false,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
       albedo: { uniform: UNIFORM_ALBEDO },
@@ -486,6 +531,7 @@ export const viewpoints: readonly Viewpoint[] = [
     scene: 'moon',
     moon: {
       ...MOON_SETUP,
+      relief: false,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
       albedo: { uniform: UNIFORM_ALBEDO },
@@ -504,6 +550,79 @@ export const viewpoints: readonly Viewpoint[] = [
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
       lighting: 'even',
+    },
+  },
+  {
+    ...SPACE,
+    id: 'uniform-relief-full',
+    description:
+      'The uniform Moon with LOLA relief at full phase. Lommel–Seeliger with sun and view almost aligned barely depends on the surface normal, so the relief must nearly vanish: the smooth-sphere prediction still holds within 2 levels on 95% of the disc.',
+    scene: 'moon',
+    moon: { ...MOON_SETUP, albedo: { uniform: UNIFORM_ALBEDO } },
+    moonChecks: [photometry('relief vanishes at full phase', 'lommel-seeliger', 0.95, 8)],
+  },
+  {
+    ...SPACE,
+    id: 'uniform-relief-albategnius',
+    description:
+      'The uniform Moon with relief, looking down on Albategnius at first quarter, the Sun 7° up in the east. Its west inner wall faces the Sun and must be brighter than its east wall.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
+      distanceKm: 1.3 * MOON_RADIUS_KM,
+      fovDeg: 20,
+      albedo: { uniform: UNIFORM_ALBEDO },
+    },
+    moonChecks: [
+      {
+        kind: 'walls',
+        name: 'Albategnius sunward wall brighter',
+        ...ALBATEGNIUS,
+        inner: [0.25, 0.45],
+        brighter: 'west',
+      },
+    ],
+  },
+  {
+    ...SPACE,
+    id: 'uniform-relief-albategnius-flipped',
+    description:
+      'Negative control: the same view with east-west flipped normals, the classic sign error. The wall check must fail.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
+      distanceKm: 1.3 * MOON_RADIUS_KM,
+      fovDeg: 20,
+      albedo: { uniform: UNIFORM_ALBEDO },
+      reliefFlipped: true,
+    },
+    moonChecks: [
+      {
+        kind: 'walls',
+        name: 'Albategnius sunward wall brighter',
+        ...ALBATEGNIUS,
+        inner: [0.25, 0.45],
+        brighter: 'west',
+      },
+    ],
+    negativeControl: true,
+  },
+  {
+    ...SPACE,
+    id: 'moon-albategnius',
+    description:
+      'Albategnius and its neighbours near the first-quarter terminator, textured, with relief. For eyes: crater walls and rims should read as three-dimensional.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
+      distanceKm: 1.5 * MOON_RADIUS_KM,
+      fovDeg: 40,
     },
   },
   {

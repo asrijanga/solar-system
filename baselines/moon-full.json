@@ -21,7 +21,9 @@
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
-      "lighting": "sun"
+      "lighting": "sun",
+      "relief": true,
+      "reliefFlipped": false
     },
     "moonChecks": [
       {
@@ -113,7 +115,7 @@
     "ok": true,
     "results": [
       {
-        "name": "Tycho brighter (113 px): ratio 1.084",
+        "name": "Tycho brighter (113 px): ratio 1.088",
         "pass": true,
         "fraction": 1
       },
@@ -123,24 +125,24 @@
         "fraction": 1
       },
       {
-        "name": "Aristarchus brighter (13 px): ratio 1.469",
+        "name": "Aristarchus brighter (13 px): ratio 1.450",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Mare Crisium darker (1135 px): ratio 0.759",
+        "name": "Mare Crisium darker (1135 px): ratio 0.757",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Statio Tranquillitatis darker (76 px): ratio 0.699",
+        "name": "Statio Tranquillitatis darker (76 px): ratio 0.693",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "4f6d7ffaaef5a8d0d7634d9da889fc4b2374fa9d",
+    "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",
     "dirty": false
   }
 }

@@ -23,7 +23,9 @@
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
-      "lighting": "sun"
+      "lighting": "sun",
+      "relief": true,
+      "reliefFlipped": false
     },
     "moonChecks": [
       {
@@ -63,14 +65,14 @@
     "ok": true,
     "results": [
       {
-        "name": "no line at ±180°: 677 crossed rows, step at the meridian 2.01 vs 2.07 beside it (ratio 0.97)",
+        "name": "no line at ±180°: 677 crossed rows, step at the meridian 2.03 vs 2.05 beside it (ratio 0.99)",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "4f6d7ffaaef5a8d0d7634d9da889fc4b2374fa9d",
+    "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",
     "dirty": false
   }
 }

@@ -627,6 +627,20 @@ export const viewpoints: readonly Viewpoint[] = [
   },
   {
     ...SPACE,
+    id: 'moon-albategnius-60km',
+    description:
+      "Straight down on Albategnius from 60 km at first quarter, the closest view here: the crater's floor and central peak as LOLA 59 m polygons (docs/stories/SS-10.md). For eyes: small craters should be bowls lit from the east.",
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
+      distanceKm: MOON_RADIUS_KM + 60,
+      fovDeg: 50,
+    },
+  },
+  {
+    ...SPACE,
     id: 'moon-seam',
     description:
       'The ±180° meridian from over 165°E 25°N, unlit albedo, so the wrap crosses 2x2 pixel quads the way it does for anyone orbiting. The texture wrap must leave no line.',

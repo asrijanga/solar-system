@@ -13,7 +13,7 @@ const good: Ready = {
   canvas: { width: viewpoint.width, height: viewpoint.height },
   devicePixelRatio: 1,
   albedoDecodedMean: null,
-  heightDecodedSum: null,
+  terrainTiles: null,
 };
 
 describe('verifyReport', () => {
@@ -52,25 +52,18 @@ describe('verifyReport', () => {
       ...good,
       viewpoint: moon.id,
       albedoDecodedMean: 43.9234,
-      heightDecodedSum: 1000,
+      terrainTiles: 12,
     };
-    expect(verifyReport(report, moon, 43.9234, 1000)).toEqual([]);
-    expect(verifyReport({ ...report, albedoDecodedMean: 44.5 }, moon, 43.9234, 1000)).toHaveLength(
-      1,
-    );
-    expect(verifyReport({ ...report, albedoDecodedMean: null }, moon, 43.9234, 1000)).toHaveLength(
-      1,
-    );
+    expect(verifyReport(report, moon, 43.9234)).toEqual([]);
+    expect(verifyReport({ ...report, albedoDecodedMean: 44.5 }, moon, 43.9234)).toHaveLength(1);
+    expect(verifyReport({ ...report, albedoDecodedMean: null }, moon, 43.9234)).toHaveLength(1);
   });
 
-  it('refuses a relief viewpoint whose heights decoded differently, by even one unit', () => {
+  it('refuses a relief viewpoint drawn before any terrain loaded', () => {
     const moon = findViewpoint('moon-full') as Viewpoint;
-    const report: Ready = {
-      ...good,
-      viewpoint: moon.id,
-      albedoDecodedMean: 1,
-      heightDecodedSum: 1001,
-    };
-    expect(verifyReport(report, moon, 1, 1000)).toHaveLength(1);
+    const report: Ready = { ...good, viewpoint: moon.id, albedoDecodedMean: 1, terrainTiles: 0 };
+    expect(verifyReport(report, moon, 1)).toHaveLength(1);
+    expect(verifyReport({ ...report, terrainTiles: null }, moon, 1)).toHaveLength(1);
+    expect(verifyReport({ ...report, terrainTiles: 12 }, moon, 1)).toEqual([]);
   });
 });

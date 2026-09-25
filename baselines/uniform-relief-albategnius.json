@@ -74,14 +74,14 @@
     "ok": true,
     "results": [
       {
-        "name": "Albategnius sunward wall brighter: west wall 74.7 vs 57.5 (58073 / 58104 px)",
+        "name": "Albategnius sunward wall brighter: west wall 73.3 vs 55.8 (58073 / 58104 px)",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",
-    "dirty": false
+    "sha": "d5b065965c2985c34ce907e1d31ac0134b910bfb",
+    "dirty": true
   }
 }

@@ -2,14 +2,17 @@ import {
   Color,
   FloatType,
   PerspectiveCamera,
+  Raycaster,
   REVISION,
   RenderPipeline,
   Scene,
+  Vector3,
   type UniformNode,
   type WebGPURenderer,
 } from 'three/webgpu';
 import { pass, uniform } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import type { TilesRenderer } from '3d-tiles-renderer';
 import type { CaptureReport } from './capture/protocol';
 import {
   findViewpoint,
@@ -20,13 +23,14 @@ import {
 import { findEpoch, moonViewPose, type MoonEphemeris } from './core/moon';
 import { physicalStarExposure, pixelSolidAngle } from './core/photometry';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
+import { minAltitudeKm, type TileRange } from './core/terrain';
 import { METRE } from './core/units';
 import { installErrorReporting, showFatal, watchDevice } from './debug/errors';
 import { DebugOverlay } from './debug/overlay';
 import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/adapter';
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
 import { createDepthTestScene } from './scenes/depthTest';
-import { createMoonMesh, loadMoonTextures, loadTerrain } from './scenes/moon';
+import { createMoonMesh, createMoonTerrain, loadMoonTextures } from './scenes/moon';
 import {
   createStarMesh,
   loadStarField,
@@ -47,9 +51,23 @@ export const SPACE_COLOUR = '#000000';
 /** Sharper than 2x costs fill rate for detail nobody can see. */
 const MAX_PIXEL_RATIO = 2;
 
-/** Orbit limits, in Moon radii from its centre. */
+/** Orbit limits, in Moon radii from its centre. The smooth sphere stops at 1.5 radii. */
 const MIN_DISTANCE_RADII = 1.5;
 const MAX_DISTANCE_RADII = 60;
+/**
+ * Over terrain the camera never comes lower than this above the ground beneath it, km, and
+ * where the data is coarser it stops higher (core/terrain.ts, minAltitudeKm). The real
+ * camera, with collision against the terrain, is SS-11.
+ */
+const MIN_ALTITUDE_KM = 2;
+/**
+ * The highest point on the Moon above the 1737.4 km sphere, km: LOLA +10.757 km at 5.441°N,
+ * 158.656°W (docs/stories/SS-8.md). Where no terrain is under the camera yet, it is kept
+ * above this.
+ */
+const HIGHEST_POINT_KM = 10.757;
+/** How long a capture waits for the terrain it needs to finish loading. */
+const TERRAIN_LOAD_TIMEOUT_MS = 150_000;
 /** On load the disc spans this fraction of the screen's shorter side. */
 const FIT_FRACTION = 0.8;
 
@@ -98,7 +116,9 @@ interface Stage {
   /** Physical star exposure follows the pixel's solid angle, so it changes on resize. */
   readonly starExposure: UniformNode<'float', number> | null;
   readonly albedoDecodedMean: number | null;
-  readonly heightDecodedSum: number | null;
+  /** Streamed LOLA terrain (SS-10), when the view has relief, and which levels exist where. */
+  readonly terrain: TilesRenderer | null;
+  readonly terrainAvailable: readonly (readonly TileRange[])[] | null;
   readonly caption: string | null;
   /** 0 sunlight, 1 the labelled even lighting. */
   readonly evenLight: UniformNode<'float', number> | null;
@@ -130,7 +150,8 @@ async function createStage(
     radiusKm: null,
     starExposure: null,
     albedoDecodedMean: null,
-    heightDecodedSum: null,
+    terrain: null,
+    terrainAvailable: null,
     caption: null,
     evenLight: null,
   });
@@ -154,35 +175,37 @@ async function createStage(
     case 'moon': {
       const setup = viewpoint.moon;
       if (setup === null) throw new Error(`${viewpoint.id} is a Moon scene without a Moon setup`);
-      const [ephemeris, field, textures, terrain] = await Promise.all([
+      const [ephemeris, field, textures, layer] = await Promise.all([
         loadJson<MoonEphemeris>('data/moon/ephemeris.json'),
         loadStarField(),
         setup.albedo === 'map' ? loadMoonTextures(maxAnisotropy) : null,
-        setup.relief ? loadTerrain(maxAnisotropy) : null,
+        setup.relief ? loadJson<{ available: TileRange[][] }>('terrain/layer.json') : null,
       ]);
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
       const evenLight = uniform(setup.lighting === 'even' ? 1 : 0);
       const scene = new Scene();
-      scene.add(
-        createMoonMesh({
-          epoch,
-          radiusKm,
-          albedo: textures ?? { uniform: setup.albedo === 'map' ? 0 : setup.albedo.uniform },
-          shading: setup.shading,
-          mirrored: setup.mirrored,
-          seamFix: setup.seamFix,
-          evenLight,
-          relief: terrain,
-          reliefFlipped: setup.reliefFlipped,
-        }),
-      );
+      const moon = {
+        epoch,
+        radiusKm,
+        albedo: textures ?? { uniform: setup.albedo === 'map' ? 0 : setup.albedo.uniform },
+        shading: setup.shading,
+        mirrored: setup.mirrored,
+        seamFix: setup.seamFix,
+        evenLight,
+        reliefFlipped: setup.reliefFlipped,
+      };
+      // With relief the Moon is its measured shape, streamed as polygons (SS-10); without,
+      // the smooth sphere the photometry checks are written for.
+      const terrain = setup.relief ? createMoonTerrain(moon) : null;
+      scene.add(terrain === null ? createMoonMesh(moon) : terrain.group);
       const starExposure = uniform(0);
       scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
 
-      // Near 1 km: at the closest orbit the surface is 870 km away. Reversed-Z float depth
+      // Near 10 m over terrain, where the camera comes down to a couple of kilometres; 1 km
+      // over the sphere, whose surface is never closer than 870 km. Reversed-Z float depth
       // keeps full precision to any far plane (docs/stories/SS-3.md).
-      const camera = new PerspectiveCamera(setup.fovDeg, 1, 1, 1e7);
+      const camera = new PerspectiveCamera(setup.fovDeg, 1, terrain === null ? 1 : 0.01, 1e7);
       const pose = moonViewPose(epoch, setup.vantage, setup.distanceKm);
       camera.position.set(...pose.position);
       camera.up.set(...pose.up);
@@ -195,7 +218,8 @@ async function createStage(
         starExposure,
         evenLight,
         albedoDecodedMean: textures?.decodedMean ?? null,
-        heightDecodedSum: terrain?.heightDecodedSum ?? null,
+        terrain,
+        terrainAvailable: layer?.available ?? null,
         caption: `The Moon from Earth · ${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°`,
       };
     }
@@ -249,7 +273,8 @@ async function start(): Promise<void> {
     viewpoint.reversedDepthBuffer,
     renderer.getMaxAnisotropy(),
   );
-  const { scene, camera, starExposure } = stage;
+  const { scene, camera, starExposure, terrain } = stage;
+  terrain?.setCamera(camera);
   /** 1 at physical exposure, STAR_BOOST with the labelled boost on. */
   const starBoost = new Float64Array([viewpoint.moon?.stars === 'boosted' ? STAR_BOOST : 1]);
 
@@ -268,6 +293,8 @@ async function start(): Promise<void> {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    // Terrain refines against drawing-buffer pixels, the ones the screen shows.
+    terrain?.setResolution(camera, canvas.width, canvas.height);
     if (starExposure !== null) {
       starExposure.value =
         physicalStarExposure(pixelSolidAngle(camera.fov, height)) * (starBoost[0] ?? 1);
@@ -278,6 +305,10 @@ async function start(): Promise<void> {
     // Capture mode: exactly one frame, no clock, no controls. Ready means the GPU has
     // finished it and the compositor has had a chance to present it.
     resize();
+    if (terrain !== null && !(await terrainLoaded(terrain, camera))) {
+      report({ status: 'refused', reason: 'terrain did not finish loading' });
+      return;
+    }
     pipeline.render();
     await device.queue.onSubmittedWorkDone();
     await new Promise(requestAnimationFrame);
@@ -292,7 +323,7 @@ async function start(): Promise<void> {
       canvas: { width: canvas.width, height: canvas.height },
       devicePixelRatio: window.devicePixelRatio,
       albedoDecodedMean: stage.albedoDecodedMean,
-      heightDecodedSum: stage.heightDecodedSum,
+      terrainTiles: terrain === null ? null : terrain.visibleTiles.size,
     });
     return;
   }
@@ -307,6 +338,9 @@ async function start(): Promise<void> {
     camera.position.setLength(distance);
     controls.minDistance = MIN_DISTANCE_RADII * stage.radiusKm;
     controls.maxDistance = MAX_DISTANCE_RADII * stage.radiusKm;
+    if (terrain !== null && stage.terrainAvailable !== null) {
+      followGround(controls, terrain, stage.terrainAvailable, stage.radiusKm);
+    }
   }
   controls.enableDamping = true;
   controls.update();
@@ -342,6 +376,10 @@ async function start(): Promise<void> {
   const frame = (time: number): void => {
     if (stats.frames === 0) overlay?.firstFrame(performance.now());
     controls.update();
+    if (terrain !== null) {
+      camera.updateMatrixWorld();
+      terrain.update();
+    }
     if (overlay === null) {
       pipeline.render();
     } else {
@@ -355,6 +393,67 @@ async function start(): Promise<void> {
   };
   await renderer.setAnimationLoop(frame);
   document.documentElement.dataset['ready'] = 'true';
+}
+
+/**
+ * Capture mode: refine the terrain for this camera until nothing more is queued, downloading
+ * or parsing for several frames in a row. False if that takes longer than the timeout.
+ */
+async function terrainLoaded(terrain: TilesRenderer, camera: PerspectiveCamera): Promise<boolean> {
+  const deadline = performance.now() + TERRAIN_LOAD_TIMEOUT_MS;
+  camera.updateMatrixWorld();
+  let settled = 0;
+  while (settled < 5) {
+    if (performance.now() > deadline) return false;
+    terrain.update();
+    await new Promise(requestAnimationFrame);
+    settled = terrain.loadProgress === 1 && terrain.visibleTiles.size > 0 ? settled + 1 : 0;
+  }
+  return true;
+}
+
+/**
+ * Over terrain, orbit limits and speeds follow the ground under the camera. At the start and
+ * end of each gesture, never per frame: the minimum distance becomes the ground beneath plus
+ * the lowest altitude the data there supports, zooming moves a fixed fraction of the altitude
+ * rather than of the distance to the centre, and a drag moves the ground about as far as the
+ * finger.
+ */
+function followGround(
+  controls: OrbitControls,
+  terrain: TilesRenderer,
+  available: readonly (readonly TileRange[])[],
+  radiusKm: number,
+): void {
+  const camera = controls.object as PerspectiveCamera;
+  const raycaster = new Raycaster();
+  (raycaster as Raycaster & { firstHitOnly?: boolean }).firstHitOnly = true;
+  const down = new Vector3();
+  const body = new Vector3();
+  // Scene to body-fixed metres: the terrain group's placement, inverted.
+  const sceneToBody = terrain.group.matrixWorld.clone().invert();
+  const follow = (): void => {
+    const distance = camera.position.length();
+    down.copy(camera.position).negate().normalize();
+    raycaster.set(camera.position, down);
+    const hit = raycaster.intersectObject(terrain.group, true)[0];
+    const ground = hit === undefined ? radiusKm + HIGHEST_POINT_KM : distance - hit.distance;
+    body.copy(camera.position).applyMatrix4(sceneToBody);
+    const lonDeg = (Math.atan2(body.y, body.x) * 180) / Math.PI;
+    const latDeg = (Math.asin(body.z / body.length()) * 180) / Math.PI;
+    const lowest = Math.max(
+      MIN_ALTITUDE_KM,
+      minAltitudeKm(available, lonDeg, latDeg, radiusKm, camera.fov),
+    );
+    controls.minDistance = ground + lowest;
+    const altitude = Math.max(distance - ground, lowest);
+    const tanHalf = Math.tan((camera.fov * Math.PI) / 360);
+    controls.zoomSpeed = Math.min(1, altitude / distance);
+    controls.rotateSpeed = Math.min(1, (tanHalf * altitude) / (Math.PI * radiusKm));
+  };
+  controls.addEventListener('start', follow);
+  controls.addEventListener('end', follow);
+  follow();
 }
 
 /**
@@ -396,7 +495,7 @@ const ABOUT = [
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
-  "Relief: heights from LOLA's laser altimeter shape the surface and light every slope, so craters and mountains catch the Sun and shade away from it. At full Moon the relief nearly vanishes, as it does in reality. Heights are true scale, not exaggerated.",
+  "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 2.7 km apart everywhere, and down to 41 m around the crater Albategnius, from LOLA's finest data. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',
 ];
 

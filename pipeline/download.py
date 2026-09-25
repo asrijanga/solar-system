@@ -44,12 +44,22 @@ def _verified(path: Path, sha: str | None, md5: str | None) -> tuple[bool, str]:
     return True, ""
 
 
-def fetch(url: str, expected_sha256: str | None, name: str, *, md5: str | None = None) -> Path:
+def fetch(
+    url: str,
+    expected_sha256: str | None,
+    name: str,
+    *,
+    md5: str | None = None,
+    byte_range: tuple[int, int] | None = None,
+) -> Path:
     """Returns a verified local copy of `url`, resuming a partial download if one exists.
 
     `expected_sha256` may be None only for a first download that has a publisher MD5; the
-    caller must then pin the SHA-256 this prints.
+    caller must then pin the SHA-256 this prints. `byte_range` (inclusive start, exclusive
+    end) fetches only that part of the file, by HTTP range request; it must be pinned.
     """
+    if byte_range is not None and expected_sha256 is None:
+        raise ValueError(f"{name}: a byte range has no publisher checksum; pin its sha256")
     if expected_sha256 is None and md5 is None:
         raise ValueError(f"{name}: refusing an unpinned download with no publisher checksum")
     CACHE.mkdir(exist_ok=True)
@@ -66,10 +76,14 @@ def fetch(url: str, expected_sha256: str | None, name: str, *, md5: str | None =
         try:
             have = partial.stat().st_size if partial.exists() else 0
             headers = {"User-Agent": USER_AGENT}
-            if have:
+            if byte_range is not None:
+                headers["Range"] = f"bytes={byte_range[0] + have}-{byte_range[1] - 1}"
+            elif have:
                 headers["Range"] = f"bytes={have}-"
             request = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(request, timeout=120) as response:
+                if byte_range is not None and response.status != 206:
+                    raise OSError(f"server ignored the range request (HTTP {response.status})")
                 resumed = have > 0 and response.status == 206
                 length = response.headers.get("Content-Length")
                 total = (have if resumed else 0) + int(length) if length is not None else None

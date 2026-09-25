@@ -60,7 +60,7 @@ const MAX_DISTANCE_RADII = 60;
  * where the data is coarser it stops higher (core/terrain.ts, minAltitudeKm). The real
  * camera, with collision against the terrain, is SS-11.
  */
-const MIN_ALTITUDE_KM = 2;
+const MIN_ALTITUDE_KM = 0.3;
 /**
  * The highest point on the Moon above the 1737.4 km sphere, km: LOLA +10.757 km at 5.441°N,
  * 158.656°W (docs/stories/SS-8.md). Where no terrain is under the camera yet, it is kept
@@ -579,7 +579,7 @@ const ABOUT = [
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
-  "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 2.7 km apart everywhere, and down to 41 m around the crater Albategnius, from LOLA's finest data. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
+  "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 2.7 km apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
   'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',
 ];

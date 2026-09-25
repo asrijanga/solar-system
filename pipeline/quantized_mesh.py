@@ -1,11 +1,10 @@
-"""Cesium quantized-mesh 1.0 terrain tiles for the Moon, from LOLA (SS-10 spike).
+"""Cesium quantized-mesh 1.0 terrain tiles for the Moon (SS-10), from measured elevation.
 
 Format: https://github.com/CesiumGS/quantized-mesh (header, zig-zag delta u/v/height,
 high-water-mark indices, edge lists). Geographic tiling (EPSG:4326, TMS: y = 0 at the south),
 two tiles at level 0. Positions are body-fixed MOON_ME metres on the 1737.4 km sphere plus
-the LOLA height, the frame LDEM_64 is in (pipeline/terrain.py).
-
-Spike scope: levels 0-3 everywhere, deeper levels only inside a box, from LDEM_64 (474 m).
+the measured height, the frame LDEM_64 is in (pipeline/terrain.py). Which sources and levels
+are built where is pipeline/terrain_tiles.py's choice.
 """
 
 from __future__ import annotations
@@ -13,7 +12,6 @@ from __future__ import annotations
 import json
 import math
 import struct
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -72,6 +70,33 @@ class Region:
         g = self.rows
         v = g[r0, c0] * (1 - fc) * (1 - fr) + g[r0, c0 + 1] * fc * (1 - fr) + g[r0 + 1, c0] * (1 - fc) * fr + g[r0 + 1, c0 + 1] * fc * fr
         return v.astype(np.float64) * 1000.0
+
+
+class Blend:
+    """A finer source over a box, blended into a base source across a band at the box's edge.
+
+    Inside the box, `band_deg` or more from its edge, heights are the fine source's; at the
+    edge and outside, the base's; linear between. Where the fine source has no measurement
+    (NaN: the producer's no-data value), the base's measurement is used instead, never an
+    interpolation across the hole.
+    """
+
+    def __init__(self, fine: Region, base: Region, box: tuple[float, float, float, float], band_deg: float) -> None:
+        self.fine, self.base, self.box, self.band = fine, base, box, band_deg
+
+    def contains(self, west: float, south: float, east: float, north: float) -> bool:
+        return self.base.contains(west, south, east, north)
+
+    def weight(self, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+        w, s, e, n = self.box
+        inside = np.minimum(np.minimum(lon - w, e - lon), np.minimum(lat - s, n - lat))
+        return np.clip(inside / self.band, 0.0, 1.0)
+
+    def heights_m(self, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+        base = self.base.heights_m(lat, lon)
+        fine = self.fine.heights_m(lat, lon)
+        weight = np.where(np.isnan(fine), 0.0, self.weight(lat, lon))
+        return base + weight * (np.nan_to_num(fine) - base)
 
 
 def ecef(lat: np.ndarray, lon: np.ndarray, h: np.ndarray) -> np.ndarray:
@@ -136,16 +161,19 @@ def tile_bounds(z: int, x: int, y: int) -> tuple[float, float, float, float]:
     return west, south, west + size, south + size
 
 
-def encode_tile(km: np.ndarray, z: int, x: int, y: int, grid: int, region: Region | None = None) -> bytes:
+def encode_tile(km: np.ndarray, z: int, x: int, y: int, grid: int, regions: list[tuple[int, Region | Blend]] = []) -> bytes:  # noqa: B006
+    """One tile. `regions` are (lowest level, source), finest first: the first source used at
+    this level that covers the whole tile supplies every height; otherwise the global grid."""
     west, south, east, north = tile_bounds(z, x, y)
     t = np.linspace(0.0, 1.0, grid)
     uu, vv = np.meshgrid(t, t)  # vv rows go south -> north
     lon = west + uu * (east - west)
     lat = south + vv * (north - south)
-    if region is not None and region.contains(west, south, east, north):
-        sample = region.heights_m
-    else:
-        sample = lambda la, lo: heights_m(km, la, lo)  # noqa: E731
+    sample = lambda la, lo: heights_m(km, la, lo)  # noqa: E731
+    for level, region in regions:
+        if z >= level and region.contains(west, south, east, north):
+            sample = region.heights_m
+            break
     h = sample(lat, lon)
     step_m = math.radians(north - south) / (grid - 1) * R_M
     hmin, hmax = float(h.min()), float(h.max())
@@ -213,7 +241,8 @@ def build(
     max_global: int,
     boxes: list[tuple[int, tuple[float, float, float, float]]],
     grid: int,
-    region: Region | None = None,
+    regions: list[tuple[int, Region | Blend]] = [],  # noqa: B006
+    attribution: str = "LOLA LDEM_64 and LDEM_512 (PDS LRO-L-LOLA-4-GDR-V1.0)",
 ) -> None:
     """Levels 0..max_global everywhere; then each (max level, box) adds deeper tiles."""
     km = np.asarray(load_source())
@@ -240,7 +269,7 @@ def build(
                     done.add((x, y))
                     path = out_dir / str(z) / str(x) / f"{y}.terrain"
                     path.parent.mkdir(parents=True, exist_ok=True)
-                    path.write_bytes(encode_tile(km, z, x, y, grid, region))
+                    path.write_bytes(encode_tile(km, z, x, y, grid, regions))
                     count += 1
     layer = {
         "tilejson": "2.1.0",
@@ -253,21 +282,7 @@ def build(
         "tiles": ["{z}/{x}/{y}.terrain"],
         "available": available,
         "extensions": ["octvertexnormals"],
-        "attribution": "LOLA LDEM_64 and LDEM_512 (PDS LRO-L-LOLA-4-GDR-V1.0)",
+        "attribution": attribution,
     }
     (out_dir / "layer.json").write_text(json.dumps(layer, indent=1))
     print(f"{count} tiles in {out_dir}")
-
-
-if __name__ == "__main__":
-    out = Path(sys.argv[1])
-    region = None
-    if len(sys.argv) > 2:
-        # LDEM_512 rows 2560..8704 of tile 45S-0S, 0-90E: latitude -5 to -17, first 10 degrees of
-        # longitude kept (pipeline/.cache/ldem512_rows_2560_8704.img, a range of the PDS file).
-        raw = np.fromfile(sys.argv[2], dtype="<f4").reshape(-1, 46080)[:, : 10 * 512]
-        region = Region(raw, lat_top=-5.0, lon_west=0.0)
-    # Around Albategnius (4.0 E, 11.2 S): levels to 7 over 10 x 12 degrees, to 10 (83 m vertex
-    # spacing) over the crater, to 11 (41 m, still interpolating 59 m data) at its central peak.
-    boxes = [(7, (0.1, -16.9, 9.9, -5.1)), (10, (1.5, -14.0, 6.5, -8.5)), (11, (3.4, -11.8, 4.6, -10.6))]
-    build(out, max_global=3, boxes=boxes, grid=65, region=region)

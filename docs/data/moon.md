@@ -25,8 +25,11 @@ The owner's rule of 2026-09-25: gather every available dataset first, then recre
 
 | Dataset | Status | What was established |
 | --- | --- | --- |
-| LOLA LDEM_64 gridded shape map, 474 m (PDS) | used | Global. Normals at 2.6 km and heights at 10.7 km in the app (SS-8) |
-| LOLA LDEM 128 / 256 / 512 ppd and LDEM_1024 tiles (PDS) | to evaluate | Listed in the PDS directory; finer global and tiled grids for zooming in |
+| LOLA LDEM_64 gridded shape map, 474 m (PDS) | used | Global. Terrain tiles levels 0–5, vertices 2.7 km apart (SS-10) |
+| LOLA LDEM_512 (59 m), tile 45°S–0°, 0–90°E (PDS) | used around Albategnius | A byte range of the 68 GB tile (latitude 5–17°S). Agrees with LDEM_64: r 0.9998, mean difference 0.3 m. Terrain levels 6–11 (SS-10) |
+| LOLA LDEM 128 / 256 ppd, other LDEM_512 tiles (PDS) | to evaluate | 4.2 GB, 17 GB and 68 GB globally: the whole Moon at 59–118 m once object storage exists |
+| SELENE (Kaguya) TC DTM_MAP_02 seamless, 8.4 m sampling, 3° tiles (JAXA DARTS, `SLN-L-TC-5-DTM-MAP-SEAMLESS-V2.0`) | used over Albategnius's floor and peak | 16-bit metres, planetocentric, east-positive, heights from the 1737.4 km sphere. Registered to LDEM_512: r 0.99992, mean difference 0.6 m, MAD 4 m, RMS 17 m (steep slopes). Best horizontal shift 3–6 m, below one sample, so none is applied. 0.015% no-data samples, filled from LOLA. Integer metres, so slopes over 20 m carry about 3° of quantisation noise. No checksum published; SHA-256 pinned. Terrain levels 12–13 (SS-10). Coverage about 60°S–60°N, 233 MB per 3° tile: about 1.1 TB for the whole Moon |
+| LROC NAC stereo DTMs, 1–5 m (ASU/PDS) | to evaluate | Hundreds of local sites |
 | LOLA polar DEMs (PDS, `lola_gdr/polar`) | to evaluate | Listed alongside the LDAM products |
 | SLDEM2015, LOLA with Kaguya TC stereo, about 59 m, ±60° | to evaluate | Fewer interpolation artefacts between LOLA tracks |
 | Chang'E-1 laser altimetry (Li et al. 2010) | ground truth | Highest and lowest points agree with LOLA within 0.13 and 0.06 km (SS-8) |

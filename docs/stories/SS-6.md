@@ -100,3 +100,43 @@ The 8192 × 4096 WebP is decoded with `createImageBitmap` (no colour conversion,
 ## Effort
 
 Estimate: 2 to 4 sessions. Actual: 1 session.
+
+## Follow-up: owner requests after the first deploy (2026-09-24)
+
+### "The far side is completely dark"
+
+It is, whenever it faces away from the Sun: at first quarter the far side's sunlit half is only the part next to the terminator, and at full Moon the whole far side is night. There is no air to scatter light, and earthshine never reaches the far side. That is correct, so the fix is a labelled switch, not a change to the physics:
+
+- **Lighting: sun** (default): unchanged.
+- **Lighting: even**: every point at its zero-phase brightness, ϖ/8, as if lit from behind the viewer everywhere at once. The same effective albedo and exposure, with the sun direction taken out. A yellow note says it is not physical for as long as it is on, following the star boost's rule.
+
+It is a uniform mixed into the Lommel–Seeliger result (`mix`, no branch), so the default render is unchanged: every existing baseline is pixel-identical.
+
+Checked: `uniform-even-far` (the far side at first quarter, even lighting) matches ϖ/8 on every one of 408,636 disc pixels, worst 0 levels. `uniform-even-far-sunlit` (negative control, same view in sunlight) fails, 2.1% matching, worst 136 levels. `moon-even-far` is the textured view, for eyes.
+
+### "What are the magenta patches?"
+
+The panel now has a key, and a tappable "About this view" explaining each setting. Magenta marks places no picture exists: Clementine never imaged them. 91% of the missing area lies poleward of ±80°, and most of it is the floor of craters that sunlight never reaches, so no camera using sunlight could have photographed them.
+
+### "Can we fill the gaps from another source?"
+
+Investigated; not done yet, because the honest options are a decision for the owner. Evidence:
+
+- **LOLA 1064 nm albedo, 10 ppd (USGS mosaic).** Covers 69% of the gap pixels, but it is individual laser tracks with strong track-to-track calibration stripes. Its correlation with Clementine is about 0 at every latitude, whatever the alignment. Unusable.
+- **LOLA LDAM polar normal albedo** (Lemelin et al. 2016; PDS `LRO-L-LOLA-4-GDR-V1.0`, `LDAM_50S_1000M` and `LDAM_50N_1000M`; polar stereographic, 1 km/px, 50° to the pole; planetocentric, east-positive; frame "MEAN EARTH/POLAR AXIS OF DE421"; values are 1064 nm normal albedo, 0.15 to 0.58). Covers every polar gap. Registered to our grid by the label's projection. The orientation is confirmed by correlation: r = 0.44 at 60–70°S against 0.03 to 0.26 for the mirrored alternatives, and the correlation peaks at zero offset.
+- **But the two maps disagree exactly where the gaps are.** Agreement is good at 50–60° (r = 0.72 south, 0.76 north) and collapses poleward of 70° (r between −0.16 and 0.10). There the Sun is always low, so Clementine records shading (bright sun-facing slopes, black shadows) as much as albedo, while LOLA, lit by its own laser, records albedo alone. See `ss6b-south-pole-comparison.png`. LOLA's map also shows its interpolated ground tracks as radial stripes.
+
+So LOLA values cannot be made consistent with the Clementine pixels around each gap: any fill would show as mismatched, striped patches. The options:
+
+1. **Keep the gaps as missing** (current), with the key.
+2. **Fill only the gaps from LDAM**, scaled by a fit at 50–60° where the maps agree. Every gap becomes a visibly different patch, and each is labelled by source.
+3. **Replace Clementine poleward of about 70° with LDAM**, calibrated at 50–60° and blended across a band. No gaps at the poles, and it removes Clementine's baked polar shading (a limitation recorded in SS-5), at the cost of LOLA's track stripes and 1 km resolution there.
+4. **Wait for terrain.** With elevation and shadows (a later story), these crater floors render black under the real Sun, as they are, and the gaps only show under even lighting.
+
+### The allocation gate and V8's compiler
+
+After the lighting switch, CI's allocation gate twice sampled 96–180 B "in frame". The first run had a real cause: `resize()` ran inside the frame loop and stores fractional numbers in object fields. It now runs in the ResizeObserver callback. The second sample came after that fix, and nothing left in `frame` allocates. A V8 trace shows the frame function is compiled only after hundreds of calls, which at SwiftShader's few frames a second fell inside the measured window. **Owner approved on 2026-09-25:** the warm-up is now 600 frames, as long as the measurement. The pass rule (0 B from `src/`) is unchanged. Locally: 0 B in 601 frames.
+
+### Principle added
+
+At the owner's direction, the plan now says to combine every available source for each world (README, "Combine every available source"; rule in `CLAUDE.md`). The polar replacement with LOLA, chosen by the owner on 2026-09-25, is the first application.

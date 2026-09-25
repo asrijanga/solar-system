@@ -99,6 +99,8 @@ interface Stage {
   readonly starExposure: UniformNode<'float', number> | null;
   readonly albedoDecodedMean: number | null;
   readonly caption: string | null;
+  /** 0 sunlight, 1 the labelled even lighting. */
+  readonly evenLight: UniformNode<'float', number> | null;
 }
 
 async function loadJson<T>(path: string): Promise<T> {
@@ -128,6 +130,7 @@ async function createStage(
     starExposure: null,
     albedoDecodedMean: null,
     caption: null,
+    evenLight: null,
   });
   switch (viewpoint.scene) {
     case 'empty':
@@ -156,6 +159,7 @@ async function createStage(
       ]);
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
+      const evenLight = uniform(setup.lighting === 'even' ? 1 : 0);
       const scene = new Scene();
       scene.add(
         createMoonMesh({
@@ -165,6 +169,7 @@ async function createStage(
           shading: setup.shading,
           mirrored: setup.mirrored,
           seamFix: setup.seamFix,
+          evenLight,
         }),
       );
       const starExposure = uniform(0);
@@ -183,6 +188,7 @@ async function createStage(
         camera,
         radiusKm,
         starExposure,
+        evenLight,
         albedoDecodedMean: textures?.decodedMean ?? null,
         caption: `The Moon from Earth · ${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°`,
       };
@@ -300,15 +306,23 @@ async function start(): Promise<void> {
 
   const overlay = debug ? new DebugOverlay(renderer, device.features.has('timestamp-query')) : null;
 
-  let resizePending = true;
-  new ResizeObserver(() => {
-    resizePending = true;
-  }).observe(canvas);
+  // Resizing happens here, never in the frame loop: it stores fractional numbers (aspect,
+  // star exposure) in object fields, which allocates. ResizeObserver callbacks run after
+  // layout and before paint, so the next frame already renders at the new size. The
+  // observer also fires once on observe(), which sizes the first frame.
+  resize();
+  new ResizeObserver(resize).observe(canvas);
 
   if (stage.caption !== null) {
-    createMoonControls(stage.caption, (boosted) => {
-      starBoost[0] = boosted ? STAR_BOOST : 1;
-      resizePending = true;
+    const { evenLight } = stage;
+    createMoonControls(stage.caption, {
+      onBoost: (boosted) => {
+        starBoost[0] = boosted ? STAR_BOOST : 1;
+        resize();
+      },
+      onEvenLight: (even) => {
+        if (evenLight !== null) evenLight.value = even ? 1 : 0;
+      },
     });
   }
 
@@ -320,10 +334,6 @@ async function start(): Promise<void> {
   clock[0] = -1; // previous frame's timestamp, ms
   const frame = (time: number): void => {
     if (stats.frames === 0) overlay?.firstFrame(performance.now());
-    if (resizePending) {
-      resizePending = false;
-      resize();
-    }
     controls.update();
     if (overlay === null) {
       pipeline.render();
@@ -341,15 +351,53 @@ async function start(): Promise<void> {
 }
 
 /**
- * The caption, the epoch switch and the star boost. The boost says what it does on screen,
- * every time it is on: stars brighter than physics allows are a labelled exaggeration.
+ * A two-state switch. While it is on, `onNote` names the departure from physics, on screen,
+ * for as long as it lasts.
  */
-function createMoonControls(caption: string, onBoost: (boosted: boolean) => void): void {
+function createToggle(
+  labels: { readonly off: string; readonly on: string },
+  onNote: string | null,
+  notes: HTMLElement,
+  onChange: (on: boolean) => void,
+): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  const note = document.createElement('p');
+  note.className = 'note warning';
+  note.textContent = onNote ?? '';
+  let on = false;
+  const set = (value: boolean): void => {
+    on = value;
+    button.textContent = on ? labels.on : labels.off;
+    button.setAttribute('aria-pressed', String(on));
+    if (on && onNote !== null) notes.append(note);
+    else note.remove();
+    onChange(on);
+  };
+  button.addEventListener('click', () => set(!on));
+  set(false);
+  return button;
+}
+
+interface MoonControlHandlers {
+  readonly onBoost: (boosted: boolean) => void;
+  readonly onEvenLight: (even: boolean) => void;
+}
+
+const ABOUT = [
+  'Lighting: sun is real sunlight at this date. The night side, and the far side whenever it faces away from the Sun, are black: the Moon has no air to scatter light, and earthshine is not drawn yet.',
+  'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
+  'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
+  'Magenta marks places no picture exists: Clementine never imaged them. Most are crater floors near the poles that sunlight never reaches, so no camera using sunlight could photograph them. They are shown as missing, not filled in.',
+];
+
+/** The caption, the epoch switch, the lighting and star switches, and the map key. */
+function createMoonControls(caption: string, handlers: MoonControlHandlers): void {
   const panel = document.createElement('div');
   panel.id = 'moon-controls';
   const text = document.createElement('p');
   text.textContent = caption;
-  const epochs = document.createElement('p');
+
   const full = epochParam !== null;
   const link = document.createElement('a');
   const next = new URLSearchParams(location.search);
@@ -357,27 +405,38 @@ function createMoonControls(caption: string, onBoost: (boosted: boolean) => void
   else next.set('epoch', 'full');
   const query = next.toString();
   link.href = query === '' ? location.pathname : `?${query}`;
-  link.textContent = full ? 'Show first quarter' : 'Show full Moon';
-  epochs.append(link);
-  const button = document.createElement('button');
-  button.type = 'button';
-  const label = document.createElement('p');
-  label.className = 'boost-label';
-  const set = (boosted: boolean): void => {
-    button.textContent = boosted ? 'Stars: boosted' : 'Stars: physical';
-    button.setAttribute('aria-pressed', String(boosted));
-    label.textContent = boosted
-      ? `Stars ×${STAR_BOOST.toLocaleString('en')} (+${STAR_BOOST_MAGNITUDES} mag) brighter than a real exposure shows them.`
-      : 'Physical exposure: next to the sunlit Moon, stars are too faint to show, as in every Apollo photograph.';
-    onBoost(boosted);
-  };
-  let boosted = false;
-  button.addEventListener('click', () => {
-    boosted = !boosted;
-    set(boosted);
-  });
-  set(false);
-  panel.append(text, epochs, button, label);
+  link.textContent = full ? 'First quarter' : 'Full Moon';
+
+  const notes = document.createElement('div');
+  const lighting = createToggle(
+    { off: 'Lighting: sun', on: 'Lighting: even' },
+    'Even lighting is not physical: every point at full-Moon brightness, so the night and far sides show.',
+    notes,
+    handlers.onEvenLight,
+  );
+  const stars = createToggle(
+    { off: 'Stars: physical', on: 'Stars: boosted' },
+    `Stars ×${STAR_BOOST.toLocaleString('en')} (+${STAR_BOOST_MAGNITUDES} mag) brighter than a real exposure shows them.`,
+    notes,
+    handlers.onBoost,
+  );
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.append(link, lighting, stars);
+
+  const about = document.createElement('details');
+  const summary = document.createElement('summary');
+  const swatch = document.createElement('span');
+  swatch.className = 'swatch';
+  summary.append(swatch, 'Magenta: never photographed · About this view');
+  about.append(summary);
+  for (const line of ABOUT) {
+    const p = document.createElement('p');
+    p.textContent = line;
+    about.append(p);
+  }
+
+  panel.append(text, row, notes, about);
   document.body.append(panel);
 }
 

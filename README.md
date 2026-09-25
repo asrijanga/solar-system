@@ -78,6 +78,19 @@ Showing that honestly, with the mission and year attached, teaches something no 
 
 By contrast, the usual approach fills unmapped regions with plausible invented landscape. That is the one thing this project will not do. It is also the thing an agent is most likely to do by accident, because procedural noise is its easiest way to make a gap look finished. `CLAUDE.md` forbids it explicitly (see SS-1).
 
+### Combine every available source
+
+*(Added 2026-09-25 at the owner's direction.)* A high-quality simulation comes from combining all the real data that exists for a world, not from the single best-looking product. Every mission and instrument covers some regions, wavelengths or resolutions better than others. The Moon is the first example: Clementine's camera covers most of the surface at 118 m, but not the polar crater floors the Sun never reaches, and LOLA's laser measures exactly those.
+
+So for each world the pipeline gathers every usable source and builds the best composite it can:
+
+- Each region uses the best measurement available for it, chosen by stated criteria (resolution, coverage, and whether shading or other artefacts are baked in).
+- Sources are registered to one body frame and cross-calibrated where they overlap, with the fit and its quality recorded.
+- Transitions are blended over a stated band, never hard seams.
+- Provenance is kept per region, so the app can always say which mission and instrument a pixel came from.
+
+This does not relax "never invent data". A composite of real measurements is not invention; interpolating across a region nobody measured is. Where no source covers a region, it stays a visible gap.
+
 ### Working in the open
 
 If the point is letting other people learn, then the learning should be visible while it happens rather than only at the end.
@@ -302,6 +315,7 @@ These go into `CLAUDE.md` in SS-1, so every session inherits them.
 - **Read the installed source.** For three.js APIs, the pinned version in `node_modules/three` is authoritative, including its `examples/jsm`. Memory of older versions is not.
 - **Cite conventions.** Longitude sign, latitude definition, vertical datum, projection parameters, body frame, and units are cited from the dataset's own label or documentation in the PR, every time.
 - **Never invent data.** No procedural noise, hallucinated coordinates, or gap-filling. A missing value is a visible missing value.
+- **Combine every available source.** Build each world from all usable real datasets: best source per region, cross-calibrated where they overlap, blended at transitions, provenance kept. See "Combine every available source".
 - **Never tune a check to pass.** Tolerances and thresholds change only with your approval in the PR description. The same goes for skipping or loosening tests.
 - **Baselines change deliberately.** Capture baselines are updated only by `npm run capture:accept`, in a commit of their own, with before and after images in the PR.
 - **Say what was not verified.** A PR lists what was checked by machine, what needs your eyes, and what was not checked at all.

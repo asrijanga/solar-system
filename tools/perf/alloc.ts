@@ -21,7 +21,12 @@ const SWIFTSHADER_FLAGS = [
 ];
 
 /** Frames to run before measuring, so pipelines compile and caches settle. */
-const WARMUP_FRAMES = 120;
+// V8 tiers the frame function up (Maglev, then TurboFan) only after hundreds of calls,
+// and at SwiftShader's few frames a second that used to land inside the measured window:
+// CI sampled 96 to 180 B "in frame" twice, from compilation and deoptimisation, not from
+// the per-frame code. Warm up as long as we measure so the JIT has settled first. Owner
+// approved 2026-09-25 (docs/stories/SS-6.md). The pass rule, 0 B from src/, is unchanged.
+const WARMUP_FRAMES = 600;
 const MEASURED_FRAMES = 600;
 /**
  * Mean bytes between samples. Sampling is Poisson: an allocation of s bytes is sampled with
@@ -56,7 +61,7 @@ async function main(): Promise<number> {
       timeout: 180_000,
     });
     await page.waitForFunction((n) => (window.__stats?.frames ?? 0) >= n, WARMUP_FRAMES, {
-      timeout: 120_000,
+      timeout: 900_000,
       polling: 250,
     });
 

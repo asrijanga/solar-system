@@ -1,10 +1,9 @@
 import {
   ClampToEdgeWrapping,
   DataTexture,
-  DataUtils,
-  HalfFloatType,
   LinearFilter,
   LinearMipmapLinearFilter,
+  Matrix3,
   Matrix4,
   Mesh,
   MeshBasicNodeMaterial,
@@ -12,10 +11,10 @@ import {
   NoColorSpace,
   RedFormat,
   RepeatWrapping,
-  RGFormat,
   SphereGeometry,
   UnsignedByteType,
   Vector3,
+  type Object3D,
   type UniformNode,
 } from 'three/webgpu';
 import {
@@ -24,7 +23,6 @@ import {
   atan,
   cameraPosition,
   clamp,
-  cross,
   dFdx,
   dFdy,
   dot,
@@ -34,9 +32,10 @@ import {
   fract,
   int,
   ivec2,
+  length,
   max,
-  modelWorldMatrix,
   normalize,
+  normalWorld,
   positionLocal,
   positionWorld,
   mix,
@@ -51,6 +50,8 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
+import { TilesRenderer } from '3d-tiles-renderer';
+import { QuantizedMeshPlugin } from '3d-tiles-renderer/plugins';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
 import { EXPOSURE, AU_KM } from '../core/photometry';
 
@@ -170,90 +171,6 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   return { albedo, gaps, manifest, decodedMean: sum / albedoBytes.length };
 }
 
-/** The manifest's relevant fields (public/data/moon/terrain.json, pipeline/terrain.py). */
-export interface TerrainManifest {
-  readonly normals: {
-    readonly files: readonly [string, string];
-    readonly width: number;
-    readonly height: number;
-  };
-  readonly height: {
-    readonly file: string;
-    readonly width: number;
-    readonly height: number;
-    readonly stepM: number;
-    readonly offset: number;
-  };
-}
-
-export interface TerrainTextures {
-  /** East (red) and north (green) normal components, square-root encoded, 8 bits each. */
-  readonly normals: DataTexture;
-  /** Height above the 1737.4 km sphere, km, half float. */
-  readonly height: DataTexture;
-  /** Sum of the decoded 16-bit height values, for the harness to compare exactly. */
-  readonly heightDecodedSum: number;
-}
-
-export async function loadTerrain(maxAnisotropy: number): Promise<TerrainTextures> {
-  const response = await fetch(`${base}terrain.json`);
-  if (!response.ok) throw new Error(`terrain.json failed to load: HTTP ${response.status}`);
-  const manifest = (await response.json()) as TerrainManifest;
-  const { width, height } = manifest.normals;
-  const [east, north, heightBytes] = await Promise.all([
-    decodeGrey(`${base}${manifest.normals.files[0]}`, width, height),
-    decodeGrey(`${base}${manifest.normals.files[1]}`, width, height),
-    decodeChannels(
-      `${base}${manifest.height.file}`,
-      manifest.height.width,
-      manifest.height.height,
-      [0, 1],
-    ),
-  ]);
-
-  const rg = new Uint8Array(width * height * 2);
-  for (let i = 0; i < width * height; i++) {
-    rg[i * 2] = east[i] ?? 0;
-    rg[i * 2 + 1] = north[i] ?? 0;
-  }
-  const normals = new DataTexture(rg, width, height, RGFormat, UnsignedByteType);
-  normals.colorSpace = NoColorSpace;
-  normals.wrapS = RepeatWrapping;
-  normals.wrapT = ClampToEdgeWrapping;
-  normals.magFilter = LinearFilter;
-  normals.minFilter = LinearMipmapLinearFilter;
-  normals.generateMipmaps = true;
-  normals.anisotropy = maxAnisotropy;
-  normals.needsUpdate = true;
-
-  const [hi, lo] = heightBytes as [Uint8Array, Uint8Array];
-  const count = manifest.height.width * manifest.height.height;
-  const halves = new Uint16Array(count);
-  let sum = 0;
-  for (let i = 0; i < count; i++) {
-    const raw = ((hi[i] ?? 0) << 8) | (lo[i] ?? 0);
-    sum += raw;
-    const km = ((raw - manifest.height.offset) * manifest.height.stepM) / 1000;
-    halves[i] = DataUtils.toHalfFloat(km);
-  }
-  const heightTexture = new DataTexture(
-    halves,
-    manifest.height.width,
-    manifest.height.height,
-    RedFormat,
-    HalfFloatType,
-  );
-  heightTexture.colorSpace = NoColorSpace;
-  heightTexture.wrapS = RepeatWrapping;
-  heightTexture.wrapT = ClampToEdgeWrapping;
-  heightTexture.magFilter = LinearFilter;
-  heightTexture.minFilter = LinearFilter;
-  heightTexture.generateMipmaps = false;
-  heightTexture.needsUpdate = true;
-
-  return { normals, height: heightTexture, heightDecodedSum: sum };
-}
-
 export type MoonShading = 'lommel-seeliger' | 'lambert' | 'albedo';
 
 export interface MoonOptions {
@@ -279,12 +196,7 @@ export interface MoonOptions {
    * screen; it lets the night side and the far side be seen. A uniform when it can change.
    */
   readonly evenLight?: number | UniformNode<'float', number>;
-  /**
-   * LOLA relief (SS-8): heights displace the surface and normals light it. null for the
-   * smooth sphere the photometry checks are written for.
-   */
-  readonly relief?: TerrainTextures | null;
-  /** Negative control only: east-west flipped normals, the classic sign error. */
+  /** Negative control only, on terrain: east-west flipped normals, the classic sign error. */
   readonly reliefFlipped?: boolean;
 }
 
@@ -294,20 +206,42 @@ const SUN_RADIUS_KM = 695_700;
 /** Hue for never-imaged surface: shaded like the Moon, coloured like nothing on it. */
 const GAP_COLOUR = [1, 0, 1] as const;
 
-/**
- * The Moon as a sphere in km whose object space is the MOON_ME body frame, placed at the
- * scene origin and rotated by the epoch's orientation. Texture coordinates are computed per
- * fragment from the object-space direction, never from mesh UVs.
- */
-export function createMoonMesh(options: MoonOptions): Mesh {
-  const { epoch, radiusKm } = options;
-  const relief = options.relief ?? null;
+/** The epoch's body-fixed (MOON_ME) to scene rotation, as a three.js matrix. */
+function bodyToSceneMatrix4(epoch: MoonEpoch): Matrix4 {
+  const m = bodyFixedToSceneMatrix(epoch);
+  return new Matrix4().set(
+    m[0] ?? 0,
+    m[1] ?? 0,
+    m[2] ?? 0,
+    0,
+    m[3] ?? 0,
+    m[4] ?? 0,
+    m[5] ?? 0,
+    0,
+    m[6] ?? 0,
+    m[7] ?? 0,
+    m[8] ?? 0,
+    0,
+    0,
+    0,
+    0,
+    1,
+  );
+}
 
-  // SphereGeometry is Y-up; turn it so its poles sit on the body frame's +z. Only the
-  // tessellation cares: shading and texturing use the direction alone. With relief the mesh
-  // is finer, about 21 km per quad at the equator against 10.7 km per height texel.
-  const segments = relief === null ? [256, 128] : [512, 256];
-  const geometry = new SphereGeometry(radiusKm, segments[0], segments[1]).rotateX(Math.PI / 2);
+/**
+ * The Moon's surface material. On the smooth sphere, object space is the body frame and
+ * the sphere's own normal lights it. On terrain, each fragment's body-fixed position comes
+ * from its world position, and the normal is the vertex normal the pipeline computed from
+ * the measured heights (pipeline/quantized_mesh.py): nothing about the shape is drawn from
+ * an image.
+ */
+function createMoonMaterial(
+  options: MoonOptions,
+  surface: 'sphere' | 'terrain',
+): MeshBasicNodeMaterial {
+  const { epoch, radiusKm } = options;
+  const terrain = surface === 'terrain';
 
   const sunScene = j2000ToScene(epoch.sunDirectionJ2000);
   const sun = uniform(new Vector3(...sunScene));
@@ -316,29 +250,19 @@ export function createMoonMesh(options: MoonOptions): Mesh {
   const scale = uniform(EXPOSURE / (r * r));
   // The Sun's angular radius at the epoch: the width of the penumbra at the horizon.
   const sunRadius = Math.asin(SUN_RADIUS_KM / epoch.sunDistanceKm);
+  // Scene to body frame. The Moon is at the scene origin and only rotated, so the inverse is
+  // the transpose.
+  const sceneToBody = uniform(new Matrix3().setFromMatrix4(bodyToSceneMatrix4(epoch)).transpose());
 
   // Texture coordinates of a body-fixed direction. Column 0 at −180°, row 0 at +90°
-  // (pipeline/moon.py, pipeline/terrain.py). A DataTexture's first row is at v = 0 under
-  // WebGPU, and three applies no flip to it.
+  // (pipeline/moon.py). A DataTexture's first row is at v = 0 under WebGPU, and three applies
+  // no flip to it.
 
   const material = new MeshBasicNodeMaterial();
-
-  if (relief !== null) {
-    // Displace along the radius by the LOLA height (km). The vertex stage has no screen
-    // derivatives, so the height is sampled at level 0; it has no mipmaps anyway.
-    material.positionNode = Fn(() => {
-      const d = normalize(positionLocal);
-      const lon = atan(d.y, d.x);
-      const lat = asin(clamp(d.z, -1, 1));
-      const uv = vec2(lon.div(2 * Math.PI).add(0.5), float(0.5).sub(lat.div(Math.PI)));
-      const h = texture(relief.height, uv, float(0)).r;
-      return d.mul(h.add(radiusKm));
-    })();
-  }
-
   material.colorNode = Fn(() => {
-    // Body-fixed direction: +x at longitude 0, +z at the north pole.
-    const d = normalize(positionLocal);
+    // Body-fixed position, km: +x at longitude 0, +z at the north pole.
+    const bodyPosition = terrain ? sceneToBody.mul(positionWorld) : positionLocal;
+    const d = normalize(bodyPosition);
     const lon = atan(d.y, d.x); // −π to π, east-positive
     const lat = asin(clamp(d.z, -1, 1));
     const signedLon = options.mirrored === true ? lon.negate() : lon;
@@ -393,34 +317,29 @@ export function createMoonMesh(options: MoonOptions): Mesh {
       albedo = mix(albedo, float(meanAlbedo), gap);
     }
 
-    // The Moon is at the origin with a rotation-only model matrix, so the direction of the
+    // The Moon is at the origin with a rotation-only placement, so the direction of the
     // world position is the smooth sphere's normal.
     const sphereNormal = normalize(positionWorld);
     let normal = sphereNormal;
     let sunVisible = null;
-    if (relief !== null) {
-      // The terrain normal in the local east-north-up frame, decoded from its square-root
-      // encoding (pipeline/terrain.py): c = sign(v)·v², v = 2·byte − 1.
-      const sample = texture(relief.normals, uv).grad(gradX, gradY).toVar('moonNormalSample');
-      const ve = sample.r.mul(2).sub(1);
-      const vn = sample.g.mul(2).sub(1);
-      const east = ve.mul(abs(ve)).mul(options.reliefFlipped === true ? -1 : 1);
-      const north = vn.mul(abs(vn));
-      const up = sqrt(max(float(1).sub(east.mul(east)).sub(north.mul(north)), 0));
-      // East and north at this point of the body frame. East is undefined exactly at a pole,
-      // where the tiny floor keeps it finite; the normal there is nearly straight up anyway.
-      const eastAxis = vec3(d.y.negate(), d.x, 0).div(
-        max(sqrt(d.x.mul(d.x).add(d.y.mul(d.y))), 1e-6),
-      );
-      const northAxis = cross(d, eastAxis);
-      const bodyNormal = eastAxis.mul(east).add(northAxis.mul(north)).add(d.mul(up));
-      normal = normalize(modelWorldMatrix.mul(vec4(bodyNormal, 0)).xyz);
+    if (terrain) {
+      let bodyNormal = sceneToBody.mul(normalize(normalWorld));
+      if (options.reliefFlipped === true) {
+        // Mirror the normal's east component. East is undefined exactly at a pole, where the
+        // tiny floor keeps it finite.
+        const eastAxis = vec3(d.y.negate(), d.x, 0).div(
+          max(sqrt(d.x.mul(d.x).add(d.y.mul(d.y))), 1e-6),
+        );
+        bodyNormal = bodyNormal.sub(eastAxis.mul(dot(bodyNormal, eastAxis).mul(2)));
+      }
+      // Row vector times matrix: the transpose, body to scene.
+      normal = normalize(bodyNormal.mul(sceneToBody));
 
       // Beyond the terminator the Sun is below the smooth sphere's horizon. A point at height
       // h still sees it while its depression is under acos(R / (R + h)) ≈ sqrt(2h / R): high
       // ground catches light past the terminator, low ground does not. Soft over the Sun's
       // angular radius. Cast shadows from nearby terrain come with horizon maps (SS-8, part 2).
-      const h = texture(relief.height, uv, float(0)).r;
+      const h = length(bodyPosition).sub(radiusKm);
       const depression = sqrt(max(h.mul(2 / radiusKm), 0));
       const mu0Sphere = dot(sphereNormal, sun);
       sunVisible = smoothstep(
@@ -457,31 +376,64 @@ export function createMoonMesh(options: MoonOptions): Mesh {
       gap === null ? vec3(value) : mix(vec3(value), vec3(...GAP_COLOUR).mul(value), gap);
     return vec4(colour, 1);
   })();
+  return material;
+}
 
-  const mesh = new Mesh(geometry, material);
+/**
+ * The Moon as a smooth sphere in km whose object space is the MOON_ME body frame, placed at
+ * the scene origin and rotated by the epoch's orientation. Texture coordinates are computed
+ * per fragment from the object-space direction, never from mesh UVs. The photometry checks
+ * are written for it.
+ */
+export function createMoonMesh(options: MoonOptions): Mesh {
+  // SphereGeometry is Y-up; turn it so its poles sit on the body frame's +z. Only the
+  // tessellation cares: shading and texturing use the direction alone.
+  const geometry = new SphereGeometry(options.radiusKm, 256, 128).rotateX(Math.PI / 2);
+  const mesh = new Mesh(geometry, createMoonMaterial(options, 'sphere'));
   mesh.name = 'moon';
-  const m = bodyFixedToSceneMatrix(epoch);
   mesh.matrixAutoUpdate = false;
-  mesh.matrix.copy(
-    new Matrix4().set(
-      m[0] ?? 0,
-      m[1] ?? 0,
-      m[2] ?? 0,
-      0,
-      m[3] ?? 0,
-      m[4] ?? 0,
-      m[5] ?? 0,
-      0,
-      m[6] ?? 0,
-      m[7] ?? 0,
-      m[8] ?? 0,
-      0,
-      0,
-      0,
-      0,
-      1,
-    ),
-  );
+  mesh.matrix.copy(bodyToSceneMatrix4(options.epoch));
   mesh.matrixWorldNeedsUpdate = true;
   return mesh;
+}
+
+/**
+ * Screen-space error the terrain refines to, in drawing-buffer pixels. A tile's geometric
+ * error is a quarter of its vertex spacing (3d-tiles-renderer's QuantizedMeshPlugin), so
+ * vertices land at most 4 pixels apart wherever the data goes that deep. The library
+ * recommends 2 for Earth imagery; the Moon's shape here is carried by vertices alone.
+ */
+const TERRAIN_ERROR_TARGET = 1;
+
+/** Terrain tiles, built at deploy time by `npm run pipeline:tiles` (docs/stories/SS-10.md). */
+const terrainBase = `${import.meta.env.BASE_URL}terrain/`;
+
+/**
+ * The Moon as streamed polygons: LOLA quantized-mesh tiles (pipeline/terrain_tiles.py),
+ * every vertex on a measured height, refined as the camera comes closer. The caller sets
+ * the camera and resolution and calls `update()` once per frame before drawing.
+ */
+export function createMoonTerrain(options: MoonOptions): TilesRenderer {
+  const tiles = new TilesRenderer(terrainBase);
+  const radiusM = options.radiusKm * 1000;
+  tiles.ellipsoid.radius.set(radiusM, radiusM, radiusM);
+  tiles.registerPlugin(new QuantizedMeshPlugin({ useRecommendedSettings: false }));
+  tiles.errorTarget = TERRAIN_ERROR_TARGET;
+
+  const material = createMoonMaterial(options, 'terrain');
+  tiles.addEventListener('load-model', ({ scene }: { scene: Object3D }) => {
+    scene.traverse((object) => {
+      if (object instanceof Mesh) object.material = material;
+    });
+  });
+
+  // Tiles are body-fixed metres; the scene is km.
+  const group = tiles.group;
+  group.name = 'moon';
+  group.matrixAutoUpdate = false;
+  group.matrix
+    .copy(bodyToSceneMatrix4(options.epoch))
+    .multiply(new Matrix4().makeScale(1e-3, 1e-3, 1e-3));
+  group.updateMatrixWorld(true);
+  return tiles;
 }

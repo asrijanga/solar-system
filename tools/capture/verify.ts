@@ -19,7 +19,6 @@ export function verifyReport(
   report: Ready,
   viewpoint: Viewpoint,
   albedoDecodedMean: number | null = null,
-  heightDecodedSum: number | null = null,
 ): string[] {
   const problems: string[] = [];
   if (report.viewpoint !== viewpoint.id) problems.push(`app rendered ${report.viewpoint}`);
@@ -48,11 +47,9 @@ export function verifyReport(
       );
     }
   }
-  if (viewpoint.moon?.relief === true && report.heightDecodedSum !== heightDecodedSum) {
-    // Lossless 16-bit heights: any difference at all means the browser decoded them wrongly.
-    problems.push(
-      `heights decoded to sum ${String(report.heightDecodedSum)}, pipeline says ${String(heightDecodedSum)}`,
-    );
+  if (viewpoint.moon?.relief === true && (report.terrainTiles ?? 0) === 0) {
+    // A relief view drawn before its terrain arrived shows nothing, or a coarser Moon.
+    problems.push(`relief viewpoint drew ${String(report.terrainTiles)} terrain tiles`);
   }
   return problems;
 }

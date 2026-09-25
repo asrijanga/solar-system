@@ -81,6 +81,49 @@ def ecef(lat: np.ndarray, lon: np.ndarray, h: np.ndarray) -> np.ndarray:
     return np.stack([r * np.cos(la) * np.cos(lo), r * np.cos(la) * np.sin(lo), r * np.sin(la)], -1)
 
 
+def enu_to_body(lat: np.ndarray, lon: np.ndarray, e: np.ndarray, n: np.ndarray, u: np.ndarray) -> np.ndarray:
+    la = np.radians(lat)
+    lo = np.radians(lon)
+    east = np.stack([-np.sin(lo), np.cos(lo), np.zeros_like(lo)], -1)
+    north = np.stack([-np.sin(la) * np.cos(lo), -np.sin(la) * np.sin(lo), np.cos(la)], -1)
+    up = np.stack([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)], -1)
+    return e[..., None] * east + n[..., None] * north + u[..., None] * up
+
+
+def vertex_normals(sample, lat: np.ndarray, lon: np.ndarray, step_m: float) -> np.ndarray:
+    """Unit body-frame normals of the measured surface at each vertex.
+
+    Central differences over `step_m` (the tile's vertex spacing, so every level describes the
+    surface at its own scale). Offsets are taken as distances on the sphere, not longitude
+    increments, so they stay well defined towards the poles. Adjacent tiles evaluate the same
+    function at shared vertices, so their normals agree exactly along the edge.
+    """
+    dlat = np.degrees(step_m / R_M)
+    coslat = np.maximum(np.cos(np.radians(lat)), 1e-6)
+    dlon = np.degrees(step_m / (R_M * coslat))
+    wrap = lambda x: (x + 180.0) % 360.0 - 180.0  # noqa: E731
+    he = sample(lat, wrap(lon + dlon)) - sample(lat, wrap(lon - dlon))
+    hn = sample(np.minimum(lat + dlat, 90.0), lon) - sample(np.maximum(lat - dlat, -90.0), lon)
+    ge = he / (2 * step_m)
+    gn = hn / (2 * step_m)
+    length = np.sqrt(1 + ge * ge + gn * gn)
+    body = enu_to_body(lat, lon, -ge / length, -gn / length, 1 / length)
+    pole = np.abs(lat) > 89.9999
+    body[pole] = enu_to_body(lat[pole], lon[pole], np.zeros(pole.sum()), np.zeros(pole.sum()), np.ones(pole.sum()))
+    return body
+
+
+def oct_encode(v: np.ndarray) -> np.ndarray:
+    """Cesium's 8-bit octahedral normal encoding (AttributeCompression.octEncode)."""
+    v = v / np.abs(v).sum(-1, keepdims=True)
+    x, y, z = v[..., 0], v[..., 1], v[..., 2]
+    sx = np.where(x >= 0, 1.0, -1.0)
+    sy = np.where(y >= 0, 1.0, -1.0)
+    ox = np.where(z < 0, (1 - np.abs(y)) * sx, x)
+    oy = np.where(z < 0, (1 - np.abs(x)) * sy, y)
+    return np.stack([np.rint((ox * 0.5 + 0.5) * 255), np.rint((oy * 0.5 + 0.5) * 255)], -1).astype(np.uint8)
+
+
 def zigzag(values: np.ndarray) -> np.ndarray:
     deltas = np.diff(values.astype(np.int64), prepend=0)
     return ((deltas << 1) ^ (deltas >> 63)).astype(np.uint16)
@@ -100,9 +143,11 @@ def encode_tile(km: np.ndarray, z: int, x: int, y: int, grid: int, region: Regio
     lon = west + uu * (east - west)
     lat = south + vv * (north - south)
     if region is not None and region.contains(west, south, east, north):
-        h = region.heights_m(lat, lon)
+        sample = region.heights_m
     else:
-        h = heights_m(km, lat, lon)
+        sample = lambda la, lo: heights_m(km, la, lo)  # noqa: E731
+    h = sample(lat, lon)
+    step_m = math.radians(north - south) / (grid - 1) * R_M
     hmin, hmax = float(h.min()), float(h.max())
     span = max(hmax - hmin, 1.0)
 
@@ -156,6 +201,10 @@ def encode_tile(km: np.ndarray, z: int, x: int, y: int, grid: int, region: Regio
     for edge in (u == 0, v == 0, u == MAX, v == MAX):  # west, south, east, north
         ids = np.nonzero(edge)[0].astype(np.uint16)
         out += struct.pack("<I", len(ids)) + ids.tobytes()
+    # Extension 1, octvertexnormals: body-frame unit normals, 2 bytes each.
+    normals = vertex_normals(sample, lat.ravel()[order], lon.ravel()[order], step_m)
+    payload = oct_encode(normals).tobytes()
+    out += struct.pack("<BI", 1, len(payload)) + payload
     return bytes(out)
 
 
@@ -168,7 +217,7 @@ def build(
 ) -> None:
     """Levels 0..max_global everywhere; then each (max level, box) adds deeper tiles."""
     km = np.asarray(load_source())
-    max_box = max(level for level, _ in boxes)
+    max_box = max([max_global, *[level for level, _ in boxes]])
     available = []
     count = 0
     for z in range(max_box + 1):
@@ -195,7 +244,7 @@ def build(
                     count += 1
     layer = {
         "tilejson": "2.1.0",
-        "name": "moon-lola-ldem64-spike",
+        "name": "moon-lola",
         "format": "quantized-mesh-1.0",
         "version": "1.0.0",
         "scheme": "tms",
@@ -203,7 +252,8 @@ def build(
         "bounds": [-180, -90, 180, 90],
         "tiles": ["{z}/{x}/{y}.terrain"],
         "available": available,
-        "attribution": "LOLA LDEM_64 (PDS LRO-L-LOLA-4-GDR-V1.0)",
+        "extensions": ["octvertexnormals"],
+        "attribution": "LOLA LDEM_64 and LDEM_512 (PDS LRO-L-LOLA-4-GDR-V1.0)",
     }
     (out_dir / "layer.json").write_text(json.dumps(layer, indent=1))
     print(f"{count} tiles in {out_dir}")

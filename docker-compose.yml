@@ -1,0 +1,13 @@
+# The Moon at full measured detail on your own machine (docs/self-hosting.md).
+#   docker compose up -d
+services:
+  moon:
+    build: .
+    image: solar-system
+    restart: unless-stopped
+    ports:
+      - '5178:5178'
+    volumes:
+      # Downloaded NASA/JAXA data and built tiles: grows as you explore (233 MB per 3 x 3 degree
+      # area of Kaguya data, plus tiles). Point it at a disk with room.
+      - ./moon-cache:/data

@@ -18,6 +18,8 @@ const root = join(import.meta.dirname, '..', '..');
 const dist = join(root, 'dist');
 const cacheDir = process.env['MOON_CACHE'] ?? join(root, '.cache', 'local');
 const port = Number(process.env['PORT'] ?? 5178);
+/** Where to listen: this machine only by default; `0.0.0.0` in the container (Dockerfile). */
+const host = process.env['HOST'] ?? '127.0.0.1';
 
 const log = (message: string): void => console.log(`[moon] ${message}`);
 const store = new BlockStore(cacheDir, 4, log);
@@ -130,7 +132,9 @@ createServer((req, res) => {
     return send(res, 404, 'text/plain', 'not found');
   }
   send(res, 200, TYPES[extname(file)] ?? 'application/octet-stream', readFileSync(file));
-}).listen(port, '127.0.0.1', () => {
-  log(`the Moon at full measured detail: http://localhost:${port}/`);
+}).listen(port, host, () => {
+  log(
+    `the Moon at full measured detail: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/`,
+  );
   log(`cache: ${cacheDir}`);
 });

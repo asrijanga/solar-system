@@ -59,6 +59,20 @@ jobs:
           path: captures/
           if-no-files-found: ignore
 
+  # The self-hosting image (docs/self-hosting.md) must keep building.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t solar-system .
+      - name: The server starts and serves the app and the terrain layer
+        run: |
+          docker run -d --name moon -p 5178:5178 solar-system
+          for i in $(seq 30); do curl -sf localhost:5178/terrain/layer.json > /dev/null && break; sleep 1; done
+          curl -sf localhost:5178/ | grep -q '<canvas'
+          curl -sf localhost:5178/terrain/layer.json | grep -q '"moon-local"'
+          curl -sf localhost:5178/terrain-approx/layer.json | grep -q '"moon-local-approx"'
+
   pipeline:
     runs-on: ubuntu-latest
     steps:

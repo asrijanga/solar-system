@@ -18,7 +18,7 @@ The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story
 
 - `npm run check` runs everything CI runs: typecheck, lint, format check, tests, build, and the bundle-size budget.
 - `npm run dev` for a dev server; `npm run preview` serves the production build.
-- `npm run local` serves the whole Moon at full measured detail on this machine, building terrain tiles on demand from PDS and JAXA files (`tools/local/`, cache in `.cache/local/`). Needs no hosting; CI cannot run it.
+- `npm run local` serves the whole Moon at full measured detail on this machine, building terrain tiles on demand from PDS and JAXA files (`tools/local/`, cache in `.cache/local/`). Needs no hosting; CI cannot run it. `docker compose up -d` runs the same server in a container, for a NAS or any always-on machine (`Dockerfile`, docs/self-hosting.md); CI builds the image.
 - `npm run build && npm run capture` renders every canonical viewpoint headlessly (WebGPU on SwiftShader) into `captures/`. Read the PNGs: that is how you see what you built.
 - `npm run capture:diff` compares `captures/` against `baselines/`; CI fails on any difference past tolerance.
 - `npm run alloc` measures allocation in the interactive frame loop over 600 frames (CI runs it).

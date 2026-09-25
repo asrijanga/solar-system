@@ -1,0 +1,10 @@
+# Only the source is needed; every cache and generated output stays out of the image.
+node_modules
+dist
+.cache
+captures
+screenshots
+public/terrain
+pipeline/.cache
+pipeline/.venv
+.git

@@ -79,6 +79,31 @@ const debug = params.has('debug');
 /** `?epoch=full` shows the full Moon; the default is the app viewpoint's first quarter. */
 const epochParam: MoonEpochId | null = params.get('epoch') === 'full' ? 'full-2026-01' : null;
 
+/**
+ * `?at=lon,lat,height,tilt`: start over any place instead of the Earth view. Longitude and
+ * latitude in degrees (east-positive, planetocentric), height in km above the 1737.4 km sphere,
+ * tilt in degrees from straight down towards lunar north. Works with `?capture=<id>` too, to
+ * render that viewpoint's scene from there.
+ */
+function placedAt(viewpoint: Viewpoint): Viewpoint {
+  const at = params.get('at');
+  if (at === null || viewpoint.moon === null) return viewpoint;
+  const [lonDeg, latDeg, heightKm, tiltDeg] = at.split(',').map(Number);
+  if ([lonDeg, latDeg, heightKm].some((v) => v === undefined || !Number.isFinite(v))) {
+    throw new Error(`?at= needs lon,lat,height[,tilt], got "${at}"`);
+  }
+  return {
+    ...viewpoint,
+    moon: {
+      ...viewpoint.moon,
+      vantage: { kind: 'over', lonDeg: lonDeg ?? 0, latDeg: latDeg ?? 0 },
+      distanceKm: 1737.4 + (heightKm ?? 0),
+      fovDeg: 60,
+      tiltDeg: Number.isFinite(tiltDeg) ? (tiltDeg ?? 0) : 0,
+    },
+  };
+}
+
 /** The interactive app shows the app viewpoint's scene and pose. */
 const INTERACTIVE = findViewpoint('app');
 
@@ -234,7 +259,8 @@ async function createStage(
 }
 
 async function start(): Promise<void> {
-  const viewpoint = captureId === null ? INTERACTIVE : findViewpoint(captureId);
+  const listed = captureId === null ? INTERACTIVE : findViewpoint(captureId);
+  const viewpoint = listed === undefined ? undefined : placedAt(listed);
   if (viewpoint === undefined) {
     report({ status: 'refused', reason: `unknown viewpoint: ${String(captureId)}` });
     return;
@@ -340,11 +366,12 @@ async function start(): Promise<void> {
   /** Pitch applied after the controls aim at the target: identity unless a Moon view tilts. */
   let tilt = new Quaternion();
   if (stage.radiusKm !== null) {
-    // Fit the disc to the screen's shorter side, keeping the viewpoint's direction.
+    // Fit the disc to the screen's shorter side, keeping the viewpoint's direction; `?at=`
+    // keeps the height it asked for.
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
     const tanHalf = Math.tan((camera.fov * Math.PI) / 360) * Math.min(1, aspect);
     const distance = stage.radiusKm / Math.sin(Math.atan(FIT_FRACTION * tanHalf));
-    camera.position.setLength(distance);
+    if (!params.has('at')) camera.position.setLength(distance);
     controls.minDistance = MIN_DISTANCE_RADII * stage.radiusKm;
     controls.maxDistance = MAX_DISTANCE_RADII * stage.radiusKm;
     // Orbiting stays centred on the Moon: panning would move the target off its centre.

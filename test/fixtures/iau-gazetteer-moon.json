@@ -58,6 +58,15 @@
       "diameterKm": 0.009,
       "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5684",
       "expect": "Apollo 11 site, in Mare Tranquillitatis"
+    },
+    {
+      "name": "Albategnius",
+      "lonEastDeg": 4.0092,
+      "lonDeg": 4.0092,
+      "latDeg": -11.24,
+      "diameterKm": 130.84,
+      "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/162",
+      "expect": "walled plain near the first-quarter terminator: its sunward (west) inner wall brighter than its east inner wall under relief (SS-8)"
     }
   ]
 }

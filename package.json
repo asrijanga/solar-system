@@ -27,6 +27,7 @@
     "pipeline:test": "cd pipeline && uv run python -m unittest -v",
     "pipeline:ephemeris": "uv run --project pipeline python pipeline/ephemeris.py",
     "pipeline:calibrate": "uv run --project pipeline python pipeline/calibrate.py",
+    "pipeline:terrain": "uv run --project pipeline python pipeline/terrain.py",
     "pipeline:moon": "uv run --project pipeline python pipeline/moon.py"
   },
   "dependencies": {

@@ -10,13 +10,15 @@
     "checks": [],
     "starChecks": [],
     "moon": {
-      "epoch": "first-quarter-2026-01",
+      "epoch": "full-2026-01",
       "vantage": {
         "kind": "earth"
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
-      "albedo": "map",
+      "albedo": {
+        "uniform": 0.96
+      },
       "shading": "lommel-seeliger",
       "mirrored": false,
       "seamFix": true,
@@ -27,15 +29,18 @@
     },
     "moonChecks": [
       {
-        "kind": "night",
-        "name": "night side is black",
-        "minDepthDeg": 6.5,
-        "minFraction": 0.999
+        "kind": "photometry",
+        "name": "relief vanishes at full phase",
+        "model": "lommel-seeliger",
+        "albedo": 0.96,
+        "tolerance": 2,
+        "minFraction": 0.95,
+        "limbInsetPx": 8
       }
     ],
     "negativeControl": false,
-    "id": "moon-quarter",
-    "description": "The first-quarter Moon of 2026-01-26 seen from Earth. The terminator runs north–south near the centre, the lit half to the right, and the night side is black: no ambient light.",
+    "id": "uniform-relief-full",
+    "description": "The uniform Moon with LOLA relief at full phase. Lommel–Seeliger with sun and view almost aligned barely depends on the surface normal, so the relief must nearly vanish: the smooth-sphere prediction still holds within 2 levels on 95% of the disc.",
     "scene": "moon"
   },
   "environment": {
@@ -64,9 +69,9 @@
     "ok": true,
     "results": [
       {
-        "name": "night side is black: 166547 night pixels",
+        "name": "relief vanishes at full phase: 391452 disc pixels, worst 12 levels",
         "pass": true,
-        "fraction": 1
+        "fraction": 0.9907191686337022
       }
     ]
   },

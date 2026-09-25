@@ -23,7 +23,9 @@
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
-      "lighting": "sun"
+      "lighting": "sun",
+      "relief": true,
+      "reliefFlipped": false
     },
     "moonChecks": [],
     "negativeControl": false,
@@ -58,7 +60,7 @@
     "results": []
   },
   "git": {
-    "sha": "4f6d7ffaaef5a8d0d7634d9da889fc4b2374fa9d",
+    "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",
     "dirty": false
   }
 }

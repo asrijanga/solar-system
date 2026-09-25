@@ -12,11 +12,15 @@
     "moon": {
       "epoch": "first-quarter-2026-01",
       "vantage": {
-        "kind": "earth"
+        "kind": "over",
+        "lonDeg": 4.0092,
+        "latDeg": -11.24
       },
-      "distanceKm": 6949.6,
-      "fovDeg": 40,
-      "albedo": "map",
+      "distanceKm": 2258.6200000000003,
+      "fovDeg": 20,
+      "albedo": {
+        "uniform": 0.96
+      },
       "shading": "lommel-seeliger",
       "mirrored": false,
       "seamFix": true,
@@ -27,15 +31,21 @@
     },
     "moonChecks": [
       {
-        "kind": "night",
-        "name": "night side is black",
-        "minDepthDeg": 6.5,
-        "minFraction": 0.999
+        "kind": "walls",
+        "name": "Albategnius sunward wall brighter",
+        "lonDeg": 4.0092,
+        "latDeg": -11.24,
+        "diameterKm": 130.84,
+        "inner": [
+          0.25,
+          0.45
+        ],
+        "brighter": "west"
       }
     ],
     "negativeControl": false,
-    "id": "moon-quarter",
-    "description": "The first-quarter Moon of 2026-01-26 seen from Earth. The terminator runs north–south near the centre, the lit half to the right, and the night side is black: no ambient light.",
+    "id": "uniform-relief-albategnius",
+    "description": "The uniform Moon with relief, looking down on Albategnius at first quarter, the Sun 7° up in the east. Its west inner wall faces the Sun and must be brighter than its east wall.",
     "scene": "moon"
   },
   "environment": {
@@ -64,7 +74,7 @@
     "ok": true,
     "results": [
       {
-        "name": "night side is black: 166547 night pixels",
+        "name": "Albategnius sunward wall brighter: west wall 74.7 vs 57.5 (58073 / 58104 px)",
         "pass": true,
         "fraction": 1
       }

@@ -12,9 +12,11 @@
     "moon": {
       "epoch": "first-quarter-2026-01",
       "vantage": {
-        "kind": "earth"
+        "kind": "over",
+        "lonDeg": 4.0092,
+        "latDeg": -11.24
       },
-      "distanceKm": 6949.6,
+      "distanceKm": 2606.1000000000004,
       "fovDeg": 40,
       "albedo": "map",
       "shading": "lommel-seeliger",
@@ -25,17 +27,10 @@
       "relief": true,
       "reliefFlipped": false
     },
-    "moonChecks": [
-      {
-        "kind": "night",
-        "name": "night side is black",
-        "minDepthDeg": 6.5,
-        "minFraction": 0.999
-      }
-    ],
+    "moonChecks": [],
     "negativeControl": false,
-    "id": "moon-quarter",
-    "description": "The first-quarter Moon of 2026-01-26 seen from Earth. The terminator runs north–south near the centre, the lit half to the right, and the night side is black: no ambient light.",
+    "id": "moon-albategnius",
+    "description": "Albategnius and its neighbours near the first-quarter terminator, textured, with relief. For eyes: crater walls and rims should read as three-dimensional.",
     "scene": "moon"
   },
   "environment": {
@@ -62,13 +57,7 @@
   "checks": {
     "negativeControl": false,
     "ok": true,
-    "results": [
-      {
-        "name": "night side is black: 166547 night pixels",
-        "pass": true,
-        "fraction": 1
-      }
-    ]
+    "results": []
   },
   "git": {
     "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",

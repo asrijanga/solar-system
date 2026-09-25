@@ -61,50 +61,56 @@
     "kmPerPixelAtEquator": 1.333,
     "missingPixels": 19917,
     "missingFraction": 0.000594,
-    "sha256": "47d702f56a5c4a781087aa4bf4a181c5b9e7f3d4b758d3ac2633c5b646f3d335",
+    "sha256": "0cacf4c1829758af363a4dd6a173f2854aabe8e89ca69b08777e06357d9ef3f2",
     "mask": "albedo-mask.png",
     "maskSha256": "3ab12b94c634c8191ad528d88a74149d5f5ab0ae2ab32a6cbc038d7f87b70049",
     "gpuBytesR8WithMips": 44739242
   },
   "formatChoice": {
-    "rule": "smallest albedo with albedo + mask <= 6291456 bytes and PSNR >= 40.0 dB over imaged pixels",
+    "rule": "smallest albedo with albedo + mask <= 6291456 bytes and PSNR >= 42.0 dB over imaged pixels and over the Clementine region (|lat| < 65) alone",
     "maskBytes": 7245,
-    "chosen": "webp-q70",
+    "chosen": "webp-q85",
     "trials": [
       {
         "format": "webp-lossless",
         "bytes": 11097570,
         "psnrDb": null,
+        "psnrClementineDb": null,
         "maxAbsError": 0
       },
       {
         "format": "webp-q95",
         "bytes": 3702386,
         "psnrDb": 46.36,
+        "psnrClementineDb": 45.82,
         "maxAbsError": 10
       },
       {
         "format": "webp-q90",
         "bytes": 2168680,
         "psnrDb": 44.4,
+        "psnrClementineDb": 43.88,
         "maxAbsError": 15
       },
       {
         "format": "webp-q85",
         "bytes": 1397834,
         "psnrDb": 42.61,
+        "psnrClementineDb": 42.15,
         "maxAbsError": 21
       },
       {
         "format": "webp-q80",
         "bytes": 1037756,
         "psnrDb": 41.63,
+        "psnrClementineDb": 41.21,
         "maxAbsError": 28
       },
       {
         "format": "webp-q70",
         "bytes": 696982,
         "psnrDb": 40.48,
+        "psnrClementineDb": 40.1,
         "maxAbsError": 40
       }
     ]
@@ -115,9 +121,9 @@
     "source": "NASA Moon Fact Sheet, 'Visual geometric albedo 0.12' (https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html)",
     "model": "Lommel-Seeliger, I/F = (w/4) mu0/(mu0+mu), w = albedoScale * texture value in [0, 1]",
     "method": "zero-phase disc mean of I/F equals the geometric albedo: albedoScale = 8p / mean(v), v weighted by projected area over the hemisphere facing longitude 0, latitude 0, gaps excluded",
-    "discMeanTextureValue": 0.12129,
-    "albedoScale": 7.91493,
+    "discMeanTextureValue": 0.121196,
+    "albedoScale": 7.921022,
     "script": "pipeline/calibrate.py",
-    "decodedMean": 41.4018
+    "decodedMean": 41.3737
   }
 }

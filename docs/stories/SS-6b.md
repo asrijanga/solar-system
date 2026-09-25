@@ -49,15 +49,13 @@ At 50–60° the prose orientation gives r = 0.726 (south) and 0.766 (north). Su
 - **Baked polar shading is gone** poleward of 75°: the sun-facing crater walls and black shadows of Clementine's low-sun pictures (`ss6b-south-pole-before-after.png`).
 - **The blend leaves no step.** Row means change across 60–80° no more than 10 times the typical row-to-row change at low latitude, tested at both poles.
 - **Gazetteer checks unchanged** (all features are equatorward of 50°); all pass.
-- **Albedo scale re-derived:** 7.8826 → 7.9149 (+0.4%); the disc mean includes some polar area.
+- **Albedo scale re-derived:** 7.8826 → 7.9210 (+0.5%); the disc mean includes some polar area.
 
 ### Encoding
 
-The pipeline's SS-5 rule (smallest WebP with albedo plus mask ≤ 6 MB and PSNR ≥ 40 dB over imaged pixels) now picks **q70: 0.70 MB**, down from q85 at 2.57 MB. Clementine's noisy polar shading had consumed most of the bits.
+At SS-5's floor of 40 dB, the rule picked WebP q70 (0.70 MB), which was slightly blocky in smooth maria. **Owner decision, 2026-09-25: ship q85.** The floor is now 42 dB, and it applies to the Clementine region (|latitude| < 65°) on its own as well as overall, because LOLA's smooth polar rows (about 28% of the grid) would otherwise lift the average.
 
-Because the smooth polar rows are about 28% of the equirectangular pixels, I checked that the average was not hiding a loss elsewhere. PSNR per region at q70: 40.10 dB for Clementine (|latitude| < 65°) and 41.65 dB for the poles. Both meet the rule.
-
-Even so, a limb crop shows q70 slightly blockier than q85 in smooth maria. **This is for the owner:** keep the rule's q70 (0.70 MB), or raise the PSNR floor so q85 (1.40 MB, 42.2 dB in the Clementine region) is chosen.
+Result: **q85, 1.40 MB** (it was 2.57 MB before the poles changed), 42.61 dB overall and 42.15 dB in the Clementine region. Albedo scale re-derived: 7.9210.
 
 ## Costs, stated
 

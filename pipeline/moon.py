@@ -60,7 +60,11 @@ OUT_DIR = ROOT / "public" / "data" / "moon"
 MASTER = CACHE / "moon-albedo-master.png"  # lossless, not committed
 
 MAX_BYTES = 6 * 1024 * 1024
-MIN_PSNR_DB = 40.0
+# Raised from 40 by the owner on 2026-09-25 (docs/stories/SS-6b.md): at 40 the rule chose q70,
+# visibly blocky in smooth maria. Applied to the Clementine region on its own as well, so
+# LOLA's smooth polar rows (about 28% of the grid) cannot lift the average.
+MIN_PSNR_DB = 42.0
+CLEMENTINE_REGION_DEG = 65.0
 
 
 def downsample(source: Path) -> np.ndarray:
@@ -126,6 +130,8 @@ def albedo_for_encoding(master: np.ndarray) -> np.ndarray:
 def format_trials(master: np.ndarray) -> list[dict]:
     """Encodes the albedo several ways and measures each over imaged pixels. Nothing is chosen here."""
     valid = master > 0
+    lat = 90 - (np.arange(master.shape[0]) + 0.5) * 180 / master.shape[0]
+    low = valid & (np.abs(lat) < CLEMENTINE_REGION_DEG)[:, None]
     filled = Image.fromarray(albedo_for_encoding(master), mode="L")
     trials = [("webp", {"lossless": True, "method": 6})]
     trials += [("webp", {"quality": q, "method": 6}) for q in (95, 90, 85, 80, 70)]
@@ -141,6 +147,9 @@ def format_trials(master: np.ndarray) -> list[dict]:
                 "bytes": buffer.tell(),
                 # Lossless is infinite PSNR, which JSON cannot hold: recorded as null.
                 "psnrDb": None if math.isinf(p := psnr(master[valid], decoded[valid])) else round(p, 2),
+                "psnrClementineDb": None
+                if math.isinf(q := psnr(master[low], decoded[low]))
+                else round(q, 2),
                 "maxAbsError": int(error.max()),
                 "_data": buffer.getvalue(),
             }
@@ -161,7 +170,8 @@ def choose(trials: list[dict], mask_bytes: int) -> dict:
     eligible = [
         t
         for t in trials
-        if t["bytes"] + mask_bytes <= MAX_BYTES and (t["psnrDb"] is None or t["psnrDb"] >= MIN_PSNR_DB)
+        if t["bytes"] + mask_bytes <= MAX_BYTES
+        and all(t[k] is None or t[k] >= MIN_PSNR_DB for k in ("psnrDb", "psnrClementineDb"))
     ]
     if not eligible:
         raise RuntimeError("no encoding meets the size and quality rules; see the trials")
@@ -228,7 +238,7 @@ def build() -> dict:
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),
         },
         "formatChoice": {
-            "rule": f"smallest albedo with albedo + mask <= {MAX_BYTES} bytes and PSNR >= {MIN_PSNR_DB} dB over imaged pixels",
+            "rule": f"smallest albedo with albedo + mask <= {MAX_BYTES} bytes and PSNR >= {MIN_PSNR_DB} dB over imaged pixels and over the Clementine region (|lat| < {CLEMENTINE_REGION_DEG:g}) alone",
             "maskBytes": len(mask_data),
             "chosen": chosen["format"],
             "trials": [{k: v for k, v in t.items() if k != "_data"} for t in trials],

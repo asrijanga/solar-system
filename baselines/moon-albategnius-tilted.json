@@ -1,0 +1,67 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "moon": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": 4.0092,
+        "latDeg": -12
+      },
+      "distanceKm": 1743.4,
+      "fovDeg": 60,
+      "tiltDeg": 80,
+      "albedo": "map",
+      "shading": "lommel-seeliger",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "relief": true,
+      "reliefFlipped": false
+    },
+    "moonChecks": [],
+    "negativeControl": false,
+    "id": "moon-albategnius-tilted",
+    "description": "From 6 km over Albategnius's floor, 12°S, looking north across the crater towards the horizon, tilted 80° from straight down, at first quarter. The central peak and the north rim stand up against black sky, lit from the east (right). For eyes.",
+    "scene": "moon"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": []
+  },
+  "git": {
+    "sha": "4c75325a1ab35a0b045618d88bea684d79eb4a34",
+    "dirty": true
+  }
+}

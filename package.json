@@ -29,7 +29,8 @@
     "pipeline:calibrate": "uv run --project pipeline python pipeline/calibrate.py",
     "pipeline:terrain": "uv run --project pipeline python pipeline/terrain.py",
     "pipeline:tiles": "uv run --project pipeline python pipeline/terrain_tiles.py",
-    "pipeline:moon": "uv run --project pipeline python pipeline/moon.py"
+    "pipeline:moon": "uv run --project pipeline python pipeline/moon.py",
+    "local": "vite build && node tools/local/server.ts"
   },
   "dependencies": {
     "3d-tiles-renderer": "0.5.3",

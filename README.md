@@ -881,6 +881,15 @@ Generating tiles needs compute, but offline and in batches. The pipeline runs on
 
 Static hosting carries the entire single-player roadmap, every world in the catalogue included. The first thing that genuinely requires a server is multiplayer.
 
+### No paid storage: the website plus a local mode *(2026-09-25, owner's decision)*
+
+The owner does not want to pay for storage. So the Moon ships two ways (docs/stories/SS-10c.md).
+
+- **The website stays free,** on GitHub Pages (about 1 GB): the global terrain plus a finely measured patch, and it runs on a phone.
+- **`npm run local` gives the whole Moon at full measured detail on your own computer,** with no hosting at all. A small local server makes each terrain tile the first time a view needs it. It fetches just that tile's part of the publishers' files straight from NASA PDS and JAXA DARTS, and caches it on disk. It streams by viewpoint, so a session downloads only the places you visit, at the detail your distance needs.
+
+"Generating tiles needs compute, but offline and in batches" still holds for the website. In local mode the batch becomes on demand.
+
 ### Capability splitting is about data, and now code too
 
 The instinct to split by client capability is right, and it lands mostly on the tile pyramid.

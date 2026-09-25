@@ -180,7 +180,9 @@ async function createStage(
         loadJson<MoonEphemeris>('data/moon/ephemeris.json'),
         loadStarField(),
         setup.albedo === 'map' ? loadMoonTextures(maxAnisotropy) : null,
-        setup.relief ? loadJson<{ available: TileRange[][] }>('terrain/layer.json') : null,
+        setup.relief
+          ? loadJson<{ name: string; available: TileRange[][] }>('terrain/layer.json')
+          : null,
       ]);
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
@@ -222,7 +224,10 @@ async function createStage(
         albedoDecodedMean: textures?.decodedMean ?? null,
         terrain,
         terrainAvailable: layer?.available ?? null,
-        caption: `The Moon from Earth · ${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°`,
+        caption:
+          `The Moon from Earth · ${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°` +
+          // `npm run local` serves the whole Moon at full measured detail (tools/local/server.ts).
+          (layer?.name === 'moon-local' ? ' · full measured detail, streamed locally' : ''),
       };
     }
   }

@@ -677,6 +677,21 @@ export const viewpoints: readonly Viewpoint[] = [
   },
   {
     ...SPACE,
+    id: 'moon-theophilus-tilted',
+    description:
+      'Theophilus (IAU Gazetteer: 26.2847 E, 11.4524 S, 98.6 km) from 25 km south of its centre, 2.2 km above the crater floor (2.5 km below the 1737.4 km sphere; the floor is 4.7 km below it in SLDEM2015), looking north across the crater, tilted 78°, at first quarter. On the website this is the global 2.7 km terrain; through `npm run local` it is SLDEM2015 and Kaguya down to 10 m (docs/stories/SS-10c.md). For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: 26.2847, latDeg: -12.277 },
+      distanceKm: MOON_RADIUS_KM - 2.5,
+      fovDeg: 60,
+      tiltDeg: 78,
+    },
+  },
+  {
+    ...SPACE,
     id: 'moon-seam',
     description:
       'The ±180° meridian from over 165°E 25°N, unlit albedo, so the wrap crosses 2x2 pixel quads the way it does for anyone orbiting. The texture wrap must leave no line.',

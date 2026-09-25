@@ -9,3 +9,4 @@ public/data/
 pipeline/.venv/
 pipeline/.cache/
 public/terrain/
+.cache/

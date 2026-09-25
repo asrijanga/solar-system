@@ -233,7 +233,7 @@ function bodyToSceneMatrix4(epoch: MoonEpoch): Matrix4 {
  * The Moon's surface material. On the smooth sphere, object space is the body frame and
  * the sphere's own normal lights it. On terrain, each fragment's body-fixed position comes
  * from its world position, and the normal is the vertex normal the pipeline computed from
- * the measured heights (pipeline/quantized_mesh.py): nothing about the shape is drawn from
+ * the measured heights (tools/terrain/quantizedMesh.ts): nothing about the shape is drawn from
  * an image.
  */
 function createMoonMaterial(
@@ -409,7 +409,7 @@ const TERRAIN_ERROR_TARGET = 1;
 const terrainBase = `${import.meta.env.BASE_URL}terrain/`;
 
 /**
- * The Moon as streamed polygons: LOLA quantized-mesh tiles (pipeline/terrain_tiles.py),
+ * The Moon as streamed polygons: LOLA quantized-mesh tiles (tools/terrain/build.ts),
  * every vertex on a measured height, refined as the camera comes closer. The caller sets
  * the camera and resolution and calls `update()` once per frame before drawing.
  */

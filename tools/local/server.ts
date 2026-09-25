@@ -11,7 +11,7 @@ import { readFile, writeFile, rename } from 'node:fs/promises';
 import { extname, join, normalize, dirname } from 'node:path';
 import { BlockStore } from './grids.ts';
 import { Ladder, availability, MAX_LEVEL } from './ladder.ts';
-import { encodeTile } from './quantizedMesh.ts';
+import { encodeTile } from '../terrain/quantizedMesh.ts';
 
 const root = join(import.meta.dirname, '..', '..');
 const dist = join(root, 'dist');

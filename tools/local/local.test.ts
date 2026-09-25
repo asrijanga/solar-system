@@ -10,7 +10,7 @@ import {
 } from './grids.ts';
 import { availability, productsFor } from './ladder.ts';
 import { rangeHeader, splitRanges } from './multipart.ts';
-import { encodeTile, octEncode, tileBounds } from './quantizedMesh.ts';
+import { encodeTile, octEncode, tileBounds } from '../terrain/quantizedMesh.ts';
 
 function fileAt(
   product: Product,
@@ -26,7 +26,7 @@ function fileAt(
 
 describe('publishers’ file layout', () => {
   it('names files exactly as PDS and JAXA publish them', () => {
-    // Albategnius, 4.0 E 11.2 S: the files pinned in pipeline/terrain_tiles.py and listed by PDS.
+    // Albategnius, 4.0 E 11.2 S: the files pinned in tools/terrain/build.ts and listed by PDS.
     expect(fileAt(LDEM_512, -11.24, 4.0).id).toBe('ldem_512_45s_00s_000_090_float');
     expect(fileAt(LDEM_512, 70, 100).id).toBe('ldem_512_45n_90n_090_180_float');
     expect(fileAt(LDEM_512, 10, 300).id).toBe('ldem_512_00n_45n_270_360_float');

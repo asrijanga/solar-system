@@ -16,7 +16,7 @@ import {
   type BlockStore,
   type Product,
 } from './grids.ts';
-import type { HeightSource } from './quantizedMesh.ts';
+import type { HeightSource } from '../terrain/quantizedMesh.ts';
 import type { TileRange } from '../../src/core/terrain.ts';
 
 /** The deepest level: 10 m vertex spacing, Kaguya's 8.4 m sampling. */

@@ -546,6 +546,18 @@ export const viewpoints: readonly Viewpoint[] = [
   },
   {
     ...SPACE,
+    id: 'moon-south-pole',
+    description:
+      'Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 75° the albedo is LOLA laser albedo, blended into Clementine across 65–75° (docs/stories/SS-6b.md): no gaps, no step at the blend. For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      vantage: { kind: 'over', lonDeg: 0, latDeg: -80 },
+      shading: 'albedo',
+    },
+  },
+  {
+    ...SPACE,
     id: 'app',
     description:
       'What the interactive app shows on load: the first-quarter Moon from Earth, lunar north up, stars at physical exposure (so none show).',

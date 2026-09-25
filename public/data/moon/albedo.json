@@ -7,13 +7,51 @@
     "label": "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2_pds3.lbl",
     "chosen": "owner, 2026-09-24, over LRO WAC morphology mosaic (baked shading)"
   },
+  "poles": {
+    "source": "LOLA LDAM polar normal albedo, Lemelin et al. (2016), PDS LRO-L-LOLA-4-GDR-V1.0",
+    "chosen": "owner, 2026-09-25: replace Clementine poleward of ~70 deg (docs/stories/SS-6b.md)",
+    "conventions": "polar stereographic, R = 1737.4 km, 1000 m/px, planetocentric, east-positive, MEAN EARTH/POLAR AXIS OF DE421, 1064 nm normal albedo",
+    "clementineMissingPixels": 297275,
+    "south": {
+      "product": "LDAM_50S_1000M_FLOAT",
+      "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/float_img/ldam_50s_1000m_float.img",
+      "sha256": "cd35ca62d322d48b2b809041e9baa086242842c25a50f8bff70936929910079a",
+      "fit": {
+        "model": "clementine = gain * lola_albedo + offset",
+        "band": "|latitude| 50 to 60 deg, both valid",
+        "pixels": 1858492,
+        "gain": 200.4352,
+        "offset": -16.0646,
+        "r": 0.7259,
+        "rmsResidual": 7.22
+      },
+      "clementineGapsFilled": 250168
+    },
+    "north": {
+      "product": "LDAM_50N_1000M_FLOAT",
+      "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/float_img/ldam_50n_1000m_float.img",
+      "sha256": "f795fd56e19718e31885fb79f7d9cd197302df91741a4f39e3aa13f053a73273",
+      "fit": {
+        "model": "clementine = gain * lola_albedo + offset",
+        "band": "|latitude| 50 to 60 deg, both valid",
+        "pixels": 1859580,
+        "gain": 182.2109,
+        "offset": -11.1177,
+        "r": 0.7655,
+        "rmsResidual": 7.021
+      },
+      "clementineGapsFilled": 27190
+    },
+    "blend": "smoothstep weight from 0 at |latitude| 65 to 1 at 75 deg; LOLA alone poleward, Clementine alone equatorward",
+    "orientation": "DSMAP_POLAR.CAT prose (90 E to the right at both poles; south lon 0 up, north lon 0 down); its south-pole inverse formula disagrees and was not used"
+  },
   "conventions": {
     "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
     "latitude": "planetocentric (identical to planetographic on a sphere)",
     "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
     "rows": "row 0 = +90 deg latitude",
     "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
-    "values": "relative albedo 1-255, linear in source pixel value; no reflectance scale in the label",
+    "values": "relative albedo 1-255 on Clementine's scale, linear; LOLA mapped onto it by the fits under poles",
     "gaps": "albedo-mask.png is authoritative: white = never imaged. Albedo values there are compression filler"
   },
   "texture": {
@@ -21,53 +59,59 @@
     "width": 8192,
     "height": 4096,
     "kmPerPixelAtEquator": 1.333,
-    "missingPixels": 297275,
-    "missingFraction": 0.008859,
-    "sha256": "21d6d7c69365af4b83a180544bcc39c800807eb38869ddefafa3d3d4d877d079",
+    "missingPixels": 19917,
+    "missingFraction": 0.000594,
+    "sha256": "0cacf4c1829758af363a4dd6a173f2854aabe8e89ca69b08777e06357d9ef3f2",
     "mask": "albedo-mask.png",
-    "maskSha256": "3d3ad7a96df52e0c7cf4e3796504c575dea280ad1e27462ded67cd66b539c346",
+    "maskSha256": "3ab12b94c634c8191ad528d88a74149d5f5ab0ae2ab32a6cbc038d7f87b70049",
     "gpuBytesR8WithMips": 44739242
   },
   "formatChoice": {
-    "rule": "smallest albedo with albedo + mask <= 6291456 bytes and PSNR >= 40.0 dB over imaged pixels",
-    "maskBytes": 21523,
+    "rule": "smallest albedo with albedo + mask <= 6291456 bytes and PSNR >= 42.0 dB over imaged pixels and over the Clementine region (|lat| < 65) alone",
+    "maskBytes": 7245,
     "chosen": "webp-q85",
     "trials": [
       {
         "format": "webp-lossless",
-        "bytes": 13387362,
+        "bytes": 11097570,
         "psnrDb": null,
+        "psnrClementineDb": null,
         "maxAbsError": 0
       },
       {
         "format": "webp-q95",
-        "bytes": 6094878,
-        "psnrDb": 46.01,
-        "maxAbsError": 9
+        "bytes": 3702386,
+        "psnrDb": 46.36,
+        "psnrClementineDb": 45.82,
+        "maxAbsError": 10
       },
       {
         "format": "webp-q90",
-        "bytes": 3998142,
-        "psnrDb": 42.08,
-        "maxAbsError": 46
+        "bytes": 2168680,
+        "psnrDb": 44.4,
+        "psnrClementineDb": 43.88,
+        "maxAbsError": 15
       },
       {
         "format": "webp-q85",
-        "bytes": 2574554,
-        "psnrDb": 41.0,
-        "maxAbsError": 28
+        "bytes": 1397834,
+        "psnrDb": 42.61,
+        "psnrClementineDb": 42.15,
+        "maxAbsError": 21
       },
       {
         "format": "webp-q80",
-        "bytes": 1972594,
-        "psnrDb": 39.84,
-        "maxAbsError": 37
+        "bytes": 1037756,
+        "psnrDb": 41.63,
+        "psnrClementineDb": 41.21,
+        "maxAbsError": 28
       },
       {
         "format": "webp-q70",
-        "bytes": 1436954,
-        "psnrDb": 38.14,
-        "maxAbsError": 50
+        "bytes": 696982,
+        "psnrDb": 40.48,
+        "psnrClementineDb": 40.1,
+        "maxAbsError": 40
       }
     ]
   },
@@ -77,9 +121,9 @@
     "source": "NASA Moon Fact Sheet, 'Visual geometric albedo 0.12' (https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html)",
     "model": "Lommel-Seeliger, I/F = (w/4) mu0/(mu0+mu), w = albedoScale * texture value in [0, 1]",
     "method": "zero-phase disc mean of I/F equals the geometric albedo: albedoScale = 8p / mean(v), v weighted by projected area over the hemisphere facing longitude 0, latitude 0, gaps excluded",
-    "discMeanTextureValue": 0.121788,
-    "albedoScale": 7.882559,
+    "discMeanTextureValue": 0.121196,
+    "albedoScale": 7.921022,
     "script": "pipeline/calibrate.py",
-    "decodedMean": 43.9234
+    "decodedMean": 41.3737
   }
 }

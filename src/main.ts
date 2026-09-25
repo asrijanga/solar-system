@@ -388,7 +388,8 @@ const ABOUT = [
   'Lighting: sun is real sunlight at this date. The night side, and the far side whenever it faces away from the Sun, are black: the Moon has no air to scatter light, and earthshine is not drawn yet.',
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
-  'Magenta marks places no picture exists: Clementine never imaged them. Most are crater floors near the poles that sunlight never reaches, so no camera using sunlight could photograph them. They are shown as missing, not filled in.',
+  'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
+  'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',
 ];
 
 /** The caption, the epoch switch, the lighting and star switches, and the map key. */
@@ -428,7 +429,7 @@ function createMoonControls(caption: string, handlers: MoonControlHandlers): voi
   const summary = document.createElement('summary');
   const swatch = document.createElement('span');
   swatch.className = 'swatch';
-  summary.append(swatch, 'Magenta: never photographed · About this view');
+  summary.append(swatch, 'Magenta: never measured · About this view');
   about.append(summary);
   for (const line of ABOUT) {
     const p = document.createElement('p');

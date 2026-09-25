@@ -13,11 +13,11 @@
       "epoch": "full-2026-01",
       "vantage": {
         "kind": "over",
-        "lonDeg": -16,
-        "latDeg": 33
+        "lonDeg": 0,
+        "latDeg": -80
       },
-      "distanceKm": 2606.1000000000004,
-      "fovDeg": 90,
+      "distanceKm": 6949.6,
+      "fovDeg": 40,
       "albedo": "map",
       "shading": "albedo",
       "mirrored": false,
@@ -27,8 +27,8 @@
     },
     "moonChecks": [],
     "negativeControl": false,
-    "id": "moon-limb",
-    "description": "From 1.5 radii with a 90° field, unlit albedo, over Mare Imbrium: the closest the app allows. Towards the limb the surface is seen edge-on, where anisotropic filtering keeps detail that isotropic filtering blurs. For eyes: no automated check.",
+    "id": "moon-south-pole",
+    "description": "Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 75° the albedo is LOLA laser albedo, blended into Clementine across 65–75° (docs/stories/SS-6b.md): no gaps, no step at the blend. For eyes.",
     "scene": "moon"
   },
   "environment": {

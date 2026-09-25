@@ -78,9 +78,27 @@ class Integrity(unittest.TestCase):
         self.assertGreater(missing, 0, "Clementine has unimaged gaps; they must survive")
         self.assertLess(missing, 0.01)
 
-    def test_south_polar_gap_is_where_clementine_is_known_to_be_thin(self) -> None:
+    def test_the_poles_have_no_gaps_since_lola_covers_them(self) -> None:
+        """Clementine never imaged 13% of the area south of -80 deg; LOLA measured all of it."""
         lat = 90 - (np.arange(H) + 0.5) * 180 / H
-        self.assertGreater(GAP[lat < -80].mean(), 10 * GAP[np.abs(lat) < 60].mean())
+        self.assertEqual(int(GAP[np.abs(lat) >= 65].sum()), 0)
+        self.assertLess(MANIFEST["texture"]["missingPixels"], MANIFEST["poles"]["clementineMissingPixels"])
+
+    def test_the_blend_leaves_no_step_between_sources(self) -> None:
+        """Row means change smoothly across the 65-75 deg blend, at both poles."""
+        lat = 90 - (np.arange(H) + 0.5) * 180 / H
+        row_mean = np.array([TEXTURE[r][~GAP[r]].mean() if (~GAP[r]).any() else np.nan for r in range(H)])
+        for band in ((60, 80), (-80, -60)):
+            rows = np.nonzero((lat > min(band)) & (lat < max(band)))[0]
+            steps = np.abs(np.diff(row_mean[rows]))
+            typical = np.median(np.abs(np.diff(row_mean[np.nonzero(np.abs(lat) < 40)[0]])))
+            self.assertLess(float(steps.max()), 10 * typical + 1.0, band)
+
+    def test_the_polar_fits_are_recorded_and_where_both_maps_agree(self) -> None:
+        for pole in ("south", "north"):
+            fit = MANIFEST["poles"][pole]["fit"]
+            self.assertGreater(fit["r"], 0.6, pole)
+            self.assertGreater(fit["gain"], 0, pole)
 
 
 class AgainstTheGazetteer(unittest.TestCase):

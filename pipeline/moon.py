@@ -41,6 +41,7 @@ from rasterio.enums import Resampling
 from rasterio.windows import Window
 
 from download import CACHE, fetch, sha256
+from lola_poles import combine
 
 SOURCE_URL = (
     "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2.1.tif"
@@ -59,7 +60,11 @@ OUT_DIR = ROOT / "public" / "data" / "moon"
 MASTER = CACHE / "moon-albedo-master.png"  # lossless, not committed
 
 MAX_BYTES = 6 * 1024 * 1024
-MIN_PSNR_DB = 40.0
+# Raised from 40 by the owner on 2026-09-25 (docs/stories/SS-6b.md): at 40 the rule chose q70,
+# visibly blocky in smooth maria. Applied to the Clementine region on its own as well, so
+# LOLA's smooth polar rows (about 28% of the grid) cannot lift the average.
+MIN_PSNR_DB = 42.0
+CLEMENTINE_REGION_DEG = 65.0
 
 
 def downsample(source: Path) -> np.ndarray:
@@ -125,6 +130,8 @@ def albedo_for_encoding(master: np.ndarray) -> np.ndarray:
 def format_trials(master: np.ndarray) -> list[dict]:
     """Encodes the albedo several ways and measures each over imaged pixels. Nothing is chosen here."""
     valid = master > 0
+    lat = 90 - (np.arange(master.shape[0]) + 0.5) * 180 / master.shape[0]
+    low = valid & (np.abs(lat) < CLEMENTINE_REGION_DEG)[:, None]
     filled = Image.fromarray(albedo_for_encoding(master), mode="L")
     trials = [("webp", {"lossless": True, "method": 6})]
     trials += [("webp", {"quality": q, "method": 6}) for q in (95, 90, 85, 80, 70)]
@@ -140,6 +147,9 @@ def format_trials(master: np.ndarray) -> list[dict]:
                 "bytes": buffer.tell(),
                 # Lossless is infinite PSNR, which JSON cannot hold: recorded as null.
                 "psnrDb": None if math.isinf(p := psnr(master[valid], decoded[valid])) else round(p, 2),
+                "psnrClementineDb": None
+                if math.isinf(q := psnr(master[low], decoded[low]))
+                else round(q, 2),
                 "maxAbsError": int(error.max()),
                 "_data": buffer.getvalue(),
             }
@@ -160,7 +170,8 @@ def choose(trials: list[dict], mask_bytes: int) -> dict:
     eligible = [
         t
         for t in trials
-        if t["bytes"] + mask_bytes <= MAX_BYTES and (t["psnrDb"] is None or t["psnrDb"] >= MIN_PSNR_DB)
+        if t["bytes"] + mask_bytes <= MAX_BYTES
+        and all(t[k] is None or t[k] >= MIN_PSNR_DB for k in ("psnrDb", "psnrClementineDb"))
     ]
     if not eligible:
         raise RuntimeError("no encoding meets the size and quality rules; see the trials")
@@ -174,6 +185,10 @@ def build() -> dict:
     else:
         master = downsample(source)
         Image.fromarray(master, mode="L").save(MASTER, optimize=True)
+
+    clementine_missing = int(np.sum(master == 0))
+    # Every available source (README): LOLA's laser albedo at the poles (lola_poles.py).
+    master, poles = combine(master)
 
     mask_data = encode_mask(master)
     trials = format_trials(master)
@@ -194,13 +209,20 @@ def build() -> dict:
             "label": SOURCE_LABEL,
             "chosen": "owner, 2026-09-24, over LRO WAC morphology mosaic (baked shading)",
         },
+        "poles": {
+            "source": "LOLA LDAM polar normal albedo, Lemelin et al. (2016), PDS LRO-L-LOLA-4-GDR-V1.0",
+            "chosen": "owner, 2026-09-25: replace Clementine poleward of ~70 deg (docs/stories/SS-6b.md)",
+            "conventions": "polar stereographic, R = 1737.4 km, 1000 m/px, planetocentric, east-positive, MEAN EARTH/POLAR AXIS OF DE421, 1064 nm normal albedo",
+            "clementineMissingPixels": clementine_missing,
+            **poles,
+        },
         "conventions": {
             "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
             "latitude": "planetocentric (identical to planetographic on a sphere)",
             "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
             "rows": "row 0 = +90 deg latitude",
             "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
-            "values": "relative albedo 1-255, linear in source pixel value; no reflectance scale in the label",
+            "values": "relative albedo 1-255 on Clementine's scale, linear; LOLA mapped onto it by the fits under poles",
             "gaps": "albedo-mask.png is authoritative: white = never imaged. Albedo values there are compression filler",
         },
         "texture": {
@@ -216,7 +238,7 @@ def build() -> dict:
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),
         },
         "formatChoice": {
-            "rule": f"smallest albedo with albedo + mask <= {MAX_BYTES} bytes and PSNR >= {MIN_PSNR_DB} dB over imaged pixels",
+            "rule": f"smallest albedo with albedo + mask <= {MAX_BYTES} bytes and PSNR >= {MIN_PSNR_DB} dB over imaged pixels and over the Clementine region (|lat| < {CLEMENTINE_REGION_DEG:g}) alone",
             "maskBytes": len(mask_data),
             "chosen": chosen["format"],
             "trials": [{k: v for k, v in t.items() if k != "_data"} for t in trials],
@@ -231,6 +253,6 @@ if __name__ == "__main__":
     m = build()
     print(f"chose {m['formatChoice']['chosen']}; missing {m['texture']['missingFraction']:.4%} of pixels")
     for t in m["formatChoice"]["trials"]:
-        print(f"  {t['format']:18} {t['bytes'] / 1e6:6.2f} MB  PSNR {t['psnrDb']:>6} dB  max err {t['maxAbsError']:>3}")
+        print(f"  {t['format']:18} {t['bytes'] / 1e6:6.2f} MB  PSNR {'lossless' if t['psnrDb'] is None else t['psnrDb']:>6} dB  max err {t['maxAbsError']:>3}")
     print(f"  mask {m['formatChoice']['maskBytes'] / 1e6:.3f} MB")
     sys.exit(0)

@@ -1,0 +1,107 @@
+{
+  "note": "Statistics for the labelled approximation below the measurements (docs/stories/SS-10b.md). Re-derive with npm run pipeline:roughness.",
+  "falloff": {
+    "source": "LROC NAC DTMs (PDS4 LRO-L-LROC-5-RDR), 2 m spacing; RMS height difference against distance, as a ratio to its value at 64 m",
+    "sites": [
+      {
+        "site": "APOLLO11",
+        "terrain": "mare",
+        "url": "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/lro-l-lroc-5-rdr/LROLRC_2001/DATA/SDP/NAC_DTM/APOLLO11/NAC_DTM_APOLLO11_E008N0234.IMG",
+        "md5": "0c04fb36927462d1e18f1a6c888f183a",
+        "sha256": "cfdd25a32cabc3ef6306269a59b7d466c09fbd7b83f6b9dfdb7ee24df78eee44",
+        "sigmaM": [
+          0.12,
+          0.236,
+          0.461,
+          0.876,
+          1.627,
+          2.929
+        ]
+      },
+      {
+        "site": "APOLLO16_1",
+        "terrain": "highland",
+        "url": "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/lro-l-lroc-5-rdr/LROLRC_2001/DATA/SDP/NAC_DTM/APOLLO16_1/NAC_DTM_APOLLO16_1_E092S0153.IMG",
+        "md5": "18cba66509e07a751705d211d3500da9",
+        "sha256": "286e5f133f0020ef01c91b32cd359a3308a9ed456cf574f75359c014fed6aa2e",
+        "sigmaM": [
+          0.239,
+          0.47,
+          0.917,
+          1.782,
+          3.455,
+          6.681
+        ]
+      }
+    ],
+    "lagsM": [
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "ratio": [
+      0.0383,
+      0.0755,
+      0.1473,
+      0.2829,
+      0.5364,
+      1
+    ],
+    "siteSpread": [
+      0.131,
+      0.138,
+      0.136,
+      0.114,
+      0.072,
+      0
+    ],
+    "exponentBelow8m": 0.971,
+    "knownArtefact": "NAC DTM seams can step 0.5-1.0 m (the products’ README), which slightly raises small-scale roughness"
+  },
+  "anchor": {
+    "source": "SELENE TC DTM_MAP_02, RMS height difference over 8 samples (67 m) near each place, at run time",
+    "samples": 8
+  },
+  "octaves": {
+    "latticesPerDegree": [
+      7200,
+      14400,
+      28800
+    ],
+    "amplitudePerAnchorMetre": [
+      0.0453,
+      0,
+      0
+    ]
+  },
+  "check": {
+    "site": "Albategnius (Kaguya DTMs02_S09E003S12E006), 12 km patch",
+    "anchorM": 5.168,
+    "lags": [
+      {
+        "lagM": 5.2,
+        "measuredOnlyM": 0.478,
+        "rmsM": 0.499,
+        "targetM": 0.502,
+        "ratio": 0.993
+      },
+      {
+        "lagM": 2.6,
+        "measuredOnlyM": 0.243,
+        "rmsM": 0.264,
+        "targetM": 0.256,
+        "ratio": 1.033
+      },
+      {
+        "lagM": 1.3,
+        "measuredOnlyM": 0.123,
+        "rmsM": 0.136,
+        "targetM": 0.131,
+        "ratio": 1.04
+      }
+    ]
+  }
+}

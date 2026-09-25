@@ -1,0 +1,67 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "moon": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": 3.77,
+        "latDeg": -11.7
+      },
+      "distanceKm": 1738.9,
+      "fovDeg": 60,
+      "tiltDeg": 78,
+      "albedo": "map",
+      "shading": "lommel-seeliger",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "relief": true,
+      "reliefFlipped": false
+    },
+    "moonChecks": [],
+    "negativeControl": false,
+    "id": "moon-albategnius-peak",
+    "description": "Albategnius's central peak from 12 km south of it, 1.5 km above the 1737.4 km sphere (about 3 km above the crater floor), looking north, tilted 80°, at first quarter. The peak and the floor around it are SELENE Terrain Camera heights at 10 m vertex spacing (docs/stories/SS-10.md). For eyes.",
+    "scene": "moon"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": []
+  },
+  "git": {
+    "sha": "978454541385b6291fe1b1e12ecb3ff1ad663f87",
+    "dirty": true
+  }
+}

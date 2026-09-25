@@ -413,8 +413,8 @@ const terrainBase = `${import.meta.env.BASE_URL}terrain/`;
  * every vertex on a measured height, refined as the camera comes closer. The caller sets
  * the camera and resolution and calls `update()` once per frame before drawing.
  */
-export function createMoonTerrain(options: MoonOptions): TilesRenderer {
-  const tiles = new TilesRenderer(terrainBase);
+export function createMoonTerrain(options: MoonOptions, base = terrainBase): TilesRenderer {
+  const tiles = new TilesRenderer(base);
   const radiusM = options.radiusKm * 1000;
   tiles.ellipsoid.radius.set(radiusM, radiusM, radiusM);
   tiles.registerPlugin(new QuantizedMeshPlugin({ useRecommendedSettings: false }));

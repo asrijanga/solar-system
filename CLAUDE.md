@@ -5,6 +5,7 @@ The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story
 ## Stack
 
 - three.js `WebGPURenderer`, shaders in TSL, TypeScript (strict), Vite, Vitest.
+- **TypeScript everywhere, including tools and data pipelines** (owner, 2026-09-25), run directly by Node 22's type stripping. Python (with numpy) only where a step needs a library TypeScript has no good equivalent for, stated in that script: SPICE (`ephemeris.py`), GeoTIFF and GDAL resampling (`moon.py`, `terrain.py`, `lola_poles.py`), lossless WebP encoding, and heavy array maths that would be much slower without numpy. Port the rest as it is touched.
 - WebGPU only. The app refuses to run on the WebGL 2 fallback or a software adapter. `?software` allows a software adapter, for headless captures only.
 - `src/core/` is pure TypeScript and must not import three.js (enforced by lint and by `test/core-boundary.test.ts`). Truth-critical code lives there: ephemeris, orbits, geodesy, photometry, tile maths, support decisions.
 - Units are kilometres. Every renderer option goes through `createRenderer` in `src/gpu/renderer.ts`.

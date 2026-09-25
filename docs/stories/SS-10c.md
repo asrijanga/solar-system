@@ -35,7 +35,7 @@ As a learner, I want to fly anywhere on the Moon and see it as finely as it has 
   - Seen so far: Albategnius 0.6 m (SS-10), Tycho 1.1 m, Theophilus 0.5 m and 2.0 m.
 - **Size checks:** every range reply is checked against the file size implied by its label (rows × columns × sample size), and every whole download likewise.
 - **What cannot be checksummed:** reading parts of a file cannot verify the whole file's checksum, and the publishers post none for these files.
-- **Encoder:** tiles use the same format, grid and normals as `pipeline/quantized_mesh.py`, via a TypeScript port in `tools/local/quantizedMesh.ts`.
+- **Encoder:** `tools/terrain/quantizedMesh.ts`, shared with the website's build: the same format, grid and normals.
 
 ## Measured on the cloud machine
 

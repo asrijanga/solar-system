@@ -1,10 +1,17 @@
-// Cesium quantized-mesh 1.0 tiles with octahedral vertex normals: the TypeScript twin of
-// pipeline/quantized_mesh.py, used by the local server to build tiles as they are asked for.
-// Same tiling (geographic TMS, two tiles at level 0, y = 0 at the south), same vertex grid, same
+// Cesium quantized-mesh 1.0 tiles with octahedral vertex normals, for the website's terrain
+// build (tools/terrain/build.ts) and the local server (tools/local/server.ts). It replaced
+// pipeline/quantized_mesh.py, whose tiles it reproduced exactly: every height and normal, with
+// headers equal to within a nanometre. Same tiling (geographic TMS, two tiles at level 0, y = 0 at the south), same vertex grid, same
 // normals: every vertex is a measured height; nothing is added between them.
 
 export const R_M = 1_737_400;
 const MAX = 32767;
+
+/** Round half to even, as numpy's rint did in the Python encoder this replaced. */
+function rint(v: number): number {
+  const r = Math.round(v);
+  return Math.abs(v % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r;
+}
 
 export function tileBounds(z: number, x: number, y: number): [number, number, number, number] {
   const size = 180 / 2 ** z;
@@ -77,7 +84,7 @@ export function octEncode(x: number, y: number, z: number): [number, number] {
     ox = tx;
     oy = ty;
   }
-  return [Math.round((ox * 0.5 + 0.5) * 255), Math.round((oy * 0.5 + 0.5) * 255)];
+  return [rint((ox * 0.5 + 0.5) * 255), rint((oy * 0.5 + 0.5) * 255)];
 }
 
 function zigzag(values: Int32Array): Uint16Array {
@@ -93,7 +100,7 @@ function zigzag(values: Int32Array): Uint16Array {
 
 /**
  * One tile. Heights are sampled once for every vertex and, for the normals, at a vertex
- * spacing east, west, north and south of it (pipeline/quantized_mesh.py, vertex_normals), in a
+ * spacing east, west, north and south of it (central differences over one vertex spacing, offsets as distances on the sphere), in a
  * single call so a source can fetch everything it needs at once.
  */
 export async function encodeTile(
@@ -158,9 +165,9 @@ export async function encodeTile(
   order.forEach((i, k) => {
     const r = Math.floor(i / grid);
     const c = i % grid;
-    u[k] = Math.round((c / (grid - 1)) * MAX);
-    v[k] = Math.round((r / (grid - 1)) * MAX);
-    hq[k] = Math.round((((h[i] ?? 0) - hMin) / span) * MAX);
+    u[k] = rint((c / (grid - 1)) * MAX);
+    v[k] = rint((r / (grid - 1)) * MAX);
+    hq[k] = rint((((h[i] ?? 0) - hMin) / span) * MAX);
     const p = ecef(lat[i] ?? 0, lon[i] ?? 0, h[i] ?? 0);
     positions.push(p);
     for (let a = 0; a < 3; a++) {

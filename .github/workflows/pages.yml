@@ -27,15 +27,14 @@ jobs:
       - run: npm ci
       # The Moon's terrain tiles (SS-10) are built from pinned, checksummed LOLA products on
       # every run and never committed: 485 MB, too large for git. The 2.4 GB of sources are
-      # cached; download.py re-verifies each file's SHA-256 either way.
-      - run: python -m pip install uv==0.8.17
+      # cached; tools/data/download.ts re-verifies each file's SHA-256 either way.
       - uses: actions/cache@v4
         with:
           path: |
             pipeline/.cache/ldem_64_float.img
             pipeline/.cache/ldem512_rows_2560_8704.img
             pipeline/.cache/kaguya_tc_dtm_S09E003S12E006SC.img
-          key: lola-terrain-${{ hashFiles('pipeline/terrain.py', 'pipeline/terrain_tiles.py') }}
+          key: lola-terrain-${{ hashFiles('tools/terrain/build.ts', 'tools/data/download.ts') }}
           restore-keys: lola-terrain-
       - run: npm run pipeline:tiles
       # Nothing deploys that would fail CI, captures included.

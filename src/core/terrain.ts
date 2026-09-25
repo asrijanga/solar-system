@@ -9,7 +9,7 @@ export interface TileRange {
   readonly endY: number;
 }
 
-/** Vertex intervals along a tile edge: 65 x 65 vertices (pipeline/terrain_tiles.py). */
+/** Vertex intervals along a tile edge: 65 x 65 vertices (tools/terrain/quantizedMesh.ts). */
 export const TILE_INTERVALS = 64;
 
 /**

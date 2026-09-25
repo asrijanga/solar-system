@@ -662,6 +662,21 @@ export const viewpoints: readonly Viewpoint[] = [
   },
   {
     ...SPACE,
+    id: 'moon-albategnius-peak',
+    description:
+      "Albategnius's central peak from 12 km south of it, 1.5 km above the 1737.4 km sphere (about 3 km above the crater floor), looking north, tilted 80°, at first quarter. The peak and the floor around it are SELENE Terrain Camera heights at 10 m vertex spacing (docs/stories/SS-10.md). For eyes.",
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: 3.77, latDeg: -11.7 },
+      distanceKm: MOON_RADIUS_KM + 1.5,
+      fovDeg: 60,
+      tiltDeg: 78,
+    },
+  },
+  {
+    ...SPACE,
     id: 'moon-seam',
     description:
       'The ±180° meridian from over 165°E 25°N, unlit albedo, so the wrap crosses 2x2 pixel quads the way it does for anyone orbiting. The texture wrap must leave no line.',

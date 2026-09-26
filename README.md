@@ -573,47 +573,58 @@ Two stories are likely to overrun. SS-2, because headless GPU tooling is fiddly 
 
 ## Later releases
 
-Sketched, not specified. Real acceptance criteria get written in the story contract only when a story is next, because Release 1 will change what these should say.
+From here every world is built the same way: one round of the eight stories in **`docs/world-recipe.md`**, taken from how the Moon was actually built. Real acceptance criteria get written in each story's spec only when it is next.
 
-| ID | Story | Release |
+### Where the Moon stands (2026-09-26)
+
+| ID | Story | State |
 | --- | --- | --- |
-| SS-7 | As the developer, I want the app on a private link only I can open, so that shipping is routine before anything is public | 2 |
-| SS-8 | As a learner, I want the Moon to have real relief, so that craters and mountains read as three-dimensional | 2 |
-| SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge, so that the Moon brightens at full phase the way the real one does | 2 |
-| SS-9 | As a learner, I want a visible vertical exaggeration control, so that I understand how flat worlds really are | 2 |
-| SS-10 | As a learner, I want to zoom in and have detail sharpen, so that I can study one crater closely | 3 |
-| SS-11 | As a learner, I want to descend to a few kilometres and hover, so that I feel the scale of the terrain | 3 |
-| SS-12 | As a learner, I want it to run smoothly on my own machine, so that I can actually use it — first public release | 3 |
-| SS-13 | As a learner, I want to choose a world from a true-scale map showing real distances, so that I grasp the layout before I arrive | 4 |
-| SS-14 | As a learner, I want Mars at the same fidelity as the Moon, so that I can compare two worlds | 4 |
-| SS-15 | As a learner, I want named features labelled, so that I know what I am looking at | 4 |
-| SS-16 | As a learner, I want to see where the data is poor and which mission produced it, so that I understand the limits of what we know | 5 |
-| SS-17 | As a learner, I want worlds shown side by side at true relative size, so that I feel how they compare | 5 |
-| SS-18 | As a learner, I want Mercury, so that a third rocky world is covered | 5 |
-| SS-19 | As a learner, I want Venus as radar imagery over coarse relief, so that its strangeness is visible | 6 |
-| SS-20 | As a learner, I want Earth with atmosphere, ocean, and clouds, so that home is included | 6 |
-| SS-21 | As a learner, I want the major moons, so that the outer system is represented | 7 |
-| SS-22 | As a learner, I want the gas giants as cloud tops, so that nothing is missing — a separate renderer | 8 |
-| SS-23 | As a learner, I want to place a station at a chosen altitude and inclination and watch it orbit, so that I see a world the way astronauts do | 4 |
-| SS-24 | As a learner, I want a cinematic mode with no interface and a slow camera, so that I can leave it running | 4 |
-| SS-25 | As a learner, I want thrusters that change my orbit, so that I can feel how orbital mechanics actually behaves | 5 |
-| SS-26 | As a player, I want to design my own station from parts, so that the thing in orbit is mine | Separate |
+| SS-7 | As the developer, I want the app on a private link only I can open, so that shipping is routine before anything is public | Partly pulled forward: public on GitHub Pages since SS-1. A private preview is still open |
+| SS-8 | As a learner, I want the Moon to have real relief, so that craters and mountains read as three-dimensional | Shipped |
+| SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge, so that the Moon brightens at full phase the way the real one does | Open |
+| SS-9 | As a learner, I want a visible vertical exaggeration control, so that I understand how flat worlds really are | Open |
+| SS-10 | As a learner, I want to zoom in and have detail sharpen, so that I can study one crater closely | Shipped: streamed terrain, 670 m everywhere on the website |
+| SS-10b | As a learner, I want detail below the measurements, labelled as an approximation | Shipped, local mode only |
+| SS-10c | As a learner, I want the whole Moon at full measured detail without anyone paying for hosting | Shipped: `npm run local` |
+| SS-11 | As a learner, I want to descend to a few kilometres and hover, so that I feel the scale of the terrain | Partly: tilt and ground-following; camera-relative rendering open |
+| SS-11b | As a learner, I want to orbit in a cinematic mode, low enough to see terrain and never blurry | Shipped: gestures first, then orbit |
+| SS-11c | As a learner, I want no marks breaking the view where one mission missed a spot | Shipped: gaps filled from LOLA |
+| SS-12 | As a learner, I want it to run smoothly on my own machine, so that I can actually use it: first public release | Open. Needs frame-rate numbers from the owner's iPhone |
+| SS-13 | As a learner, I want to pick a world from a home page, each world on its own page with a way back | In review. The true-scale map with real distances stays the goal for the home page |
 
-SS-7 was partly pulled forward: at the owner's request, the app has deployed publicly to GitHub Pages since SS-1. A private preview link is still SS-7's job.
+### Next: the worlds, one round of the recipe each
 
-SS-8 is where WebGPU starts paying for itself. Relief is vertex displacement in TSL from a height texture, and normals come from a compute pass over the height data rather than from finite differences in the fragment shader. Horizon maps for terrain shadows are computed offline in the pipeline (see Terrain shadows) and simply sampled at runtime.
+| ID | World | Round | Notes for this world |
+| --- | --- | --- | --- |
+| SS-13b | Earth in the Moon's sky | W8 only | The owner's "objects in the background coming and going". Earth drawn from the ephemeris at true brightness, as a lit disc until Earth's own round |
+| SS-14 | Mars | W1–W8 | MOLA global elevation, HRSC and CTX mosaics, HiRISE locally. Likely the first world to need its own data repository (W4) |
+| SS-18 | Mercury | W1–W8 | MESSENGER. Permanently shadowed polar craters, as on the Moon |
+| SS-19 | Venus | W1–W8, adapted | Magellan radar is not albedo. W3 becomes radar brightness, labelled as such, over coarse relief |
+| SS-20 | Earth | W1–W8, plus atmosphere | Copernicus, Sentinel, GEBCO. Ocean, clouds and atmosphere are their own stories |
+| SS-21 | The major moons | W1–W8 each, lighter | Io, Enceladus and Triton first (the catalogue's priority). Most have imagery but little elevation, so W4 is often a sphere with local relief |
+| SS-22 | The gas giants | Separate renderer | Cloud tops, loaded through a dynamic `import()` |
 
-SS-10 and SS-11 are the architecturally heavy pair and the real technical risk of the project. SS-10 opens with a timeboxed **spike**: can 3DTilesRendererJS stream our Moon on `WebGPURenderer`, with our TSL material, inside our budgets? If yes, we adopt it and the risk of the whole project drops sharply. If no, the spike's write-up says exactly why, and we build our own cube-sphere quadtree: GPU-driven, with a compute pass for frustum and horizon culling that writes an indirect draw buffer, a texture array as the tile atlas, workers decoding tiles off the main thread, and eviction against a byte budget. Either way, quality tiers arrive here as well.
+Each round's W1 inventory comes first and is shown to the owner before any code. Each W3 starts with side-by-side product images for the owner to choose from, as SS-5 did.
 
-SS-13 is where world selection arrives, and it should land with the second world rather than before it. A selector with one entry is not a selector. Design it as the place that carries system-scale context, since nothing else in the experience will.
+### Across all worlds
 
-SS-16 deserves to be a headline feature rather than a footnote. A coverage overlay showing resolution per region, with the mission and year behind it, is the clearest thing this project has that nothing else out there does.
+| ID | Story |
+| --- | --- |
+| SS-15 | As a learner, I want named features labelled, so that I know what I am looking at |
+| SS-16 | As a learner, I want to see where the data is poor and which mission produced it, so that I understand the limits of what we know |
+| SS-17 | As a learner, I want worlds shown side by side at true relative size, so that I feel how they compare |
+| SS-23 | As a learner, I want to place a station at a chosen altitude and inclination and watch it orbit, so that I see a world the way astronauts do |
+| SS-24 | As a learner, I want a cinematic mode with no interface and a slow camera, so that I can leave it running |
+| SS-25 | As a learner, I want thrusters that change my orbit, so that I can feel how orbital mechanics actually behaves |
+| SS-26 | As a player, I want to design my own station from parts, so that the thing in orbit is mine (separate project) |
 
-SS-22 shares only the camera with the rest. It is loaded through a dynamic `import()`, so nobody visiting the Moon downloads it, and it is scheduled as its own project rather than one more world in the queue.
+**SS-16** deserves to be a headline feature rather than a footnote. A coverage overlay showing resolution per region, with the mission and year behind it, is the clearest thing this project has that nothing else does. After SS-11c it has a second job: showing where a gap was filled from a coarser instrument, since those places are no longer marked on the surface.
 
-From SS-14 onward each world is roughly the same shape of work: acquire, reproject, tile, verify, ship. That is the ideal shape for agent work, one specified unit repeated with a checklist. The pipeline built for the Moon and proven on Mars is what makes the remaining worlds finite rather than endless.
+**SS-23 and SS-24** are mostly built. Orbit mode (SS-11b) already flies a real circular orbit at a height the owner chooses. SS-23 adds inclination and a station to watch. SS-24 hides the interface.
 
-SS-23 and SS-24 are the strongest candidates for pulling forward. They need a lit sphere and an orbit propagator, not terrain, so they would work on the plain Moon from Release 2. If motivation ever flags during the heavy Release 3 work, this is the pair to reach for.
+**SS-22** shares only the camera with the rest. It is loaded through a dynamic `import()`, so nobody visiting the Moon downloads it, and it is scheduled as its own project rather than one more world in the queue.
+
+**Storage:** GitHub Pages allows about 1 GB per site, and the Moon uses 671 MB of it. The plan is one data repository per heavy world, each with its own Pages site, loaded cross-site (Pages allows it). The first world that needs one waits on the owner creating it.
 
 ## What has to be right, and how we know
 

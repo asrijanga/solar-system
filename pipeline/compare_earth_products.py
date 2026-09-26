@@ -2,7 +2,7 @@
 the SS-20 product decision (docs/data/earth.md). Python because the Himawari files are bzip2
 Himawari Standard Data and the maths is whole-image numpy.
 
-    uv run python compare_earth_products.py CACHE OUT.png
+    uv run python compare_earth_products.py .cache/earth OUT.png
 
 CACHE holds the downloads docs/data/earth.md lists:
     bm-200401.jpg          Blue Marble Next Generation, January 2004, no shaded relief (NASA)
@@ -28,17 +28,18 @@ from SPICE.
 
 from __future__ import annotations
 
-import bz2
 import glob
 import json
 import math
 import os
-import struct
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
+
+from earth import AHI_FACTOR, ahi_sample, read_ahi
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 EXPOSURE = 2.0  # core/photometry.ts EXPOSURE
@@ -101,83 +102,6 @@ def linear_to_srgb(v: np.ndarray) -> np.ndarray:
     return np.where(v <= 0.0031308, 12.92 * v, 1.055 * v ** (1 / 2.4) - 0.055)
 
 
-def read_ahi_band(paths: list[str], factor: int) -> tuple[np.ndarray, dict]:
-    """One AHI band's full disc as albedo (I/F), averaged by `factor`, from its 10 segments.
-
-    Header layout from JMA's Himawari Standard Data User's Guide v1.3: blocks 1 (basic), 2 (data),
-    3 (projection), 5 (calibration) and 7 (segment), each starting with its number (uint8) and
-    length (uint16), little-endian.
-    """
-    rows = []
-    meta: dict = {}
-    for path in sorted(paths):
-        raw = bz2.decompress(open(path, "rb").read())
-        blocks = {}
-        at = 0
-        while at < len(raw):
-            number, length = struct.unpack_from("<BH", raw, at)
-            blocks[number] = at
-            at += length
-            if number == 11:
-                break
-        b1, b2, b3, b5, b7 = (blocks[i] for i in (1, 2, 3, 5, 7))
-        header_length = struct.unpack_from("<I", raw, b1 + 70)[0]
-        columns, lines = struct.unpack_from("<HH", raw, b2 + 5)
-        sub_lon, cfac, lfac, coff, loff = struct.unpack_from("<dIIff", raw, b3 + 3)
-        req, rpol = struct.unpack_from("<dd", raw, b3 + 35)
-        distance = struct.unpack_from("<d", raw, b3 + 27)[0]
-        band, wavelength = struct.unpack_from("<Hd", raw, b5 + 3)
-        err, outside = struct.unpack_from("<HH", raw, b5 + 15)
-        gain, constant, c_prime = struct.unpack_from("<ddd", raw, b5 + 19)
-        # The updated calibration JMA gives after its update time (offset 43, MJD); zero if none.
-        new_gain, new_constant = struct.unpack_from("<dd", raw, b5 + 51)
-        if new_gain != 0:
-            gain, constant = new_gain, new_constant
-        first_line = struct.unpack_from("<H", raw, b7 + 5)[0]
-        counts = np.frombuffer(raw, "<u2", columns * lines, header_length).reshape(lines, columns)
-        albedo = (counts * gain + constant) * c_prime
-        albedo = np.where((counts == err) | (counts == outside), np.nan, albedo).astype(np.float32)
-        rows.append((first_line, albedo))
-        meta = dict(
-            sub_lon=sub_lon, cfac=cfac, lfac=lfac, coff=coff, loff=loff, req=req, rpol=rpol,
-            distance=distance, band=band, wavelength=wavelength, columns=columns,
-        )
-    rows.sort(key=lambda r: r[0])
-    full = np.concatenate([r[1] for r in rows])
-    h, w = full.shape
-    full = full[: h - h % factor, : w - w % factor]
-    full = np.nanmean(full.reshape(h // factor, factor, w // factor, factor), axis=(1, 3))
-    return full, meta
-
-
-def ahi_sample(image: np.ndarray, meta: dict, factor: int, lon: np.ndarray, lat: np.ndarray):
-    """Sample an AHI full disc at body-fixed lon/lat: the CGMS normalised geostationary projection
-    (LRIT/HRIT Global Specification, CGMS 03), as the HSD guide gives it."""
-    req, rpol, h = meta["req"], meta["rpol"], meta["distance"]
-    e2 = 1 - (rpol / req) ** 2
-    phi = np.radians(lat)
-    c_lat = np.arctan((rpol / req) ** 2 * np.tan(phi))
-    rl = rpol / np.sqrt(1 - e2 * np.cos(c_lat) ** 2)
-    d_lon = np.radians(lon - meta["sub_lon"])
-    r1 = h - rl * np.cos(c_lat) * np.cos(d_lon)
-    r2 = -rl * np.cos(c_lat) * np.sin(d_lon)
-    r3 = rl * np.sin(c_lat)
-    rn = np.sqrt(r1 * r1 + r2 * r2 + r3 * r3)
-    # Visible from the satellite: the surface faces it (geodetic normal against the line of sight).
-    px = rl * np.cos(c_lat) * np.cos(d_lon)
-    py = rl * np.cos(c_lat) * np.sin(d_lon)
-    nx, ny, nz = np.cos(phi) * np.cos(d_lon), np.cos(phi) * np.sin(d_lon), np.sin(phi)
-    visible = (h - px) * nx - py * ny - r3 * nz > 0
-    x = np.degrees(np.arctan(-r2 / r1))
-    y = np.degrees(np.arcsin(-r3 / rn))
-    col = meta["coff"] + x * 2.0**-16 * meta["cfac"]
-    line = meta["loff"] + y * 2.0**-16 * meta["lfac"]
-    ci = np.clip(((col - 1) / factor).astype(int), 0, image.shape[1] - 1)
-    li = np.clip(((line - 1) / factor).astype(int), 0, image.shape[0] - 1)
-    out = image[li, ci]
-    return np.where(visible, out, np.nan)
-
-
 def label(img: Image.Image, text: str) -> Image.Image:
     canvas = Image.new("RGB", (PANEL, PANEL + 64), (12, 12, 14))
     canvas.paste(img, (0, 0))
@@ -234,11 +158,11 @@ def main(cache: str, out: str) -> None:
 
     channels = []
     for band in ("B03", "B02", "B01"):
-        paths = glob.glob(os.path.join(cache, "ahi", f"HS_H09_20260126_0500_{band}_FLDK_*.DAT.bz2"))
-        image, meta = read_ahi_band(paths, AHI_FACTOR[band])
+        paths = [Path(p) for p in glob.glob(os.path.join(cache, "ahi", f"HS_H09_20260126_0500_{band}_FLDK_*.DAT.bz2"))]
+        image, meta = read_ahi(paths, AHI_FACTOR[band])
         print(band, f"{meta['wavelength']:.3f} um, sub-lon {meta['sub_lon']}, {image.shape}, "
               f"median albedo {np.nanmedian(image):.3f}")
-        channels.append(ahi_sample(image, meta, AHI_FACTOR[band], lon, lat))
+        channels.append(ahi_sample(image, meta, lon, lat)[0])
     ahi = np.stack(channels, -1)
     panels.append(label(finish(ahi), "Himawari-9, 26 Jan 2026 05:00 UTC exactly\ncalibrated I/F: 0.64 / 0.51 / 0.47 um, as measured"))
 

@@ -35,6 +35,8 @@ export interface MoonSetup {
   readonly orbitFrom: { readonly landmark: string; readonly angleDeg: number } | null;
   /** Landmark labels shown (docs/stories/SS-15.md), at once and fully faded in. */
   readonly labels: boolean;
+  /** Turn from the vantage to look at Earth's centre instead of the Moon's (SS-13c). */
+  readonly lookAtEarth: boolean;
   /** The Clementine map, or a uniform Lommel–Seeliger ϖ for photometry checks. */
   readonly albedo: 'map' | { readonly uniform: number };
   /** 'lambert' only in a negative control; 'albedo' is unlit, for checking the map itself. */
@@ -284,6 +286,7 @@ const MOON_SETUP: MoonSetup = {
   orbitSeed: null,
   orbitFrom: null,
   labels: false,
+  lookAtEarth: false,
   albedo: 'map',
   shading: 'lommel-seeliger',
   mirrored: false,
@@ -733,6 +736,21 @@ export const viewpoints: readonly Viewpoint[] = [
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       orbitFrom: { landmark: 'Albategnius', angleDeg: 252 },
+    },
+  },
+  {
+    ...SPACE,
+    id: 'moon-earth',
+    description:
+      'Earth from the Moon at first quarter, through a 2.4\u00b0 field so it fills the view: its face as Himawari-9 and GOES-18 measured it at 2026-01-26 05:00 UTC, half lit, Asia and Australia in the afternoon (docs/stories/SS-13c.md). For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      fovDeg: 2.4,
+      lookAtEarth: true,
+      // The Moon is behind the camera: no terrain to stream.
+      relief: false,
     },
   },
   {

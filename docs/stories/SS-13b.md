@@ -21,6 +21,7 @@ This is story W8 of the world recipe (`docs/world-recipe.md`) for the Moon.
   - For a Lambert sphere the albedo is A = 3p/2 = 0.651. A unit test checks the disc mean against p.
   - At the Moon's exposure the sunlit Earth is far brighter than the grey Moon and clips to white, as in the Apollo photographs.
 - **Honesty:** there is no colour, no cloud and no ocean yet, and the "About this view" text says so.
+- **Since SS-13c:** at the first-quarter instant Earth shows what the satellites measured. The uniform sphere remains only for the full-Moon instant.
 - **Pole:** Earth's pole is taken as the J2000 z axis. Precession since J2000 is about 0.4°, which only tilts a 0.3% flattening.
 
 On the Orbit button's orbit (SS-15), Earth sets behind the Moon about 123° along it and rises ahead over the south pole about 248° along it. That is the Earthrise the Apollo 8 crew photographed.

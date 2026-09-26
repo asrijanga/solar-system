@@ -30,6 +30,7 @@
     "pipeline:terrain": "uv run --project pipeline python pipeline/terrain.py",
     "pipeline:tiles": "node tools/terrain/build.ts",
     "pipeline:landmarks": "node tools/data/landmarks.ts",
+    "pipeline:earth": "uv run --project pipeline python pipeline/earth.py",
     "pipeline:moon": "uv run --project pipeline python pipeline/moon.py",
     "local": "vite build && node tools/local/server.ts",
     "pipeline:roughness": "node tools/data/roughness.ts"

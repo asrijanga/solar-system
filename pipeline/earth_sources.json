@@ -1,0 +1,337 @@
+{
+  "note": "Every source file of pipeline/earth.py, pinned by SHA-256 on first download (2026-09-26). Neither NOAA bucket publishes checksums.",
+  "instants": {
+    "first-quarter-2026-01": [
+      {
+        "url": "https://noaa-goes18.s3.amazonaws.com/ABI-L1b-RadF/2026/026/05/OR_ABI-L1b-RadF-M6C01_G18_s20260260500213_e20260260509521_c20260260509569.nc",
+        "name": "earth/abi/OR_ABI-L1b-RadF-M6C01_G18_s20260260500213_e20260260509521_c20260260509569.nc",
+        "sha256": "ab4857c5ac5e1de442d50a4a895dc8ace6f4ad9e54dc5deb79d951f88fda77b4"
+      },
+      {
+        "url": "https://noaa-goes18.s3.amazonaws.com/ABI-L1b-RadF/2026/026/05/OR_ABI-L1b-RadF-M6C02_G18_s20260260500213_e20260260509521_c20260260509561.nc",
+        "name": "earth/abi/OR_ABI-L1b-RadF-M6C02_G18_s20260260500213_e20260260509521_c20260260509561.nc",
+        "sha256": "e5fdafd8dcd24aa5ff960baa3f05c280ca2c56abc61ae898dff463be36a5a44c"
+      },
+      {
+        "url": "https://noaa-goes18.s3.amazonaws.com/ABI-L1b-RadF/2026/026/05/OR_ABI-L1b-RadF-M6C03_G18_s20260260500213_e20260260509522_c20260260509566.nc",
+        "name": "earth/abi/OR_ABI-L1b-RadF-M6C03_G18_s20260260500213_e20260260509522_c20260260509566.nc",
+        "sha256": "56b139f408abb8181fa6290c8dc1994d8c98a8cc2a96dee5f88421827889f4ff"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0110.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0110.DAT.bz2",
+        "sha256": "bd463c154c6e8cfd593a367780e76132347ee18f59732569d6de89468e2fae11"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0210.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0210.DAT.bz2",
+        "sha256": "28b7f8c5736bcd0e47dd2047c90ae47066f7a2a11c68d8dd857be48b56347fc1"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0310.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0310.DAT.bz2",
+        "sha256": "aaa55dd19d7014c55075ee27c9f6481800c227979beb3371b4e8374409d22a08"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0410.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0410.DAT.bz2",
+        "sha256": "a06757f655f1ce08d3a307844b2c0ec2204e92729ef18074feed3260a09d3738"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0510.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0510.DAT.bz2",
+        "sha256": "300fefc4c21fdb6bad4c9f643bec56e7666e4b3a0ffe648a64a4bf1a14dba326"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0610.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0610.DAT.bz2",
+        "sha256": "c250e4a50ac7424c9b4a8bc985ad1518a0511d2666caf80c5737b2d9a471ca2d"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0710.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0710.DAT.bz2",
+        "sha256": "f060d8efb6113033c1c78cdefc06d7a0ad8ffe7e987085b973d0343bc6e995cd"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0810.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0810.DAT.bz2",
+        "sha256": "97004533f9f68f381f19fa8ad8d00f3a44292c1551d122b54ddbf0e40f2ef75e"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S0910.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S0910.DAT.bz2",
+        "sha256": "9cc99fda53bf5539bb2b0bae49dc9658f8d2da0a89acfa86c0b34eae05a55204"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B01_FLDK_R10_S1010.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B01_FLDK_R10_S1010.DAT.bz2",
+        "sha256": "9e4eea6a7550131aabbfa1ec4fb7bd160b0149672fdb611a6f83042eddabc229"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0110.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0110.DAT.bz2",
+        "sha256": "c444072d1f09e31d30e75d383452a3ddf8b09713b49d42a026cca48e558b0db7"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0210.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0210.DAT.bz2",
+        "sha256": "c6e95663479e0318805410cf78337d83af0b6828f68eb977e53af1d38fad6313"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0310.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0310.DAT.bz2",
+        "sha256": "bdd306e78b7890a2b46089e264b236d53d9eba8a789cbbac0d3dd92e8abe27b0"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0410.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0410.DAT.bz2",
+        "sha256": "d9bee82d3a78c9deb07b2dd4a12c0aeccee86c512e92f1f782fa7b674573db1f"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0510.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0510.DAT.bz2",
+        "sha256": "5bf4e986f4e2881a9905ee6384cae103f3c00eb4edc99292db298ae8258ad881"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0610.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0610.DAT.bz2",
+        "sha256": "d4c9e6c6c4773788298c384880fa5e15daff0b0b3ae54501b405e33d6c5d5fb4"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0710.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0710.DAT.bz2",
+        "sha256": "23f88f7c0178dee832d6425fbbf8b1495b3c44c94701bc76496b8d62cd2e4612"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0810.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0810.DAT.bz2",
+        "sha256": "3420ec28c06c7dfae2a89a0a6e513413aba0ba4d57d5c4702083a941f8f3d2a2"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S0910.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S0910.DAT.bz2",
+        "sha256": "f055697f5320787c6622e1a765f494264e8436d68610f89263a706697d93a46d"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B02_FLDK_R10_S1010.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B02_FLDK_R10_S1010.DAT.bz2",
+        "sha256": "285fbf5be8b26177602c3d886a0cf021e58ce434e80d9265efa3f7adfbc8e6b8"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0110.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0110.DAT.bz2",
+        "sha256": "2587274c3c3aaa78eb48146fc0f6cd82ac107969781d155a47864549f8928765"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0210.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0210.DAT.bz2",
+        "sha256": "fef6f817bf419f1540a5c7339c12e7aeddb0483f3cec726656f44424169e9862"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0310.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0310.DAT.bz2",
+        "sha256": "e2ace993cde753d2a531ac074db887687584a82d0726ad9811c8530455b426df"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0410.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0410.DAT.bz2",
+        "sha256": "d4237871607e781b88c96fcbb80e1deae35566490127db262681e8b5f1d16cc5"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0510.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0510.DAT.bz2",
+        "sha256": "e2c44a61b84a9c275d546f3e2987cb69fda63ea157d6c41b1a158686c87aa7e9"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0610.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0610.DAT.bz2",
+        "sha256": "33de0e179e0956580536fa3fcb3c08af128618712bc1ed5c21f653d029a47aaa"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0710.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0710.DAT.bz2",
+        "sha256": "f1b89abc95feebd13056223cb2ec484507da7c02d5086dc13655182265a036ac"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0810.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0810.DAT.bz2",
+        "sha256": "d40edea33d4679aa6ace1119aa1a45d32aa6a7095ab66654d94bbc4a9d8ee9c2"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S0910.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S0910.DAT.bz2",
+        "sha256": "86a649f4dba7a22d25995b543a7bd73c0705f8cda3c454e8dc24d6aa7bcc62dc"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B03_FLDK_R05_S1010.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B03_FLDK_R05_S1010.DAT.bz2",
+        "sha256": "e86dd912cc67b9eef7e191a2414d8ed8c73afeb976f82266709800580ce120c9"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0110.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0110.DAT.bz2",
+        "sha256": "e42f090ac19401936457b8e3778ae44fa02ac46c610129e05f921cab4d6a1e6b"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0210.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0210.DAT.bz2",
+        "sha256": "0bea2858232ad4425a04de7e8ae46de28712a4daff960ebc4c7edc276ff03748"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0310.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0310.DAT.bz2",
+        "sha256": "ba8a7b3e5c1956a10afb5dc921313a6a3ce3dcf6ac13fa839f766e8fefec7d07"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0410.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0410.DAT.bz2",
+        "sha256": "749228c3cd1ffe9b925028f9bb55d4b7320141525554b7bbc17358f3effd8d5c"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0510.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0510.DAT.bz2",
+        "sha256": "18884fa72abe94458ea12eab61c2d593c163c56ec10692da4bb476da4d9837f9"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0610.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0610.DAT.bz2",
+        "sha256": "9988fc724f167ea036f19efb577715cf14fd10cadba1efd318345d374b3f8904"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0710.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0710.DAT.bz2",
+        "sha256": "0c492fc0614a001c6115ae9decc7d04f4a071f2f94ddc91ecd2469337de2c1d5"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0810.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0810.DAT.bz2",
+        "sha256": "4bfc4a6a31abf631074b14cb06cb17736df423f5c08dd58cd93348aa0dfa1860"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S0910.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S0910.DAT.bz2",
+        "sha256": "435e0ba1bfedd108c6056eb47347e822bb8ae10445119321d888f40cf07a8b8c"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0500/HS_H09_20260126_0500_B04_FLDK_R10_S1010.DAT.bz2",
+        "name": "earth/ahi/HS_H09_20260126_0500_B04_FLDK_R10_S1010.DAT.bz2",
+        "sha256": "1832c5cc9650210a60ae0110bd6cf831445f5cf951e92a5b6761336f74af3624"
+      }
+    ]
+  },
+  "crossCalibration": {
+    "note": "Himawari-9 and GOES-18 full-disc scans starting 2026-01-26 00:10 UTC, when the Sun stood nearly midway between them, so places near 182 E were seen in mirror geometry",
+    "files": [
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0110.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0110.DAT.bz2",
+        "sha256": "393805b6472579584b412390442f6e5e1a6c435bc229b9dcc12eca84b00922fc"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0210.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0210.DAT.bz2",
+        "sha256": "3e980daeddbb00db287cfdfee30f699ba94735003bb4c47e5283bd6a59030ea9"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0310.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0310.DAT.bz2",
+        "sha256": "67a88d9c3ba31fbb6ae6de615b95f8d8dbf19ec562794221c444c8da7608a4f1"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0410.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0410.DAT.bz2",
+        "sha256": "25708a9e41b0791f94e4a1fb14df109a4748bc421f4a99c3c1525b7d25ab9c38"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0510.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0510.DAT.bz2",
+        "sha256": "ddd3e619c57a824145bd9527f811b03ec76582cb826222e6f1c63dad4cdff177"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0610.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0610.DAT.bz2",
+        "sha256": "f8ee15a683c7d08acd4c5b26faf31285ef208d1a005e2e5d4870ebf2f06c707d"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0710.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0710.DAT.bz2",
+        "sha256": "7bd186c3ddb8e4a6b56338d8355063908aa624199d91781b6c31866e6e6cb989"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0810.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0810.DAT.bz2",
+        "sha256": "739a59133c4ab5fd20d08cd0e54f22b0e9b929aaa7c83568f0e566105389921f"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S0910.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S0910.DAT.bz2",
+        "sha256": "d92a88656955a0008548496b184a25a6d50e4c26f81dff374db0741b68cc96a9"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B01_FLDK_R10_S1010.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B01_FLDK_R10_S1010.DAT.bz2",
+        "sha256": "87a997b66a33f3ef809c6b7b38db15b0e79db7842112176473edb4cfeac08bcb"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0110.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0110.DAT.bz2",
+        "sha256": "6a01492277c85b401f680753d4e1d8b81a767fb1a7134f97cae68334ba0bdf36"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0210.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0210.DAT.bz2",
+        "sha256": "436996fc8417b67f7aee99e65e84fd5a6570742baa6fda606061ef35b6d6e6a5"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0310.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0310.DAT.bz2",
+        "sha256": "d8f298285b916f03a05f736ba8cb4bc5750889753c5c1354e35186691c6b2a49"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0410.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0410.DAT.bz2",
+        "sha256": "be35fe508e162661e98779577b69692925ba5da70f3b68962a1e889e5187adce"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0510.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0510.DAT.bz2",
+        "sha256": "f3bcf960262e70c70d4b6ec72333561f27dc4d971895392163bb847399975ff3"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0610.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0610.DAT.bz2",
+        "sha256": "64f9d2e32180f9d026bfeaa790aa76935236bbfc6c4652a218ba26b756e617e5"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0710.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0710.DAT.bz2",
+        "sha256": "5bb204b6bbd39c6a93fe512acde632430efbb73138cd7b8d0e4d902078e08636"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0810.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0810.DAT.bz2",
+        "sha256": "a888b353a5ec7575d73e0bae1f649c6d572fb6f4508903091cfe12a856a02170"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S0910.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S0910.DAT.bz2",
+        "sha256": "8af6592efc7008402478873f6a3774aa8e5605a312a5600006ab842491481c0a"
+      },
+      {
+        "url": "https://noaa-himawari9.s3.amazonaws.com/AHI-L1b-FLDK/2026/01/26/0010/HS_H09_20260126_0010_B03_FLDK_R05_S1010.DAT.bz2",
+        "name": "earth/xcal/HS_H09_20260126_0010_B03_FLDK_R05_S1010.DAT.bz2",
+        "sha256": "ec3261365d7104d2b921d9872eac016840fe5d681dc0c3f1a1fb0a2a96858e4c"
+      },
+      {
+        "url": "https://noaa-goes18.s3.amazonaws.com/ABI-L1b-RadF/2026/026/00/OR_ABI-L1b-RadF-M6C01_G18_s20260260010213_e20260260019521_c20260260019564.nc",
+        "name": "earth/xcal/OR_ABI-L1b-RadF-M6C01_G18_s20260260010213_e20260260019521_c20260260019564.nc",
+        "sha256": "ceeb5b02e0e815db0e78d8be7f0c559e5dff9005a80a064c87d015c0166a8599"
+      },
+      {
+        "url": "https://noaa-goes18.s3.amazonaws.com/ABI-L1b-RadF/2026/026/00/OR_ABI-L1b-RadF-M6C02_G18_s20260260010213_e20260260019521_c20260260019557.nc",
+        "name": "earth/xcal/OR_ABI-L1b-RadF-M6C02_G18_s20260260010213_e20260260019521_c20260260019557.nc",
+        "sha256": "6d1427b6b0ef3fee87c1240d3c7b432d7c7891217dbbede3f1747fbb9efb361f"
+      }
+    ]
+  }
+}

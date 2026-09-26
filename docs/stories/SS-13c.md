@@ -1,6 +1,6 @@
 # SS-13c · Earth's real face in the Moon's sky
 
-Status: **approved** · 2026-09-26
+Status: **in review** · 2026-09-26
 
 As a learner on the Moon, I want Earth to look as it really did at that moment, with its clouds, oceans, continents and blue air, not a plain ball.
 
@@ -80,6 +80,57 @@ Himawari's 0.51 µm is bluer than the eye's green, so vegetation looks slightly 
 1. **Source:** "Satellites at that moment": option 4, Earth as the geostationary satellites measured it at the app's instants.
 2. **Colour:** "Yes, colour", as measured in three bands. The Moon stays grey.
 
+## What was built
+
+- **Earth's orientation:** `pipeline/ephemeris.py` now writes `j2000ToEarthFixed`, IAU_EARTH when Earth's light left for the Moon, and Earth's own distance from the Sun. Against JPL Horizons (`test/fixtures/horizons-earth-from-moon.json`), the sub-Moon and sub-solar points on Earth agree within 0.09° in longitude. The latitudes also agree once Horizons' geodetic latitude is converted.
+- **The map:** `npm run pipeline:earth` (`pipeline/earth.py`) writes `public/data/earth/first-quarter-2026-01.webp`, 2048 × 1024, 0.7 MB, lossless, with `faces.json`. It holds:
+  - Himawari-9 at 05:00 UTC in 0.64 / 0.51 / 0.47 µm;
+  - GOES-18 at 05:00 where it saw a place more as the Moon did, put on Himawari's scale by the mirror-geometry fits in `docs/data/earth.md`, with its green from Himawari's own relation (r 0.9996).
+  
+  Measured over 99.86% of the lit disc the Moon sees. The rest, polar slivers seen by neither within 85°, stays unmeasured and is drawn dark.
+- **Blending:** each satellite counts by:
+  - how directly it saw a place (full to 65°, gone by 85°);
+  - times a Gaussian (σ 30°) of how far its line of sight was from the Moon's;
+  - fading inside its own sun glint.
+  
+  There is no seam.
+- **The app:** Earth is an ellipsoid whose rows sit at their geodetic latitude, turned by the ephemeris. It shows the map as measured: display = exposure · I/F / r², no lighting added. The About text says what it is and what it is not.
+
+![Earthrise from the Orbit button's orbit, before and after](ss13c-earthrise-before-after.png)
+
+## Found while building
+
+- **Scattering, not calibration.** Where Himawari and GOES see a place from opposite sides with the Sun low, they differ by up to 2×. In the few places both saw in mirror geometry they agree within 4%. So the satellite whose view was more like the Moon's is preferred, rather than forcing the two to match.
+- **Sun glint belongs to the viewer.** GOES shows a glint near 174° E, 15° S that the Moon would not see. The Moon's own glint, near 150° E on the equator, was seen by neither satellite and is not in the data.
+- **Himawari's albedo is relative to 1 AU;** GOES's reflectance factor is not. Both are brought to I/F on the day.
+- **Earth is not a Lambert sphere.** See the check below. It also means SS-13b's uniform sphere, 1.5 × 0.434 = 0.651, is about twice too bright away from full phase. It remains only for the full-Moon instant, where Earth is a thin crescent.
+
+## Checks, as built
+
+- **Pipeline** (`pipeline/test_earth.py`, in CI):
+  - the Himawari reader against a synthetic segment in the claimed layout;
+  - a block with a gap stays missing;
+  - the sub-satellite point is straight down, at the centre pixel;
+  - the far side is unseen, and view zenith grows away from the sub-satellite point;
+  - on the committed map, night (the Sun more than 6° down) is dark (99.9th percentile below I/F 0.01) and day is not;
+  - over 99.5% of the lit disc the Moon sees is measured;
+  - the disc brightness, below.
+- **Disc brightness: the reference was changed, for the owner's approval.**
+  - **As specified:** a Lambert sphere of the geometric albedo, 0.434, with a 30% tolerance set before measuring. It failed at 49%: that sphere predicted 0.138 in red at this phase, and the map gives 0.070.
+  - **Why the reference was wrong:** a Lambert sphere of geometric albedo 0.434 reflects 65% of the sunlight it gets, while Earth reflects 30.6% (its Bond albedo, NASA fact sheet). Earth's phase integral is 0.71, not a Lambert sphere's 1.5, because air and clouds send light back towards the Sun.
+  - **Now:** the reference is a Lambert sphere of the Bond albedo, predicting 0.065. The tolerance stays 30%, and the map is 8% above it.
+- **Ephemeris** (`pipeline/test_ephemeris.py`): Earth against Horizons, and its rotation is a proper rotation.
+- **App** (`src/scenes/earth.test.ts`): every checked texel lands within 1 m of where IAU_EARTH puts its place on the ellipsoid, so the map is neither mirrored nor turned. Earth sits where the ephemeris puts it.
+- **Captures:**
+  - The new `moon-earth` shows Earth filling a 2.4° view from the Moon.
+  - `moon-earthrise` changes, with its baseline in its own commit.
+
+## Not verified
+
+- **Not built:** the full-Moon instant, 2026-01-03 10:00. Earth is a thin crescent then, about half of which only Meteosat saw. That needs a free EUMETSAT account, and its keys would go into the environment's secrets. Until then that instant keeps SS-13b's labelled uniform sphere.
+- **Owner's eyes:** how Earth looks on the owner's iPhone.
+- **Colour:** vegetation looks brownish, because 0.51 µm is bluer than the eye's green. No published correction is applied.
+
 ## Effort
 
-To be recorded after the build.
+About one working session, most of it spent on the cross-calibration (the scattering finding) and the conventions.

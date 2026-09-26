@@ -40,6 +40,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "data" / "moon" / "ephemeris.json"
 
 BODY_FRAME = "MOON_ME"
+# Earth's body-fixed frame: the IAU rotation model in pck00011.tpc. It is good to far better than
+# one pixel of the 1.9 degree disc Earth is from the Moon.
+EARTH_FRAME = "IAU_EARTH"
 # Light time and stellar aberration: the Sun as it appears from the Moon at the epoch.
 ABCORR = "LT+S"
 # Where to look for canonical epochs, scanned hourly. January 2026 has no lunar eclipse.
@@ -91,6 +94,11 @@ def describe(label: str, et: float) -> dict:
     sun_dir, sun_km = unit(sun)
     earth_dir, earth_km = unit(earth)
     rotation = spice.pxform("J2000", BODY_FRAME, et)
+    # Earth as the Moon sees it: its orientation when the light left it (SS-13c), and its own
+    # distance from the Sun then, which sets its satellites' reflectance scale.
+    _, earth_lt = spice.spkpos("EARTH", et, "J2000", ABCORR, "MOON")
+    earth_rotation = spice.pxform("J2000", EARTH_FRAME, et - earth_lt)
+    earth_sun, _ = spice.spkpos("SUN", et - earth_lt, "J2000", ABCORR, "EARTH")
 
     # Sub-solar point as Horizons reports it: seen from Earth's centre, apparent (LT+S).
     spoint, _, _ = spice.subslr("INTERCEPT/ELLIPSOID", "MOON", et, BODY_FRAME, ABCORR, "EARTH")
@@ -105,6 +113,8 @@ def describe(label: str, et: float) -> dict:
         "earthDirectionJ2000": earth_dir,
         "earthDistanceKm": earth_km,
         "j2000ToBodyFixed": [list(row) for row in rotation],
+        "j2000ToEarthFixed": [list(row) for row in earth_rotation],
+        "earthSunDistanceKm": unit(earth_sun)[1],
         "subSolarFromEarth": {
             "lonDeg": math.degrees(lon),
             "latDeg": math.degrees(lat),
@@ -138,6 +148,8 @@ def build() -> dict:
             "naifId": 399,
             "radiiKm": [float(r) for r in earth_radii],
             "radiiSource": "pck00011.tpc BODY399_RADII",
+            "bodyFixedFrame": EARTH_FRAME,
+            "longitude": "planetocentric, east-positive",
         },
         "ephemeris": "DE440 (de440s.bsp), lunar orientation moon_pa_de440_200625.bpc",
         "aberrationCorrection": ABCORR,

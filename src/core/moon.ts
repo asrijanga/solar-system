@@ -20,6 +20,10 @@ export interface MoonEpoch {
   readonly earthDirectionJ2000: Vec3;
   readonly earthDistanceKm: number;
   readonly j2000ToBodyFixed: Mat3Rows;
+  /** pxform("J2000", "IAU_EARTH") when Earth's light left for the Moon (SS-13c), row-major. */
+  readonly j2000ToEarthFixed: Mat3Rows;
+  /** Earth's own distance from the Sun then, km. */
+  readonly earthSunDistanceKm: number;
 }
 
 export interface MoonEphemeris {

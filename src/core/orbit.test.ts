@@ -4,9 +4,11 @@ import {
   groundDistance,
   horizonDip,
   orbitFrom,
+  orbitHeading,
   randomOrbit,
   seededRandom,
   sharpHeightKm,
+  upAndNorth,
   viewDepression,
   type Vec3,
 } from './orbit';
@@ -92,5 +94,22 @@ describe('orbits from where you are', () => {
       headings.add(o.v.map((x) => x.toFixed(3)).join());
     }
     expect(headings.size).toBe(19);
+  });
+});
+
+describe('an orbit from a known spot', () => {
+  it('starts over the point and sets off due north along its meridian', () => {
+    const { up, north } = upAndNorth(3.77, -11.3);
+    expect(up[0] * north[0] + up[1] * north[1] + up[2] * north[2]).toBeCloseTo(0, 12);
+    const o = orbitHeading(up, north, R, GM, 620);
+    // A quarter of a turn on, it is 90° further north along the same meridian: 78.7° N.
+    const t = Math.PI / 2;
+    const p = [0, 1, 2].map((i) => Math.cos(t) * (o.u[i] ?? 0) + Math.sin(t) * (o.v[i] ?? 0));
+    const lat = (Math.asin(p[2] ?? 0) * 180) / Math.PI;
+    const lon = (Math.atan2(p[1] ?? 0, p[0] ?? 0) * 180) / Math.PI;
+    expect(lat).toBeCloseTo(78.7, 9);
+    // Still short of the pole, so still on the same meridian.
+    expect(lon).toBeCloseTo(3.77, 9);
+    expect(o.omega * o.radiusKm).toBeCloseTo(circularSpeedKmS(GM, R + 620), 12);
   });
 });

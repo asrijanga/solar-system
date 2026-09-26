@@ -118,6 +118,8 @@ The bodies near the world are drawn where the ephemeris puts them, at true brigh
 
 This is the owner's "objects in the background coming and going". A neighbour is drawn from its own world's data once that world exists. Until then it is a point or a disc, labelled as such.
 
+**Moon:** Earth, sunlit, rising ahead over the south pole on the Orbit button's orbit (SS-13b).
+
 ## How each round is run
 
 - **One PR per change.** Each PR says:

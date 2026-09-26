@@ -30,6 +30,8 @@ export interface MoonEphemeris {
     readonly gmKm3PerS2: number;
   };
   readonly epochs: readonly MoonEpoch[];
+  /** pck00011.tpc BODY399_RADII, km (docs/stories/SS-13b.md). */
+  readonly earth: { readonly radiiKm: Vec3 };
 }
 
 /** Body-fixed unit vector for planetocentric, east-positive longitude and latitude. */

@@ -28,6 +28,13 @@ export interface MoonSetup {
   readonly tiltDeg: number;
   /** Orbit mode (docs/stories/SS-11b.md): the seed of a random orbit, shown at its start. */
   readonly orbitSeed: number | null;
+  /**
+   * The orbit the Orbit button flies (docs/stories/SS-15.md): from over the landmark, due north,
+   * at the lowest sharp height, shown `angleDeg` along it. Null for no orbit.
+   */
+  readonly orbitFrom: { readonly landmark: string; readonly angleDeg: number } | null;
+  /** Landmark labels shown (docs/stories/SS-15.md), at once and fully faded in. */
+  readonly labels: boolean;
   /** The Clementine map, or a uniform Lommel–Seeliger ϖ for photometry checks. */
   readonly albedo: 'map' | { readonly uniform: number };
   /** 'lambert' only in a negative control; 'albedo' is unlit, for checking the map itself. */
@@ -275,6 +282,8 @@ const MOON_SETUP: MoonSetup = {
   fovDeg: 40,
   tiltDeg: 0,
   orbitSeed: null,
+  orbitFrom: null,
+  labels: false,
   albedo: 'map',
   shading: 'lommel-seeliger',
   mirrored: false,
@@ -700,6 +709,31 @@ export const viewpoints: readonly Viewpoint[] = [
       'Orbit mode (?orbit=7) at its start, first quarter: a random orbit at the lowest height the website\u2019s terrain stays sharp from for this 1024-pixel view, looking ahead with the horizon above the centre. For eyes.',
     scene: 'moon',
     moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', orbitSeed: 7 },
+  },
+  {
+    ...SPACE,
+    id: 'moon-orbit-labels',
+    description:
+      'The Orbit button\u2019s orbit (docs/stories/SS-15.md) at its start over Albategnius, heading north along the 3.8\u00b0E meridian at the lowest sharp height, first quarter, with landmark labels on. Labels rise over the horizon ahead; small features wait until they are close. For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      orbitFrom: { landmark: 'Albategnius', angleDeg: 0 },
+      labels: true,
+    },
+  },
+  {
+    ...SPACE,
+    id: 'moon-earthrise',
+    description:
+      'The same orbit 252\u00b0 on, over the far side heading for the south pole, first quarter: Earth, sunlit, 4\u00b0 above the horizon ahead (docs/stories/SS-13b.md). For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      orbitFrom: { landmark: 'Albategnius', angleDeg: 252 },
+    },
   },
   {
     ...SPACE,

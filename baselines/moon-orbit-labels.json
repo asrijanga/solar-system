@@ -1,0 +1,71 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "moon": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 6949.6,
+      "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": {
+        "landmark": "Albategnius",
+        "angleDeg": 0
+      },
+      "labels": true,
+      "albedo": "map",
+      "shading": "lommel-seeliger",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "relief": true,
+      "reliefFlipped": false
+    },
+    "moonChecks": [],
+    "negativeControl": false,
+    "id": "moon-orbit-labels",
+    "description": "The Orbit button’s orbit (docs/stories/SS-15.md) at its start over Albategnius, heading north along the 3.8°E meridian at the lowest sharp height, first quarter, with landmark labels on. Labels rise over the horizon ahead; small features wait until they are close. For eyes.",
+    "scene": "moon"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": []
+  },
+  "git": {
+    "sha": "e75a5f38e6dca8c59471b0ab57cc88cb74043317",
+    "dirty": false
+  }
+}

@@ -66,6 +66,22 @@ export function lambert(albedo: number, mu0: number, mu: number): number {
 }
 
 /**
+ * Earth's geometric albedo. NASA Earth Fact Sheet
+ * (https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html): "Geometric albedo 0.434".
+ * Earth is drawn as a uniform Lambert sphere with it until its own round of the world recipe
+ * gives it real surface, cloud and ocean data (docs/stories/SS-13b.md).
+ */
+export const EARTH_GEOMETRIC_ALBEDO = 0.434;
+
+/**
+ * Lambert albedo A for a uniform Lambert sphere of geometric albedo p. At zero phase the
+ * disc's mean I/F is A times the mean of μ over the projected disc, which is 2/3, so A = 3p/2.
+ */
+export function lambertAlbedoFor(geometricAlbedo: number): number {
+  return 1.5 * geometricAlbedo;
+}
+
+/**
  * Lommel–Seeliger ϖ for a surface of uniform albedo whose disc at zero phase has geometric
  * albedo p. At zero phase I/F = ϖ/8 at every point of the disc, and p is the disc's mean I/F
  * there, so ϖ = 8p. It exceeds 1 for p > 0.125: as used here ϖ is an effective parameter that

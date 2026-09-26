@@ -1,0 +1,559 @@
+{
+ "source": "Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MOON_nomenclature_center_pts",
+ "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip",
+ "sha256": "404a951d514821590f244c1858d9dc15e64f9e93e2cde45e35e9cf413fc60fea",
+ "retrieved": "2026-09-26",
+ "conventions": "planetocentric latitude; longitude east-positive, converted from 0-360 to -180-180; sphere R = 1737.4 km; datum Moon 2000 (the file metadata)",
+ "script": "tools/data/landmarks.ts",
+ "landmarks": [
+  {
+   "name": "Oceanus Procellarum",
+   "label": "Oceanus Procellarum",
+   "kind": "mare",
+   "lonDeg": -56.67739999999998,
+   "latDeg": 20.671400000000002,
+   "diameterKm": 2592.2378,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4395"
+  },
+  {
+   "name": "Mare Imbrium",
+   "label": "Mare Imbrium",
+   "kind": "mare",
+   "lonDeg": -14.908599999999979,
+   "latDeg": 34.7244,
+   "diameterKm": 1145.5275,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3678"
+  },
+  {
+   "name": "Mare Serenitatis",
+   "label": "Mare Serenitatis",
+   "kind": "mare",
+   "lonDeg": 18.3596,
+   "latDeg": 27.2879,
+   "diameterKm": 674.27814,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3686"
+  },
+  {
+   "name": "Mare Tranquillitatis",
+   "label": "Mare Tranquillitatis",
+   "kind": "mare",
+   "lonDeg": 30.834600000000002,
+   "latDeg": 8.348700000000001,
+   "diameterKm": 875.74884,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3691"
+  },
+  {
+   "name": "Mare Crisium",
+   "label": "Mare Crisium",
+   "kind": "mare",
+   "lonDeg": 59.1037,
+   "latDeg": 16.177400000000002,
+   "diameterKm": 555.92145,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3671"
+  },
+  {
+   "name": "Mare Fecunditatis",
+   "label": "Mare Fecunditatis",
+   "kind": "mare",
+   "lonDeg": 53.6691,
+   "latDeg": -7.835,
+   "diameterKm": 840.3541,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3673"
+  },
+  {
+   "name": "Mare Nectaris",
+   "label": "Mare Nectaris",
+   "kind": "mare",
+   "lonDeg": 34.6021,
+   "latDeg": -15.1852,
+   "diameterKm": 339.3869,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3683"
+  },
+  {
+   "name": "Mare Nubium",
+   "label": "Mare Nubium",
+   "kind": "mare",
+   "lonDeg": -17.287199999999984,
+   "latDeg": -20.5894,
+   "diameterKm": 714.4992,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3684"
+  },
+  {
+   "name": "Mare Humorum",
+   "label": "Mare Humorum",
+   "kind": "mare",
+   "lonDeg": -38.57159999999999,
+   "latDeg": -24.4785,
+   "diameterKm": 419.66855,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3677"
+  },
+  {
+   "name": "Mare Frigoris",
+   "label": "Mare Frigoris",
+   "kind": "mare",
+   "lonDeg": -0.006399999999985084,
+   "latDeg": 57.5923,
+   "diameterKm": 1446.4064,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3674"
+  },
+  {
+   "name": "Mare Vaporum",
+   "label": "Mare Vaporum",
+   "kind": "mare",
+   "lonDeg": 4.09,
+   "latDeg": 13.200000000000001,
+   "diameterKm": 242.45752,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3694"
+  },
+  {
+   "name": "Sinus Medii",
+   "label": "Sinus Medii",
+   "kind": "mare",
+   "lonDeg": 1.03,
+   "latDeg": 1.63,
+   "diameterKm": 286.67413,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5567"
+  },
+  {
+   "name": "Sinus Iridum",
+   "label": "Sinus Iridum",
+   "kind": "mare",
+   "lonDeg": -31.665300000000002,
+   "latDeg": 45.0101,
+   "diameterKm": 249.28998,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5565"
+  },
+  {
+   "name": "Mare Orientale",
+   "label": "Mare Orientale",
+   "kind": "mare",
+   "lonDeg": -94.6703,
+   "latDeg": -19.8655,
+   "diameterKm": 294.15512,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3685"
+  },
+  {
+   "name": "Mare Moscoviense",
+   "label": "Mare Moscoviense",
+   "kind": "mare",
+   "lonDeg": 148.1225,
+   "latDeg": 27.2816,
+   "diameterKm": 275.57013,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3682"
+  },
+  {
+   "name": "Tycho",
+   "label": "Tycho",
+   "kind": "crater",
+   "lonDeg": -11.215299999999957,
+   "latDeg": -43.2958,
+   "diameterKm": 85.29377,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6163"
+  },
+  {
+   "name": "Copernicus",
+   "label": "Copernicus",
+   "kind": "crater",
+   "lonDeg": -20.078599999999994,
+   "latDeg": 9.6209,
+   "diameterKm": 96.069916,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1296"
+  },
+  {
+   "name": "Kepler",
+   "label": "Kepler",
+   "kind": "crater",
+   "lonDeg": -38.008699999999976,
+   "latDeg": 8.121,
+   "diameterKm": 29.489515,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2990"
+  },
+  {
+   "name": "Aristarchus",
+   "label": "Aristarchus",
+   "kind": "crater",
+   "lonDeg": -47.490099999999984,
+   "latDeg": 23.7299,
+   "diameterKm": 39.994484,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/380"
+  },
+  {
+   "name": "Plato",
+   "label": "Plato",
+   "kind": "crater",
+   "lonDeg": -9.382499999999993,
+   "latDeg": 51.6192,
+   "diameterKm": 100.68353,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4757"
+  },
+  {
+   "name": "Archimedes",
+   "label": "Archimedes",
+   "kind": "crater",
+   "lonDeg": -3.99309999999997,
+   "latDeg": 29.717200000000002,
+   "diameterKm": 81.04167,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/350"
+  },
+  {
+   "name": "Eratosthenes",
+   "label": "Eratosthenes",
+   "kind": "crater",
+   "lonDeg": -11.31619999999998,
+   "latDeg": 14.473700000000001,
+   "diameterKm": 58.76779,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1820"
+  },
+  {
+   "name": "Ptolemaeus",
+   "label": "Ptolemaeus",
+   "kind": "crater",
+   "lonDeg": -1.8372999999999706,
+   "latDeg": -9.1605,
+   "diameterKm": 153.66885,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4860"
+  },
+  {
+   "name": "Alphonsus",
+   "label": "Alphonsus",
+   "kind": "crater",
+   "lonDeg": -2.846299999999985,
+   "latDeg": -13.3879,
+   "diameterKm": 110.54002,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/206"
+  },
+  {
+   "name": "Arzachel",
+   "label": "Arzachel",
+   "kind": "crater",
+   "lonDeg": -1.9303999999999633,
+   "latDeg": -18.264300000000002,
+   "diameterKm": 96.988014,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/412"
+  },
+  {
+   "name": "Albategnius",
+   "label": "Albategnius",
+   "kind": "crater",
+   "lonDeg": 4.0092,
+   "latDeg": -11.24,
+   "diameterKm": 130.84,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/162"
+  },
+  {
+   "name": "Hipparchus",
+   "label": "Hipparchus",
+   "kind": "crater",
+   "lonDeg": 4.9133,
+   "latDeg": -5.3565,
+   "diameterKm": 143.94553,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2516"
+  },
+  {
+   "name": "Theophilus",
+   "label": "Theophilus",
+   "kind": "crater",
+   "lonDeg": 26.2847,
+   "latDeg": -11.4524,
+   "diameterKm": 98.59187,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5965"
+  },
+  {
+   "name": "Cyrillus",
+   "label": "Cyrillus",
+   "kind": "crater",
+   "lonDeg": 24.0655,
+   "latDeg": -13.291300000000001,
+   "diameterKm": 98.08567,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1372"
+  },
+  {
+   "name": "Catharina",
+   "label": "Catharina",
+   "kind": "crater",
+   "lonDeg": 23.5521,
+   "latDeg": -17.9802,
+   "diameterKm": 98.77237,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1076"
+  },
+  {
+   "name": "Clavius",
+   "label": "Clavius",
+   "kind": "crater",
+   "lonDeg": -14.727499999999964,
+   "latDeg": -58.622800000000005,
+   "diameterKm": 230.76982,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1236"
+  },
+  {
+   "name": "Grimaldi",
+   "label": "Grimaldi",
+   "kind": "crater",
+   "lonDeg": -68.36000000000001,
+   "latDeg": -5.38,
+   "diameterKm": 235,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2252"
+  },
+  {
+   "name": "Langrenus",
+   "label": "Langrenus",
+   "kind": "crater",
+   "lonDeg": 61.038000000000004,
+   "latDeg": -8.8604,
+   "diameterKm": 131.97713,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3273"
+  },
+  {
+   "name": "Petavius",
+   "label": "Petavius",
+   "kind": "crater",
+   "lonDeg": 60.7776,
+   "latDeg": -25.3914,
+   "diameterKm": 184.06218,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4668"
+  },
+  {
+   "name": "Posidonius",
+   "label": "Posidonius",
+   "kind": "crater",
+   "lonDeg": 29.991300000000003,
+   "latDeg": 31.878300000000003,
+   "diameterKm": 95.05735,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4808"
+  },
+  {
+   "name": "Cassini",
+   "label": "Cassini",
+   "kind": "crater",
+   "lonDeg": 4.6437,
+   "latDeg": 40.2503,
+   "diameterKm": 56.876614,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1045"
+  },
+  {
+   "name": "Autolycus",
+   "label": "Autolycus",
+   "kind": "crater",
+   "lonDeg": 1.4858,
+   "latDeg": 30.675700000000003,
+   "diameterKm": 38.878696,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/493"
+  },
+  {
+   "name": "Aristillus",
+   "label": "Aristillus",
+   "kind": "crater",
+   "lonDeg": 1.2075,
+   "latDeg": 33.8808,
+   "diameterKm": 54.371136,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/381"
+  },
+  {
+   "name": "Gassendi",
+   "label": "Gassendi",
+   "kind": "crater",
+   "lonDeg": -39.96369999999996,
+   "latDeg": -17.5546,
+   "diameterKm": 111.39148,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2111"
+  },
+  {
+   "name": "Tsiolkovskiy",
+   "label": "Tsiolkovskiy",
+   "kind": "crater",
+   "lonDeg": 128.97150000000002,
+   "latDeg": -20.3789,
+   "diameterKm": 184.38905,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6108"
+  },
+  {
+   "name": "Korolev",
+   "label": "Korolev",
+   "kind": "crater",
+   "lonDeg": -157.4082,
+   "latDeg": -4.1913,
+   "diameterKm": 423.41125,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3090"
+  },
+  {
+   "name": "Hertzsprung",
+   "label": "Hertzsprung",
+   "kind": "crater",
+   "lonDeg": -128.65609999999998,
+   "latDeg": 1.3651,
+   "diameterKm": 536.3708,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2482"
+  },
+  {
+   "name": "Apollo",
+   "label": "Apollo",
+   "kind": "crater",
+   "lonDeg": -151.4777,
+   "latDeg": -35.687400000000004,
+   "diameterKm": 524.2316,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/326"
+  },
+  {
+   "name": "Shackleton",
+   "label": "Shackleton",
+   "kind": "crater",
+   "lonDeg": 129.78,
+   "latDeg": -89.67,
+   "diameterKm": 20.924982,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5450"
+  },
+  {
+   "name": "Von Kármán",
+   "label": "Von Kármán",
+   "kind": "crater",
+   "lonDeg": 176.2451,
+   "latDeg": -44.450500000000005,
+   "diameterKm": 186.3484,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6440"
+  },
+  {
+   "name": "Montes Apenninus",
+   "label": "Montes Apenninus",
+   "kind": "mountains",
+   "lonDeg": 0.0253,
+   "latDeg": 19.8714,
+   "diameterKm": 599.6746,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4004"
+  },
+  {
+   "name": "Montes Alpes",
+   "label": "Montes Alpes",
+   "kind": "mountains",
+   "lonDeg": -0.5799999999999841,
+   "latDeg": 48.36,
+   "diameterKm": 334.47925,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4003"
+  },
+  {
+   "name": "Montes Caucasus",
+   "label": "Montes Caucasus",
+   "kind": "mountains",
+   "lonDeg": 9.9311,
+   "latDeg": 37.5188,
+   "diameterKm": 443.50543,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4007"
+  },
+  {
+   "name": "Vallis Alpes",
+   "label": "Vallis Alpes",
+   "kind": "valley",
+   "lonDeg": 3.6314,
+   "latDeg": 49.208800000000004,
+   "diameterKm": 155.41698,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6290"
+  },
+  {
+   "name": "Vallis Schröteri",
+   "label": "Vallis Schröteri",
+   "kind": "valley",
+   "lonDeg": -51.58049999999997,
+   "latDeg": 26.1555,
+   "diameterKm": 185.32288,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6300"
+  },
+  {
+   "name": "Rima Hadley",
+   "label": "Rima Hadley",
+   "kind": "valley",
+   "lonDeg": 3.1467,
+   "latDeg": 25.7159,
+   "diameterKm": 116.08555,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5064"
+  },
+  {
+   "name": "Rupes Recta",
+   "label": "Rupes Recta",
+   "kind": "valley",
+   "lonDeg": -7.701899999999966,
+   "latDeg": -21.6748,
+   "diameterKm": 115.94827,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5230"
+  },
+  {
+   "name": "Statio Tranquillitatis",
+   "label": "Tranquility Base · Apollo 11",
+   "kind": "landing",
+   "lonDeg": 23.473200000000002,
+   "latDeg": 0.6741,
+   "diameterKm": 0.009,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5684"
+  },
+  {
+   "name": "Surveyor",
+   "label": "Surveyor · Apollo 12",
+   "kind": "landing",
+   "lonDeg": -23.41999999999996,
+   "latDeg": -3.02,
+   "diameterKm": 0.205,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5773"
+  },
+  {
+   "name": "Cone",
+   "label": "Cone · Apollo 14",
+   "kind": "landing",
+   "lonDeg": -17.433599999999956,
+   "latDeg": -3.6248,
+   "diameterKm": 0.333,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1287"
+  },
+  {
+   "name": "Apennine Front",
+   "label": "Apennine Front · Apollo 15",
+   "kind": "landing",
+   "lonDeg": 3.6842,
+   "latDeg": 25.9216,
+   "diameterKm": 6.6321,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/314"
+  },
+  {
+   "name": "North Ray",
+   "label": "North Ray · Apollo 16",
+   "kind": "landing",
+   "lonDeg": 15.484300000000001,
+   "latDeg": -8.815100000000001,
+   "diameterKm": 0.9473,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4342"
+  },
+  {
+   "name": "Taurus-Littrow Valley",
+   "label": "Taurus-Littrow Valley · Apollo 17",
+   "kind": "landing",
+   "lonDeg": 30.7867,
+   "latDeg": 20.0702,
+   "diameterKm": 21.0277,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5881"
+  },
+  {
+   "name": "Guang Han Gong",
+   "label": "Guang Han Gong · Chang’e-3",
+   "kind": "landing",
+   "lonDeg": -19.512299999999982,
+   "latDeg": 44.1184,
+   "diameterKm": 0.077,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15415"
+  },
+  {
+   "name": "Statio Tianhe",
+   "label": "Statio Tianhe · Chang’e-4",
+   "kind": "landing",
+   "lonDeg": 177.6,
+   "latDeg": -45.45,
+   "diameterKm": 0.01,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15781"
+  },
+  {
+   "name": "Statio Tianchuan",
+   "label": "Statio Tianchuan · Chang’e-5",
+   "kind": "landing",
+   "lonDeg": -51.91999999999996,
+   "latDeg": 43.06,
+   "diameterKm": 0.042,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15994"
+  }
+ ]
+}

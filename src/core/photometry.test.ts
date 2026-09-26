@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   AU_KM,
   displayValue,
+  EARTH_GEOMETRIC_ALBEDO,
   EXPOSURE,
   lambert,
+  lambertAlbedoFor,
   linearToSrgb,
   lommelSeeliger,
   lommelSeeligerAlbedoFor,
@@ -102,5 +104,20 @@ describe('sRGB encoding', () => {
     expect(linearToSrgb(1)).toBeCloseTo(1, 12);
     expect(linearToSrgb(0.18) * 255).toBeCloseTo(117.8, 0);
     expect(linearToSrgb(0.002)).toBeCloseTo(0.02584, 5);
+  });
+});
+
+describe('Earth as a uniform Lambert sphere', () => {
+  it('has the fact sheet geometric albedo as its disc mean at zero phase', () => {
+    // Mean of I/F = A·μ over the projected disc, by midpoint integration in radius: μ = √(1 − ρ²).
+    const albedo = lambertAlbedoFor(EARTH_GEOMETRIC_ALBEDO);
+    const n = 20000;
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      const rho = (i + 0.5) / n;
+      const mu = Math.sqrt(1 - rho * rho);
+      sum += lambert(albedo, mu, mu) * 2 * rho * (1 / n);
+    }
+    expect(sum).toBeCloseTo(EARTH_GEOMETRIC_ALBEDO, 4);
   });
 });

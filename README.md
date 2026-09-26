@@ -596,7 +596,7 @@ From here every world is built the same way: one round of the eight stories in *
 
 | ID | World | Round | Notes for this world |
 | --- | --- | --- | --- |
-| SS-13b | Earth in the Moon's sky | W8 only | The owner's "objects in the background coming and going". Earth drawn from the ephemeris at true brightness, as a lit disc until Earth's own round |
+| SS-13b | Earth in the Moon's sky | W8 only | In review. Earth from the ephemeris at its SPICE radii, sunlit, a uniform sphere of measured albedo until Earth's own round. Rises ahead on the Orbit button's orbit |
 | SS-14 | Mars | W1–W8 | MOLA global elevation, HRSC and CTX mosaics, HiRISE locally. Likely the first world to need its own data repository (W4) |
 | SS-18 | Mercury | W1–W8 | MESSENGER. Permanently shadowed polar craters, as on the Moon |
 | SS-19 | Venus | W1–W8, adapted | Magellan radar is not albedo. W3 becomes radar brightness, labelled as such, over coarse relief |
@@ -610,7 +610,7 @@ Each round's W1 inventory comes first and is shown to the owner before any code.
 
 | ID | Story |
 | --- | --- |
-| SS-15 | As a learner, I want named features labelled, so that I know what I am looking at |
+| SS-15 | As a learner, I want named features labelled, so that I know what I am looking at. In review for the Moon: 61 Gazetteer landmarks, fading with the horizon and the sunlight, and the Orbit button now starts over Albategnius heading north |
 | SS-16 | As a learner, I want to see where the data is poor and which mission produced it, so that I understand the limits of what we know |
 | SS-17 | As a learner, I want worlds shown side by side at true relative size, so that I feel how they compare |
 | SS-23 | As a learner, I want to place a station at a chosen altitude and inclination and watch it orbit, so that I see a world the way astronauts do |

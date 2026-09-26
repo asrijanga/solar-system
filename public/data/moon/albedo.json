@@ -45,6 +45,29 @@
     "blend": "smoothstep weight from 0 at |latitude| 65 to 1 at 75 deg; LOLA alone poleward, Clementine alone equatorward",
     "orientation": "DSMAP_POLAR.CAT prose (90 E to the right at both poles; south lon 0 up, north lon 0 down); its south-pole inverse formula disagrees and was not used"
   },
+  "gapFill": {
+    "source": "LOLA LDAM_10_FLOAT global normal albedo, Lemelin et al. (2016), PDS LRO-L-LOLA-4-GDR-V1.0",
+    "chosen": "owner, 2026-09-26: 'drop purple and fill gaps' (docs/stories/SS-11c.md)",
+    "conventions": "simple cylindrical, R = 1737.4 km, 10 px/deg (3032 m/px at the equator), planetocentric, east-positive, MEAN EARTH/POLAR AXIS OF DE421, 1064 nm normal albedo",
+    "product": "LDAM_10_FLOAT",
+    "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/cylindrical/float_img/ldam_10_float.img",
+    "sha256": "6a14cac07b26e3d2c8576823e20c7f4aa47afb0b65ba55df11cf67e64c7b3761",
+    "fit": {
+      "model": "clementine = gain * lola_albedo + offset",
+      "band": "|latitude| < 60 deg, Clementine valid",
+      "pixels": 22347594,
+      "gain": 207.8684,
+      "offset": -19.8055,
+      "r": 0.9234,
+      "rmsResidual": 4.649
+    },
+    "localMatch": {
+      "method": "Clementine minus calibrated LOLA, spread into each gap by pull-push",
+      "medianAbsCorrection": 1.962,
+      "p99AbsCorrection": 13.156
+    },
+    "pixelsFilled": 19917
+  },
   "conventions": {
     "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
     "latitude": "planetocentric (identical to planetographic on a sphere)",
@@ -52,65 +75,65 @@
     "rows": "row 0 = +90 deg latitude",
     "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
     "values": "relative albedo 1-255 on Clementine's scale, linear; LOLA mapped onto it by the fits under poles",
-    "gaps": "albedo-mask.png is authoritative: white = never imaged. Albedo values there are compression filler"
+    "gaps": "texture.mask, when present, is authoritative: white = never measured, and albedo values there are compression filler. Absent when every pixel was measured"
   },
   "texture": {
     "file": "albedo.webp",
     "width": 8192,
     "height": 4096,
     "kmPerPixelAtEquator": 1.333,
-    "missingPixels": 19917,
-    "missingFraction": 0.000594,
-    "sha256": "0cacf4c1829758af363a4dd6a173f2854aabe8e89ca69b08777e06357d9ef3f2",
-    "mask": "albedo-mask.png",
-    "maskSha256": "3ab12b94c634c8191ad528d88a74149d5f5ab0ae2ab32a6cbc038d7f87b70049",
+    "missingPixels": 0,
+    "missingFraction": 0.0,
+    "sha256": "d0f06a3b2dda166bfebac7812f7fcc949aaddff83890a464b69536cd8aedca77",
+    "mask": null,
+    "maskSha256": null,
     "gpuBytesR8WithMips": 44739242
   },
   "formatChoice": {
     "rule": "smallest albedo with albedo + mask <= 6291456 bytes and PSNR >= 42.0 dB over imaged pixels and over the Clementine region (|lat| < 65) alone",
-    "maskBytes": 7245,
+    "maskBytes": 0,
     "chosen": "webp-q85",
     "trials": [
       {
         "format": "webp-lossless",
-        "bytes": 11097570,
+        "bytes": 11100428,
         "psnrDb": null,
         "psnrClementineDb": null,
         "maxAbsError": 0
       },
       {
         "format": "webp-q95",
-        "bytes": 3702386,
+        "bytes": 3702902,
         "psnrDb": 46.36,
         "psnrClementineDb": 45.82,
         "maxAbsError": 10
       },
       {
         "format": "webp-q90",
-        "bytes": 2168680,
+        "bytes": 2169464,
         "psnrDb": 44.4,
         "psnrClementineDb": 43.88,
         "maxAbsError": 15
       },
       {
         "format": "webp-q85",
-        "bytes": 1397834,
+        "bytes": 1397656,
         "psnrDb": 42.61,
         "psnrClementineDb": 42.15,
         "maxAbsError": 21
       },
       {
         "format": "webp-q80",
-        "bytes": 1037756,
+        "bytes": 1037602,
         "psnrDb": 41.63,
         "psnrClementineDb": 41.21,
         "maxAbsError": 28
       },
       {
         "format": "webp-q70",
-        "bytes": 696982,
+        "bytes": 697004,
         "psnrDb": 40.48,
-        "psnrClementineDb": 40.1,
+        "psnrClementineDb": 40.11,
         "maxAbsError": 40
       }
     ]
@@ -121,9 +144,9 @@
     "source": "NASA Moon Fact Sheet, 'Visual geometric albedo 0.12' (https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html)",
     "model": "Lommel-Seeliger, I/F = (w/4) mu0/(mu0+mu), w = albedoScale * texture value in [0, 1]",
     "method": "zero-phase disc mean of I/F equals the geometric albedo: albedoScale = 8p / mean(v), v weighted by projected area over the hemisphere facing longitude 0, latitude 0, gaps excluded",
-    "discMeanTextureValue": 0.121196,
-    "albedoScale": 7.921022,
+    "discMeanTextureValue": 0.121185,
+    "albedoScale": 7.92177,
     "script": "pipeline/calibrate.py",
-    "decodedMean": 41.3737
+    "decodedMean": 41.3731
   }
 }

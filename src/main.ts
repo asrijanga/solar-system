@@ -172,6 +172,8 @@ interface Stage {
   /** Physical star exposure follows the pixel's solid angle, so it changes on resize. */
   readonly starExposure: UniformNode<'float', number> | null;
   readonly albedoDecodedMean: number | null;
+  /** Some albedo texel was never measured, so the gap key is shown. */
+  readonly albedoGaps: boolean;
   /** Streamed LOLA terrain (SS-10), when the view has relief, and which levels exist where. */
   readonly terrain: TilesRenderer | null;
   readonly terrainAvailable: readonly (readonly TileRange[])[] | null;
@@ -238,6 +240,7 @@ async function createStage(
     radiusKm: null,
     starExposure: null,
     albedoDecodedMean: null,
+    albedoGaps: false,
     terrain: null,
     terrainAvailable: null,
     orbitInputs: null,
@@ -311,6 +314,7 @@ async function createStage(
         starExposure,
         evenLight,
         albedoDecodedMean: textures?.decodedMean ?? null,
+        albedoGaps: (textures?.gaps ?? null) !== null,
         terrain,
         terrainAvailable: layer?.available ?? null,
         orbitInputs: {
@@ -567,37 +571,43 @@ async function start(): Promise<void> {
           : `pinch or scroll to change it; ${minHeight.toFixed(0)} km is the lowest the terrain stays sharp from`;
       return `Orbiting ${heightKm.toFixed(0)} km up at ${speedKmS.toFixed(2)} km/s: ${floor}.`;
     };
-    const ui = createMoonControls(stage.caption, stage.terrainLayer, stage.approximated, {
-      onOrbit: (on) => {
-        if (!on) {
-          stopOrbit();
-          return null;
-        }
-        const f = startFromView();
-        return f === null ? null : describeOrbit(f);
+    const ui = createMoonControls(
+      stage.caption,
+      stage.terrainLayer,
+      stage.approximated,
+      stage.albedoGaps,
+      {
+        onOrbit: (on) => {
+          if (!on) {
+            stopOrbit();
+            return null;
+          }
+          const f = startFromView();
+          return f === null ? null : describeOrbit(f);
+        },
+        onTimeFactor: (factor) => {
+          if (flight !== null) flight.setTimeFactor(factor);
+        },
+        startInOrbit:
+          orbitParam === null
+            ? null
+            : () => {
+                const seed =
+                  orbitParam === '' ? Math.floor(Math.random() * 2 ** 31) : Number(orbitParam);
+                const f = begin(
+                  seededOrbitFlight(stage, camera, canvas.height, Number.isFinite(seed) ? seed : 0),
+                );
+                return f === null ? null : describeOrbit(f);
+              },
+        onBoost: (boosted) => {
+          starBoost[0] = boosted ? STAR_BOOST : 1;
+          resize();
+        },
+        onEvenLight: (even) => {
+          if (evenLight !== null) evenLight.value = even ? 1 : 0;
+        },
       },
-      onTimeFactor: (factor) => {
-        if (flight !== null) flight.setTimeFactor(factor);
-      },
-      startInOrbit:
-        orbitParam === null
-          ? null
-          : () => {
-              const seed =
-                orbitParam === '' ? Math.floor(Math.random() * 2 ** 31) : Number(orbitParam);
-              const f = begin(
-                seededOrbitFlight(stage, camera, canvas.height, Number.isFinite(seed) ? seed : 0),
-              );
-              return f === null ? null : describeOrbit(f);
-            },
-      onBoost: (boosted) => {
-        starBoost[0] = boosted ? STAR_BOOST : 1;
-        resize();
-      },
-      onEvenLight: (even) => {
-        if (evenLight !== null) evenLight.value = even ? 1 : 0;
-      },
-    });
+    );
     onOrbitHeight = () => {
       if (flight !== null) ui.setOrbitLine(describeOrbit(flight));
     };
@@ -864,18 +874,20 @@ const ABOUT = [
   'Lighting: sun is real sunlight at this date. The night side, and the far side whenever it faces away from the Sun, are black: the Moon has no air to scatter light, and earthshine is not drawn yet.',
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
-  'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
+  'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°. The few small places Clementine missed elsewhere (0.06% of the map) are filled from LOLA\u2019s global laser map, which is coarser (3 km), matched to Clementine around each one.',
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
   'Detail (local mode only): measured shows only measurements. + approximation adds, below about 10 m, small craters and roughness generated from the Moon\u2019s statistics: crater numbers and shapes from NASA\u2019s lunar environment specification, roughness from NASA\u2019s 2 m stereo terrain models. The surface still passes through every measurement, but these are not the real craters there, and the screen says so while it is on.',
-  'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',
 ];
+const GAP_NOTE =
+  'Magenta marks the places no mission measured. They are shown as missing, not filled in.';
 
 /** The caption, the epoch switch, the lighting and star switches, and the map key. */
 function createMoonControls(
   caption: string,
   terrainLayer: string | null,
   approximated: boolean,
+  albedoGaps: boolean,
   handlers: MoonControlHandlers,
 ): { setOrbitLine: (line: string) => void } {
   const panel = document.createElement('div');
@@ -971,11 +983,14 @@ function createMoonControls(
 
   const about = document.createElement('details');
   const summary = document.createElement('summary');
-  const swatch = document.createElement('span');
-  swatch.className = 'swatch';
-  summary.append(swatch, 'Magenta: never measured · About this view');
+  if (albedoGaps) {
+    const swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    summary.append(swatch, 'Magenta: never measured · ');
+  }
+  summary.append('About this view');
   about.append(summary);
-  for (const line of ABOUT) {
+  for (const line of albedoGaps ? [...ABOUT, GAP_NOTE] : ABOUT) {
     const p = document.createElement('p');
     p.textContent = line;
     about.append(p);

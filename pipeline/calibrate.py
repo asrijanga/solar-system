@@ -14,8 +14,8 @@ projected disc, so
     p = (k/8) * mean(v over the Earth-facing hemisphere, weighted by mu * dA)
 
 and k = 8p / that mean. The hemisphere is centred on longitude 0, latitude 0, the mean
-sub-Earth point; dA is proportional to cos(latitude) on the equirectangular grid. Pixels the
-mask marks as never imaged are left out, not filled.
+sub-Earth point; dA is proportional to cos(latitude) on the equirectangular grid. Pixels a
+mask marks as never measured, if there are any, are left out.
 
 The 750 nm map supplies the pattern of relative albedo; the absolute scale is visual (V band),
 because the display shows visible brightness. Deterministic: CI re-runs it and diffs.
@@ -51,7 +51,12 @@ def calibrate() -> dict:
     folder = MANIFEST_PATH.parent
     decoded = np.array(Image.open(folder / manifest["texture"]["file"]).convert("L"))
     values = decoded / 255.0
-    gap = np.array(Image.open(folder / manifest["texture"]["mask"]).convert("L")) > 0
+    mask = manifest["texture"]["mask"]
+    gap = (
+        np.zeros(values.shape, dtype=bool)
+        if mask is None
+        else np.array(Image.open(folder / mask).convert("L")) > 0
+    )
     mean = disc_weighted_mean(values, gap)
     manifest["calibration"] = {
         "geometricAlbedo": GEOMETRIC_ALBEDO,

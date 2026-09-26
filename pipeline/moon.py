@@ -10,14 +10,18 @@ Mosaic_118m_v2_pds3.lbl): equirectangular, planetocentric latitude, POSITIVE_LON
 DIRECTION = EAST, CENTER_LONGITUDE = 0, sphere of radius 1737.4 km, 8-bit, nodata 0. The
 label gives no scale from pixel value to reflectance: values are relative albedo only.
 
+Other sources complete it (README, "Combine every available source"): LOLA's laser albedo at
+the poles (lola_poles.py), then LOLA's global laser albedo wherever neither measured
+(lola_global.py, owner decision 2026-09-26). Since then no pixel is unmeasured.
+
 Outputs in public/data/moon/, both 8192 x 4096, column 0 = longitude -180 deg (west edge),
 row 0 = latitude +90 deg (north edge):
-- albedo-mask.png: lossless 1-bit, white where Clementine never imaged the surface. It is
-  the only authority on gaps.
+- albedo-mask.png, only while some pixel is unmeasured: lossless 1-bit, white where no source
+  measured the surface. It is then the only authority on gaps.
 - albedo.webp: relative albedo, one channel stored as grey, lossy. Every source pixel is
   area-averaged in (GDAL "average" with fractional coverage), never decimated. Values are
   linear in the source's pixel values: no sRGB curve, because the source is itself 8-bit and
-  a transfer curve cannot add precision it does not have. Inside gaps the values are a
+  a transfer curve cannot add precision it does not have. Inside any gaps the values are a
   smooth pull-push fill so the codec does not spend bits on hard edges; they are filler, and
   the mask says never to show them.
 The split exists because a lossy codec cannot carry an exact no-data value: encoded as 0 in
@@ -41,6 +45,7 @@ from rasterio.enums import Resampling
 from rasterio.windows import Window
 
 from download import CACHE, fetch, sha256
+from lola_global import fill
 from lola_poles import combine
 
 SOURCE_URL = (
@@ -187,17 +192,23 @@ def build() -> dict:
         Image.fromarray(master, mode="L").save(MASTER, optimize=True)
 
     clementine_missing = int(np.sum(master == 0))
-    # Every available source (README): LOLA's laser albedo at the poles (lola_poles.py).
+    # Every available source (README): LOLA's laser albedo at the poles (lola_poles.py), then
+    # LOLA's global laser albedo wherever no one else measured (lola_global.py).
     master, poles = combine(master)
+    master, gap_fill = fill(master, pull_push_fill)
 
-    mask_data = encode_mask(master)
-    trials = format_trials(master)
-    chosen = choose(trials, len(mask_data))
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    mask_out = OUT_DIR / "albedo-mask.png"
+    # A mask is written only while some pixel was never measured.
+    mask_data = encode_mask(master) if np.any(master == 0) else None
+    trials = format_trials(master)
+    chosen = choose(trials, 0 if mask_data is None else len(mask_data))
     out = OUT_DIR / "albedo.webp"
     out.write_bytes(chosen["_data"])
-    mask_out = OUT_DIR / "albedo-mask.png"
-    mask_out.write_bytes(mask_data)
+    if mask_data is None:
+        mask_out.unlink(missing_ok=True)
+    else:
+        mask_out.write_bytes(mask_data)
 
     missing = int(np.sum(master == 0))
     manifest = {
@@ -216,6 +227,12 @@ def build() -> dict:
             "clementineMissingPixels": clementine_missing,
             **poles,
         },
+        "gapFill": {
+            "source": "LOLA LDAM_10_FLOAT global normal albedo, Lemelin et al. (2016), PDS LRO-L-LOLA-4-GDR-V1.0",
+            "chosen": "owner, 2026-09-26: 'drop purple and fill gaps' (docs/stories/SS-11c.md)",
+            "conventions": "simple cylindrical, R = 1737.4 km, 10 px/deg (3032 m/px at the equator), planetocentric, east-positive, MEAN EARTH/POLAR AXIS OF DE421, 1064 nm normal albedo",
+            **gap_fill,
+        },
         "conventions": {
             "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
             "latitude": "planetocentric (identical to planetographic on a sphere)",
@@ -223,7 +240,7 @@ def build() -> dict:
             "rows": "row 0 = +90 deg latitude",
             "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
             "values": "relative albedo 1-255 on Clementine's scale, linear; LOLA mapped onto it by the fits under poles",
-            "gaps": "albedo-mask.png is authoritative: white = never imaged. Albedo values there are compression filler",
+            "gaps": "texture.mask, when present, is authoritative: white = never measured, and albedo values there are compression filler. Absent when every pixel was measured",
         },
         "texture": {
             "file": out.name,
@@ -233,13 +250,13 @@ def build() -> dict:
             "missingPixels": missing,
             "missingFraction": round(missing / master.size, 6),
             "sha256": sha256(out),
-            "mask": mask_out.name,
-            "maskSha256": sha256(mask_out),
+            "mask": None if mask_data is None else mask_out.name,
+            "maskSha256": None if mask_data is None else sha256(mask_out),
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),
         },
         "formatChoice": {
             "rule": f"smallest albedo with albedo + mask <= {MAX_BYTES} bytes and PSNR >= {MIN_PSNR_DB} dB over imaged pixels and over the Clementine region (|lat| < {CLEMENTINE_REGION_DEG:g}) alone",
-            "maskBytes": len(mask_data),
+            "maskBytes": 0 if mask_data is None else len(mask_data),
             "chosen": chosen["format"],
             "trials": [{k: v for k, v in t.items() if k != "_data"} for t in trials],
         },

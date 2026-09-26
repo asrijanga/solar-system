@@ -59,7 +59,8 @@ import { EXPOSURE, AU_KM } from '../core/photometry';
 export interface AlbedoManifest {
   readonly texture: {
     readonly file: string;
-    readonly mask: string;
+    /** Present only while some texel was never measured (pipeline/moon.py). */
+    readonly mask: string | null;
     readonly width: number;
     readonly height: number;
   };
@@ -68,8 +69,9 @@ export interface AlbedoManifest {
 
 export interface MoonTextures {
   readonly albedo: DataTexture;
-  /** One bit per texel, 8 texels per byte along a row; bit set = never imaged. */
-  readonly gaps: DataTexture;
+  /** One bit per texel, 8 texels per byte along a row; bit set = never measured. Null when every
+   * texel was measured. */
+  readonly gaps: DataTexture | null;
   readonly manifest: AlbedoManifest;
   /** Mean of the decoded albedo bytes, 0-255, for the harness to compare with the pipeline. */
   readonly decodedMean: number;
@@ -133,9 +135,10 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   if (!response.ok) throw new Error(`albedo.json failed to load: HTTP ${response.status}`);
   const manifest = (await response.json()) as AlbedoManifest;
   const { width, height } = manifest.texture;
+  const mask = manifest.texture.mask;
   const [albedoBytes, maskBytes] = await Promise.all([
     decodeGrey(`${base}${manifest.texture.file}`, width, height),
-    decodeGrey(`${base}${manifest.texture.mask}`, width, height),
+    mask === null ? null : decodeGrey(`${base}${mask}`, width, height),
   ]);
 
   let sum = 0;
@@ -151,6 +154,16 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   albedo.anisotropy = maxAnisotropy;
   albedo.needsUpdate = true;
 
+  return {
+    albedo,
+    gaps: maskBytes === null ? null : packGaps(maskBytes, width, height),
+    manifest,
+    decodedMean: sum / albedoBytes.length,
+  };
+}
+
+/** The mask as one bit per texel, so the shader reads it exactly with no filtering. */
+function packGaps(maskBytes: Uint8Array, width: number, height: number): DataTexture {
   const packedWidth = width / 8;
   const packed = new Uint8Array(packedWidth * height);
   for (let y = 0; y < height; y++) {
@@ -168,7 +181,7 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   gaps.generateMipmaps = false;
   gaps.needsUpdate = true;
 
-  return { albedo, gaps, manifest, decodedMean: sum / albedoBytes.length };
+  return gaps;
 }
 
 export type MoonShading = 'lommel-seeliger' | 'lambert' | 'albedo';
@@ -300,21 +313,23 @@ function createMoonMaterial(
       );
       albedo = sample.r.mul(maps.manifest.calibration.albedoScale);
 
-      const { width, height } = maps.manifest.texture;
-      const column = int(clamp(floor(fract(u).mul(width)), 0, width - 1));
-      const row = int(clamp(floor(v.mul(height)), 0, height - 1));
-      const byte = uint(
-        textureLoad(maps.gaps, ivec2(column.shiftRight(3), row))
-          .r.mul(255)
-          .round(),
-      );
-      // 1 where the surface was never imaged, else 0.
-      gap = float(byte.shiftRight(uint(column.bitAnd(7))).bitAnd(1)).toVar('moonGap');
-      // Gaps are shaded with the disc-mean albedo, so their shape and lighting read, and
-      // coloured so they can never pass for data.
-      const meanAlbedo =
-        maps.manifest.calibration.albedoScale * maps.manifest.calibration.discMeanTextureValue;
-      albedo = mix(albedo, float(meanAlbedo), gap);
+      if (maps.gaps !== null) {
+        const { width, height } = maps.manifest.texture;
+        const column = int(clamp(floor(fract(u).mul(width)), 0, width - 1));
+        const row = int(clamp(floor(v.mul(height)), 0, height - 1));
+        const byte = uint(
+          textureLoad(maps.gaps, ivec2(column.shiftRight(3), row))
+            .r.mul(255)
+            .round(),
+        );
+        // 1 where the surface was never imaged, else 0.
+        gap = float(byte.shiftRight(uint(column.bitAnd(7))).bitAnd(1)).toVar('moonGap');
+        // Gaps are shaded with the disc-mean albedo, so their shape and lighting read, and
+        // coloured so they can never pass for data.
+        const meanAlbedo =
+          maps.manifest.calibration.albedoScale * maps.manifest.calibration.discMeanTextureValue;
+        albedo = mix(albedo, float(meanAlbedo), gap);
+      }
     }
 
     // The Moon is at the origin with a rotation-only placement, so the direction of the

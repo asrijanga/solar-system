@@ -3,6 +3,7 @@ import {
   circularSpeedKmS,
   groundDistance,
   horizonDip,
+  orbitFrom,
   randomOrbit,
   seededRandom,
   sharpHeightKm,
@@ -72,5 +73,24 @@ describe('random orbits', () => {
       expect(o.u[0] * o.v[0] + o.u[1] * o.v[1] + o.u[2] * o.v[2]).toBeCloseTo(0, 12);
       expect(Math.abs(o.omega * o.radiusKm)).toBeCloseTo(circularSpeedKmS(GM, o.radiusKm), 12);
     }
+  });
+});
+
+describe('orbits from where you are', () => {
+  it('starts over the point below you, at your height, at circular speed, in a random direction', () => {
+    const up: Vec3 = [0.6, -0.48, 0.64];
+    const headings = new Set<string>();
+    for (let seed = 1; seed < 20; seed++) {
+      const o = orbitFrom(seededRandom(seed), up, R, GM, 400);
+      expect(o.theta0).toBe(0);
+      expect(o.u[0]).toBeCloseTo(0.6, 12);
+      expect(o.u[2]).toBeCloseTo(0.64, 12);
+      expect(o.radiusKm).toBeCloseTo(R + 400, 9);
+      expect(o.u[0] * o.v[0] + o.u[1] * o.v[1] + o.u[2] * o.v[2]).toBeCloseTo(0, 12);
+      expect(Math.hypot(...o.v)).toBeCloseTo(1, 12);
+      expect(o.omega * o.radiusKm).toBeCloseTo(circularSpeedKmS(GM, o.radiusKm), 12);
+      headings.add(o.v.map((x) => x.toFixed(3)).join());
+    }
+    expect(headings.size).toBe(19);
   });
 });

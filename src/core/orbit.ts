@@ -139,3 +139,31 @@ export function randomOrbit(
   }
   throw new Error('no orbit passes over ground with the Sun in range');
 }
+
+/**
+ * A circular orbit through the point above `up` (unit vector from the Moon's centre, in the
+ * same frame as the result), at `heightKm`, heading in a random direction along the surface.
+ * The orbit starts there: theta0 = 0.
+ */
+export function orbitFrom(
+  random: () => number,
+  up: Vec3,
+  moonRadiusKm: number,
+  gmKm3PerS2: number,
+  heightKm: number,
+): Orbit {
+  const u = unit(up);
+  // A random direction perpendicular to u: any perpendicular, turned by a random angle about u.
+  const helper: Vec3 = Math.abs(u[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  const e1 = unit(cross(u, helper));
+  const e2 = cross(u, e1);
+  const a = 2 * Math.PI * random();
+  const v: Vec3 = [
+    Math.cos(a) * e1[0] + Math.sin(a) * e2[0],
+    Math.cos(a) * e1[1] + Math.sin(a) * e2[1],
+    Math.cos(a) * e1[2] + Math.sin(a) * e2[2],
+  ];
+  const radiusKm = moonRadiusKm + heightKm;
+  const omega = circularSpeedKmS(gmKm3PerS2, radiusKm) / radiusKm;
+  return { radiusKm, u, v, theta0: 0, omega };
+}

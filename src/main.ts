@@ -41,6 +41,7 @@ import {
   STAR_BOOST,
   STAR_BOOST_MAGNITUDES,
 } from './scenes/stars';
+import { siteUrl } from './site';
 
 /**
  * Scaffolding colour: deliberately not black and not three.js's default, so a successful
@@ -110,6 +111,18 @@ const APPROXIMATION_NOTE =
  * tilt in degrees from straight down towards lunar north. Works with `?capture=<id>` too, to
  * render that viewpoint's scene from there.
  */
+/**
+ * The way back to the world picker (docs/stories/SS-13.md). Interactive only: captures show the
+ * world and nothing else.
+ */
+function addBackLink(): void {
+  const back = document.createElement('a');
+  back.id = 'back';
+  back.href = '../';
+  back.textContent = '\u2190 Solar System';
+  document.body.append(back);
+}
+
 function withoutReliefIfAsked(viewpoint: Viewpoint | undefined): Viewpoint | undefined {
   if (!reliefOff || viewpoint?.moon == null) return viewpoint;
   return { ...viewpoint, moon: { ...viewpoint.moon, relief: false } };
@@ -193,7 +206,7 @@ interface Stage {
 }
 
 async function loadJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${import.meta.env.BASE_URL}${path}`);
+  const response = await fetch(siteUrl(path));
   if (!response.ok) throw new Error(`${path} failed to load: HTTP ${response.status}`);
   return (await response.json()) as T;
 }
@@ -291,8 +304,7 @@ async function createStage(
       };
       // With relief the Moon is its measured shape, streamed as polygons (SS-10); without,
       // the smooth sphere the photometry checks are written for.
-      const terrain =
-        layer === null ? null : createMoonTerrain(moon, `${import.meta.env.BASE_URL}${layer.path}`);
+      const terrain = layer === null ? null : createMoonTerrain(moon, siteUrl(layer.path));
       scene.add(terrain === null ? createMoonMesh(moon) : terrain.group);
       const starExposure = uniform(0);
       scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
@@ -344,6 +356,7 @@ async function start(): Promise<void> {
     report({ status: 'refused', reason: `unknown viewpoint: ${String(captureId)}` });
     return;
   }
+  if (captureId === null) addBackLink();
   // The approximation is never checked against anything (docs/stories/SS-10b.md).
   if (
     captureId !== null &&

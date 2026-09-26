@@ -54,6 +54,7 @@ import { TilesRenderer } from '3d-tiles-renderer';
 import { QuantizedMeshPlugin } from '3d-tiles-renderer/plugins';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
 import { EXPOSURE, AU_KM } from '../core/photometry';
+import { siteUrl } from '../site';
 
 /** The manifest's relevant fields (public/data/moon/albedo.json). */
 export interface AlbedoManifest {
@@ -77,7 +78,7 @@ export interface MoonTextures {
   readonly decodedMean: number;
 }
 
-const base = `${import.meta.env.BASE_URL}data/moon/`;
+const base = siteUrl('data/moon/');
 
 /**
  * Decodes chosen 8-bit channels of an image, in strips so that no full-size RGBA copy
@@ -421,7 +422,7 @@ export function createMoonMesh(options: MoonOptions): Mesh {
 const TERRAIN_ERROR_TARGET = 1;
 
 /** Terrain tiles, built at deploy time by `npm run pipeline:tiles` (docs/stories/SS-10.md). */
-const terrainBase = `${import.meta.env.BASE_URL}terrain/`;
+const terrainBase = siteUrl('terrain/');
 
 /**
  * Inflates tiles stored gzip-compressed (tools/terrain/build.ts), recognised by the gzip header

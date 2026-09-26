@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Solar System</title>
     <link rel="icon" href="data:," />
+    <script>
+      // Links from before each world had its own page (?orbit, ?at=, ?epoch=…) were all the Moon.
+      if (location.search !== '') location.replace(`moon/${location.search}${location.hash}`);
+    </script>
     <style>
       html,
       body {
         margin: 0;
-        height: 100%;
+        min-height: 100%;
         background: #000;
         color: #e4e5e8;
         font:
@@ -19,107 +23,104 @@
           Roboto,
           sans-serif;
       }
-      #app {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-      #unsupported {
+      main {
         box-sizing: border-box;
-        max-width: 560px;
+        max-width: 640px;
         margin: 0 auto;
-        padding: 20vh 16px 0;
+        padding: calc(env(safe-area-inset-top) + 48px) 16px calc(env(safe-area-inset-bottom) + 48px);
       }
-      #unsupported h1 {
-        font-size: 1.5rem;
-        line-height: 1.3;
-        margin: 0 0 12px;
+      h1 {
+        font-size: 1.75rem;
+        line-height: 1.2;
+        margin: 0 0 8px;
       }
-      #unsupported p {
+      .lede {
+        margin: 0 0 32px;
+        color: #a9adb6;
+      }
+      ul {
+        list-style: none;
         margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+      li > a,
+      li > div {
+        display: block;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #2a2d35;
+        background: #0d0f14;
+        color: inherit;
+        text-decoration: none;
+      }
+      li > a:hover,
+      li > a:focus-visible {
+        border-color: #6b7280;
+        background: #151821;
+      }
+      .name {
+        font-size: 1.15rem;
+        font-weight: 600;
+      }
+      .status {
+        float: right;
+        font-size: 0.8rem;
         color: #a9adb6;
       }
-      #moon-controls {
-        position: fixed;
-        left: 12px;
-        right: 12px;
-        bottom: max(10px, env(safe-area-inset-bottom));
-        max-width: 460px;
-        font-size: 12px;
-        line-height: 1.4;
-        color: #a9adb6;
-        pointer-events: none;
+      li > a .status {
+        color: #f5c451;
       }
-      #moon-controls p {
-        margin: 0 0 6px;
-      }
-      #moon-controls:has(details[open]),
-      #moon-controls:has(.warning) {
-        left: 6px;
-        right: 6px;
-        padding: 8px 6px 2px;
-        background: rgba(0, 0, 0, 0.78);
-        border-radius: 6px;
-      }
-      #moon-controls a,
-      #moon-controls button,
-      #moon-controls details {
-        pointer-events: auto;
-        color: #e4e5e8;
-      }
-      #moon-controls .row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 6px;
-      }
-      #moon-controls .row a {
-        padding: 5px 4px;
-      }
-      #moon-controls button {
-        font: inherit;
-        padding: 5px 9px;
-        background: #1c1f26;
-        border: 1px solid #3a3f4a;
-        border-radius: 4px;
-      }
-      #moon-controls button[aria-pressed='true'] {
-        border-color: #f0c060;
-        color: #f0c060;
-      }
-      #moon-controls .warning {
-        color: #f0c060;
-      }
-      #moon-controls details {
+      .detail {
+        margin: 4px 0 0;
+        font-size: 0.9rem;
         color: #a9adb6;
       }
-      #moon-controls details p {
-        max-width: 440px;
-        padding: 0 2px;
+      .soon {
+        opacity: 0.6;
       }
-      #moon-controls summary {
-        cursor: pointer;
-        color: #e4e5e8;
-        margin-bottom: 4px;
-      }
-      #moon-controls .swatch {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        margin-right: 6px;
-        vertical-align: -1px;
-        background: #ff00ff;
-        border-radius: 2px;
+      footer {
+        margin-top: 32px;
+        font-size: 0.8rem;
+        color: #6b7280;
       }
     </style>
   </head>
   <body>
-    <canvas id="app"></canvas>
-    <section id="unsupported" hidden>
-      <h1></h1>
-      <p></p>
-    </section>
-    <script type="module" src="/src/main.ts"></script>
+    <main>
+      <h1>Solar System</h1>
+      <p class="lede">
+        Every world rebuilt from the real measurements of the missions that mapped it. Pick a world
+        to fly over it.
+      </p>
+      <ul>
+        <li>
+          <a href="moon/">
+            <span class="status">Explore →</span>
+            <span class="name">The Moon</span>
+            <p class="detail">
+              Heights from LRO's laser altimeter, 670 m apart everywhere; brightness from Clementine
+              and LOLA. Orbit it, or fly down to the craters.
+            </p>
+          </a>
+        </li>
+        <li class="soon">
+          <div>
+            <span class="status">Next</span>
+            <span class="name">Mars</span>
+            <p class="detail">MOLA, HRSC, CTX and HiRISE.</p>
+          </div>
+        </li>
+        <li class="soon">
+          <div>
+            <span class="status">Later</span>
+            <span class="name">Mercury, Venus, Earth</span>
+            <p class="detail">MESSENGER; Magellan radar; Copernicus, Sentinel and GEBCO.</p>
+          </div>
+        </li>
+      </ul>
+      <footer>Each world is its own page, so it loads only its own data.</footer>
+    </main>
   </body>
 </html>

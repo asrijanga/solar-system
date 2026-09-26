@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>The Moon · Solar System</title>
+    <link rel="icon" href="data:," />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        color: #e4e5e8;
+        font:
+          16px/1.6 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      #app {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #unsupported {
+        box-sizing: border-box;
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 20vh 16px 0;
+      }
+      #unsupported h1 {
+        font-size: 1.5rem;
+        line-height: 1.3;
+        margin: 0 0 12px;
+      }
+      #unsupported p {
+        margin: 0;
+        color: #a9adb6;
+      }
+      #moon-controls {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        max-width: 460px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #a9adb6;
+        pointer-events: none;
+      }
+      #moon-controls p {
+        margin: 0 0 6px;
+      }
+      #moon-controls:has(details[open]),
+      #moon-controls:has(.warning) {
+        left: 6px;
+        right: 6px;
+        padding: 8px 6px 2px;
+        background: rgba(0, 0, 0, 0.78);
+        border-radius: 6px;
+      }
+      #moon-controls a,
+      #moon-controls button,
+      #moon-controls details {
+        pointer-events: auto;
+        color: #e4e5e8;
+      }
+      #moon-controls .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      #moon-controls .row a {
+        padding: 5px 4px;
+      }
+      #moon-controls button {
+        font: inherit;
+        padding: 5px 9px;
+        background: #1c1f26;
+        border: 1px solid #3a3f4a;
+        border-radius: 4px;
+      }
+      #moon-controls button[aria-pressed='true'] {
+        border-color: #f0c060;
+        color: #f0c060;
+      }
+      #moon-controls .warning {
+        color: #f0c060;
+      }
+      #moon-controls details {
+        color: #a9adb6;
+      }
+      #moon-controls details p {
+        max-width: 440px;
+        padding: 0 2px;
+      }
+      #moon-controls summary {
+        cursor: pointer;
+        color: #e4e5e8;
+        margin-bottom: 4px;
+      }
+      #moon-controls .swatch {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin-right: 6px;
+        vertical-align: -1px;
+        background: #ff00ff;
+        border-radius: 2px;
+      }
+      #back {
+        position: fixed;
+        top: calc(env(safe-area-inset-top) + 12px);
+        left: calc(env(safe-area-inset-left) + 12px);
+        z-index: 10;
+        padding: 6px 12px;
+        border-radius: 8px;
+        background: rgba(20, 22, 28, 0.72);
+        color: #e4e5e8;
+        text-decoration: none;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="app"></canvas>
+    <section id="unsupported" hidden>
+      <h1></h1>
+      <p></p>
+    </section>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

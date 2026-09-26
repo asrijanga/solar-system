@@ -62,7 +62,7 @@ async function render(
     page.on('console', (message) => {
       if (message.type() === 'error') errors.push(message.text());
     });
-    await page.goto(`${baseUrl}?capture=${encodeURIComponent(viewpoint.id)}`);
+    await page.goto(`${baseUrl}moon/?capture=${encodeURIComponent(viewpoint.id)}`);
     await page.waitForFunction(() => window.__capture !== undefined, null, {
       timeout: READY_TIMEOUT_MS,
     });

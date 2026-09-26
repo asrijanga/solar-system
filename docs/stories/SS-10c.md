@@ -15,7 +15,7 @@ As a learner, I want to fly anywhere on the Moon and see it as finely as it has 
 
 ## What `npm run local` does
 
-1. **Build and serve:** it builds the app and serves it at `http://localhost:5178/`. Localhost is a secure context, so WebGPU runs.
+1. **Build and serve:** it builds the app and serves it at `http://localhost:5178/`, with the Moon at `/moon/` (SS-13). Localhost is a secure context, so WebGPU runs.
 2. **Tiles on demand:** it builds each terrain tile the first time a view asks for it, from the publishers' own files. It fetches only the rows and columns that tile covers, in one multi-range HTTP request per 256 × 256 block (PDS serves `multipart/byteranges`).
 3. **Cache:** fetched blocks, downloaded files and built tiles live in `.cache/local/`, so each place is fetched once.
 

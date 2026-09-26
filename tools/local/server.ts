@@ -125,12 +125,13 @@ createServer((req, res) => {
     );
     return;
   }
-  const file = normalize(join(dist, path === '/' ? 'index.html' : path));
+  // A directory is its page: `/` is the world picker, `/moon/` the Moon (docs/stories/SS-13.md).
+  const file = normalize(join(dist, path.endsWith('/') ? `${path}index.html` : path));
   if (!file.startsWith(dist) || !existsSync(file) || !statSync(file).isFile()) {
     return send(res, 404, 'text/plain', 'not found');
   }
   send(res, 200, TYPES[extname(file)] ?? 'application/octet-stream', readFileSync(file));
 }).listen(port, '127.0.0.1', () => {
-  log(`the Moon at full measured detail: http://localhost:${port}/`);
+  log(`the Moon at full measured detail: http://localhost:${port}/moon/`);
   log(`cache: ${cacheDir}`);
 });

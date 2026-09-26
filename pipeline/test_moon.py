@@ -20,8 +20,13 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = json.loads((ROOT / "public/data/moon/albedo.json").read_text())
 TEXTURE_PATH = ROOT / "public/data/moon" / MANIFEST["texture"]["file"]
 TEXTURE = np.array(Image.open(TEXTURE_PATH).convert("L")).astype(np.float64)
-MASK_PATH = ROOT / "public/data/moon" / MANIFEST["texture"]["mask"]
-GAP = np.array(Image.open(MASK_PATH).convert("L")) > 0
+MASK = MANIFEST["texture"]["mask"]
+MASK_PATH = None if MASK is None else ROOT / "public/data/moon" / MASK
+GAP = (
+    np.zeros(TEXTURE.shape, dtype=bool)
+    if MASK_PATH is None
+    else np.array(Image.open(MASK_PATH).convert("L")) > 0
+)
 GAZETTEER = {
     f["name"]: f
     for f in json.loads((ROOT / "test/fixtures/iau-gazetteer-moon.json").read_text())["features"]
@@ -69,14 +74,23 @@ class Integrity(unittest.TestCase):
         self.assertEqual((W, H), (MANIFEST["texture"]["width"], MANIFEST["texture"]["height"]))
 
     def test_mask_matches_its_manifest(self) -> None:
+        if MASK_PATH is None:
+            self.assertIsNone(MANIFEST["texture"]["maskSha256"])
+            self.assertFalse((ROOT / "public/data/moon/albedo-mask.png").exists(), "stale mask left behind")
+            return
         self.assertEqual(hashlib.sha256(MASK_PATH.read_bytes()).hexdigest(), MANIFEST["texture"]["maskSha256"])
         self.assertEqual(GAP.shape, TEXTURE.shape)
 
-    def test_gaps_are_kept_and_rare(self) -> None:
-        missing = float(GAP.mean())
-        self.assertAlmostEqual(missing, MANIFEST["texture"]["missingFraction"], places=6)
-        self.assertGreater(missing, 0, "Clementine has unimaged gaps; they must survive")
-        self.assertLess(missing, 0.01)
+    def test_every_pixel_is_measured(self) -> None:
+        """Owner decision 2026-09-26 (docs/stories/SS-11c.md): Clementine's gaps are filled from
+        LOLA's global laser albedo, a measurement. Until then this test required the gaps to
+        survive, shown as missing."""
+        self.assertIsNone(MASK)
+        self.assertEqual(MANIFEST["texture"]["missingPixels"], 0)
+        # Every pixel Clementine lacked was measured by LOLA: at the poles, or in the global map.
+        poles = MANIFEST["poles"]
+        polar = poles["south"]["clementineGapsFilled"] + poles["north"]["clementineGapsFilled"]
+        self.assertEqual(poles["clementineMissingPixels"], polar + MANIFEST["gapFill"]["pixelsFilled"])
 
     def test_the_poles_have_no_gaps_since_lola_covers_them(self) -> None:
         """Clementine never imaged 13% of the area south of -80 deg; LOLA measured all of it."""

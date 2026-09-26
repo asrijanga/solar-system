@@ -28,7 +28,8 @@ Combination (README, "Combine every available source"):
 - Blend: weight w rises smoothly (smoothstep) from 0 at |latitude| 65 to 1 at 75. Output =
   (1 - w) * Clementine + w * calibrated LOLA. Where Clementine never imaged a point and w > 0,
   the calibrated LOLA value is used as is: it is a measurement.
-- Equatorward of 65 degrees nothing changes, and Clementine's gaps there stay gaps.
+- Equatorward of 65 degrees nothing changes. Clementine's gaps there are filled next, from LOLA's
+  global albedo map (lola_global.py).
 """
 
 from __future__ import annotations

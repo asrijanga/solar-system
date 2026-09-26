@@ -59,13 +59,71 @@ jobs:
       - run: npm run build
       - run: npm run capture
       - run: npm run capture:diff
-      - run: npm run alloc
-      - run: npm run alloc -- orbit=7 relief=off
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: captures
           path: captures/
+          if-no-files-found: ignore
+
+  # Allocation in the frame loop (CLAUDE.md), in parallel with the captures. It renders 1,200
+  # frames a run on SwiftShader, about 30 minutes for both runs, so on a pull request it runs only
+  # when the per-frame code changed (owner decision, 2026-09-26). Every push to main runs it.
+  alloc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: frame
+        name: Did the frame code change?
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The checkout is the pull request merged onto its base, so comparing trees with the
+          # base gives exactly what the pull request changes.
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}" HEAD -- \
+            src/main.ts src/scenes src/core src/gpu tools/perf package.json package-lock.json \
+            | grep -v '\.test\.ts$' || true)
+          echo "Frame code changed:"
+          echo "${changed:-  (nothing: allocation not measured)}"
+          echo "changed=$([ -n "$changed" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.frame.outputs.changed == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - if: steps.frame.outputs.changed == 'true'
+        run: npm ci
+      - if: steps.frame.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            pipeline/.cache/ldem_64_float.img
+            pipeline/.cache/ldem512_rows_2560_8704.img
+            pipeline/.cache/kaguya_tc_dtm_S09E003S12E006SC.img
+          key: lola-terrain-${{ hashFiles('tools/terrain/build.ts', 'tools/data/download.ts') }}
+          restore-keys: lola-terrain-
+      - if: steps.frame.outputs.changed == 'true'
+        id: tiles
+        uses: actions/cache@v4
+        with:
+          path: public/terrain
+          key: moon-tiles-${{ hashFiles('tools/terrain/**', 'tools/data/download.ts') }}
+      - if: steps.frame.outputs.changed == 'true' && steps.tiles.outputs.cache-hit != 'true'
+        run: npm run pipeline:tiles
+      - if: steps.frame.outputs.changed == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.frame.outputs.changed == 'true'
+        run: npm run alloc
+      - if: steps.frame.outputs.changed == 'true'
+        run: npm run alloc -- orbit=7 relief=off
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.frame.outputs.changed == 'true'
+        with:
+          name: alloc
+          path: captures/alloc*.json
           if-no-files-found: ignore
 
   pipeline:

@@ -111,4 +111,50 @@ describe('orbit flight', () => {
     const angle = after.angleTo(at(camera));
     expect(angle * (R + 900)).toBeCloseTo(circularSpeedKmS(GM, R + 900) * 100, 6);
   });
+
+  it('with arrive, glides from the old view onto the orbit, outside the Moon, and joins it', () => {
+    const camera = new PerspectiveCamera(50, 1, 0.01, 1e7);
+    // Far out on the other side of the Moon from where the orbit starts, looking at the centre.
+    const orbit = randomOrbit(seededRandom(11), R, GM, 300, [1, 0, 0]);
+    const start = expected(orbit, orbit.theta0)
+      .normalize()
+      .multiplyScalar(-6 * R);
+    start.add(new Vector3(0, 0, R));
+    camera.position.copy(start);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld();
+    const startView = camera.getWorldDirection(new Vector3());
+    const flight = new OrbitFlight(camera, orbit, R, true);
+
+    // Nothing moves until the first timed frame, and then it starts from where it was.
+    expect(at(camera).distanceTo(start)).toBeLessThan(1e-6);
+    flight.frame(undefined);
+    flight.frame(1000);
+    expect(at(camera).distanceTo(start)).toBeLessThan(1e-6);
+    expect(camera.getWorldDirection(new Vector3()).dot(startView)).toBeCloseTo(1, 9);
+
+    // On the way: always outside the Moon, and each step small (no jumps).
+    let previous = at(camera);
+    let longest = 0;
+    for (let t = 1000; t <= 1000 + 6000; t += 16) {
+      flight.frame(t);
+      const now = at(camera);
+      expect(now.length()).toBeGreaterThan(R + 300 - 1e-6);
+      longest = Math.max(longest, now.distanceTo(previous));
+      previous = now;
+    }
+    // The longest step is a few percent of the way, not a jump.
+    expect(longest).toBeLessThan(0.02 * start.distanceTo(expected(orbit, orbit.theta0)));
+
+    // After the arrival (at most 6 s) it is exactly on the orbit, as a flight without it would be.
+    flight.frame(61000);
+    const plain = new PerspectiveCamera(50, 1, 0.01, 1e7);
+    const reference = new OrbitFlight(plain, orbit, R);
+    reference.frame(1000);
+    reference.frame(61000);
+    expect(at(camera).distanceTo(at(plain))).toBeLessThan(1e-6);
+    expect(
+      camera.getWorldDirection(new Vector3()).dot(plain.getWorldDirection(new Vector3())),
+    ).toBeCloseTo(1, 12);
+  });
 });

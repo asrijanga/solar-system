@@ -41,16 +41,38 @@ The height is chosen so that nothing on screen is magnified past its data.
 
 Heights are from the 1737.4 km sphere, with a 50° vertical field of view and at most 3 px per sample.
 
-## Part 2: sharper terrain within GitHub Pages (separate PR)
+## Part 2: sharper terrain within GitHub Pages (its own PR)
 
-GitHub Pages publishes at most about 1 GB, counted uncompressed. The website's terrain stops at level 5 (2.7 km) everywhere, and adds finer levels only around Albategnius.
+GitHub Pages publishes at most about 1 GB, counted uncompressed. Until this part, the website's terrain stopped at level 5 (2.7 km) everywhere, adding finer levels only around Albategnius.
 
-- **Store compressed tiles.** Pages already sends `.terrain` files gzip-encoded in transit, but counts their full size against the limit.
-  - **Build:** writes each tile gzip-compressed, measured at 81.6 KB down to 14.0 KB per tile.
-  - **Browser:** a terrain plugin recognises the gzip header (1f 8b) and inflates the tile with the browser's own `DecompressionStream`.
-  - **Local mode:** tiles from the local server stay uncompressed and pass straight through.
-- **Global levels 6 and 7** (1.33 km and 0.67 km) from LOLA LDEM_64 (474 m), about 41,000 more tiles. The budget is checked in CI.
-- **Result:** orbit comes down to the last row of the table: about 620 km on the iPhone.
+- **Compressed tiles.** Pages already sends `.terrain` files gzip-encoded in transit, but counts their full size against the limit.
+  - **Build:** `tools/terrain/build.ts` writes each tile gzip-compressed at level 9.
+  - **Browser:** a terrain plugin in `src/scenes/moon.ts` recognises the gzip header (1f 8b) and inflates the tile with the browser's own `DecompressionStream`. Anything else passes straight through, including `layer.json` and local mode's uncompressed tiles.
+- **Global levels 6 and 7** (1.33 km and 0.67 km vertex spacing), from the same LOLA LDEM_64 (474 m) as levels 0–5. The level-7 box around Albategnius is no longer needed.
+- **Budget.** The build fails if the terrain passes 900 MB, which leaves room for the rest of the site.
+- **Build time.** CI caches the built tiles, keyed on the build code and the pinned sources, so the build only runs when one of them changes.
+
+### As built (2026-09-26)
+
+| Level | Tiles | Size |
+| --- | --- | --- |
+| 5 | 2,048 | 30 MB |
+| 6 | 8,192 | 119 MB |
+| 7 | 32,768 | 468 MB |
+| All, 0–13 | 46,743 | 671 MB |
+
+- **Build time:** 8 minutes on the cloud machine.
+- **Site size:** the whole site is 724 MB on disk.
+- **Before:** 485 MB uncompressed, for levels 0–5 plus the Albategnius boxes.
+
+**Three views change,** as expected: every one gains finer measured relief where it used to show the 2.7 km grid.
+- **`moon-orbit`:** comes down from about 1040 km to about 230 km, which is the point of this part.
+- **`moon-theophilus-tilted`:** Theophilus's walls and central peaks now show at 0.67 km.
+- **`moon-albategnius`:** its surroundings outside the high-resolution box sharpen.
+
+![moon-orbit before and after](ss11b-orbit-before-after.png)
+
+![moon-theophilus-tilted before and after](ss11b-theophilus-before-after.png)
 
 ## Checks
 

@@ -409,6 +409,25 @@ const TERRAIN_ERROR_TARGET = 1;
 const terrainBase = `${import.meta.env.BASE_URL}terrain/`;
 
 /**
+ * Inflates tiles stored gzip-compressed (tools/terrain/build.ts), recognised by the gzip header
+ * 1f 8b; anything else, such as layer.json or the local server's uncompressed tiles, passes
+ * through unchanged. GitHub Pages also gzips them in transit, which fetch undoes by itself.
+ */
+class GunzipPlugin {
+  fetchData(url: string, options: RequestInit): Promise<Response> {
+    return fetch(url, options).then(async (response) => {
+      if (!response.ok) return response;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const body =
+        bytes[0] === 0x1f && bytes[1] === 0x8b
+          ? new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
+          : bytes;
+      return new Response(body, { status: response.status });
+    });
+  }
+}
+
+/**
  * The Moon as streamed polygons: LOLA quantized-mesh tiles (tools/terrain/build.ts),
  * every vertex on a measured height, refined as the camera comes closer. The caller sets
  * the camera and resolution and calls `update()` once per frame before drawing.
@@ -417,6 +436,7 @@ export function createMoonTerrain(options: MoonOptions, base = terrainBase): Til
   const tiles = new TilesRenderer(base);
   const radiusM = options.radiusKm * 1000;
   tiles.ellipsoid.radius.set(radiusM, radiusM, radiusM);
+  tiles.registerPlugin(new GunzipPlugin());
   tiles.registerPlugin(new QuantizedMeshPlugin({ useRecommendedSettings: false }));
   tiles.errorTarget = TERRAIN_ERROR_TARGET;
 

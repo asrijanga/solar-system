@@ -17,8 +17,9 @@
 // Every vertex height is a measurement (bilinear between measured samples); nothing is added
 // between them. Formerly pipeline/terrain_tiles.py.
 
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { fetchPinned } from '../data/download.ts';
 import { encodeTile, tileBounds, type HeightSource } from './quantizedMesh.ts';
 import { Blend, Grid, boxMean, type HeightField } from './sources.ts';
@@ -57,9 +58,12 @@ const PEAK = [3.77, -11.3] as const;
 const KAGUYA_LEVEL = 12;
 const KAGUYA_BOX: Box = [3.4, -11.8, 4.6, -10.6];
 const BLEND_DEG = 0.02;
-const GLOBAL_LEVELS = 5;
+// Every level to 7 (0.67 km vertex spacing) covers the whole Moon, so orbit mode can fly low
+// everywhere (docs/stories/SS-11b.md). Tiles are stored gzip-compressed: GitHub Pages counts a
+// site's files uncompressed against its 1 GB limit, and the browser inflates them
+// (src/scenes/moon.ts).
+const GLOBAL_LEVELS = 7;
 const BOXES: readonly (readonly [number, Box])[] = [
-  [7, [0.1, -16.9, 9.9, -5.1]],
   [10, [1.5, -14.0, 6.5, -8.5]],
   [11, KAGUYA_BOX],
   [KAGUYA_LEVEL, KAGUYA_BOX],
@@ -231,6 +235,18 @@ export function registration(fine: Grid, lola: Grid, box: Box) {
   };
 }
 
+/**
+ * GitHub Pages publishes at most 1 GB, counted uncompressed on disk. The terrain may use 900 MB
+ * of it, leaving the rest for the app and its data.
+ */
+const TERRAIN_BUDGET_BYTES = 900e6;
+
+function sizeOf(dir: string): number {
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .reduce((sum, entry) => sum + statSync(join(entry.parentPath, entry.name)).size, 0);
+}
+
 function source(field: HeightField): HeightSource {
   return async (lat, lon) => lat.map((la, i) => field.heightM(la, lon[i] ?? 0));
 }
@@ -278,7 +294,7 @@ async function build(
             global;
           const path = join(OUT, String(z), String(x), `${y}.terrain`);
           mkdirSync(dirname(path), { recursive: true });
-          writeFileSync(path, await encodeTile(z, x, y, source(field)));
+          writeFileSync(path, gzipSync(await encodeTile(z, x, y, source(field)), { level: 9 }));
           count++;
         }
       }
@@ -324,7 +340,8 @@ if (import.meta.main) {
     join(OUT, 'sources.json'),
     `${JSON.stringify(
       {
-        global: 'LOLA LDEM_64_FLOAT (PDS LRO-L-LOLA-4-GDR-V1.0), levels 0-5',
+        global: `LOLA LDEM_64_FLOAT (PDS LRO-L-LOLA-4-GDR-V1.0), levels 0-${GLOBAL_LEVELS}`,
+        compression: 'gzip, level 9',
         albategnius: {
           source: 'LOLA LDEM_512_45S_00S_000_090_FLOAT, rows 2560-8704 (byte range)',
           sha256: LDEM512_SHA256,
@@ -344,5 +361,11 @@ if (import.meta.main) {
       2,
     )}\n`,
   );
-  console.log(`${count} tiles in ${OUT}`);
+  const bytes = sizeOf(OUT);
+  console.log(`${count} tiles in ${OUT}: ${(bytes / 1e6).toFixed(0)} MB`);
+  if (bytes > TERRAIN_BUDGET_BYTES) {
+    throw new Error(
+      `terrain is ${(bytes / 1e6).toFixed(0)} MB, over its ${TERRAIN_BUDGET_BYTES / 1e6} MB budget`,
+    );
+  }
 }

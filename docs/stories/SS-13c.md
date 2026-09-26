@@ -1,6 +1,6 @@
 # SS-13c · Earth's real face in the Moon's sky
 
-Status: **proposed, awaiting the owner's approval** · 2026-09-26
+Status: **approved** · 2026-09-26
 
 As a learner on the Moon, I want Earth to look as it really did at that moment, with its clouds, oceans, continents and blue air, not a plain ball.
 
@@ -75,10 +75,10 @@ Himawari's 0.51 µm is bluer than the eye's green, so vegetation looks slightly 
 - **Captures:** a new close view of Earth from the Moon, with a narrow field so Earth fills it. Its baseline is added in its own commit. `moon-earthrise` changes, with before and after images.
 - **Allocation:** the Earth material is shader work only, so no new work in the frame loop.
 
-## Owner decisions needed
+## Owner decisions, 2026-09-26
 
-1. **The source:** option 4, Earth as measured at the instant, or another panel.
-2. **Colour** for Earth, with the Moon staying grey.
+1. **Source:** "Satellites at that moment": option 4, Earth as the geostationary satellites measured it at the app's instants.
+2. **Colour:** "Yes, colour", as measured in three bands. The Moon stays grey.
 
 ## Effort
 

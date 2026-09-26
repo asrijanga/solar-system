@@ -167,3 +167,33 @@ export function orbitFrom(
   const omega = circularSpeedKmS(gmKm3PerS2, radiusKm) / radiusKm;
   return { radiusKm, u, v, theta0: 0, omega };
 }
+
+/**
+ * A circular orbit through the point above `up` (unit vector from the Moon's centre), at
+ * `heightKm`, setting off along `heading` (any vector with a component along the surface there;
+ * its part along `up` is ignored). The orbit starts there: theta0 = 0.
+ */
+export function orbitHeading(
+  up: Vec3,
+  heading: Vec3,
+  moonRadiusKm: number,
+  gmKm3PerS2: number,
+  heightKm: number,
+): Orbit {
+  const u = unit(up);
+  const along = dot(heading, u);
+  const v = unit([heading[0] - along * u[0], heading[1] - along * u[1], heading[2] - along * u[2]]);
+  const radiusKm = moonRadiusKm + heightKm;
+  const omega = circularSpeedKmS(gmKm3PerS2, radiusKm) / radiusKm;
+  return { radiusKm, u, v, theta0: 0, omega };
+}
+
+/** The body-fixed unit vectors up and due north at a planetocentric latitude and longitude. */
+export function upAndNorth(lonDeg: number, latDeg: number): { up: Vec3; north: Vec3 } {
+  const lon = (lonDeg * Math.PI) / 180;
+  const lat = (latDeg * Math.PI) / 180;
+  return {
+    up: [Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat)],
+    north: [-Math.sin(lat) * Math.cos(lon), -Math.sin(lat) * Math.sin(lon), Math.cos(lat)],
+  };
+}

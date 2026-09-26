@@ -21,8 +21,22 @@ import {
   type MoonEpochId,
   type Viewpoint,
 } from './capture/viewpoints';
-import { findEpoch, j2000ToScene, maxTiltDeg, moonViewPose, type MoonEphemeris } from './core/moon';
-import { orbitFrom, randomOrbit, seededRandom, sharpHeightKm } from './core/orbit';
+import {
+  bodyFixedToSceneMatrix,
+  findEpoch,
+  j2000ToScene,
+  maxTiltDeg,
+  moonViewPose,
+  type MoonEphemeris,
+} from './core/moon';
+import {
+  orbitHeading,
+  randomOrbit,
+  seededRandom,
+  sharpHeightKm,
+  upAndNorth,
+  type Orbit,
+} from './core/orbit';
 import { OrbitFlight } from './scenes/orbitFlight';
 import { physicalStarExposure, pixelSolidAngle } from './core/photometry';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
@@ -33,6 +47,8 @@ import { DebugOverlay } from './debug/overlay';
 import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/adapter';
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
 import { createDepthTestScene } from './scenes/depthTest';
+import { createEarth } from './scenes/earth';
+import { createLabels, type Labels, type Landmark } from './scenes/labels';
 import { createMoonMesh, createMoonTerrain, loadMoonTextures } from './scenes/moon';
 import {
   createStarMesh,
@@ -203,6 +219,10 @@ interface Stage {
   readonly approximated: boolean;
   /** 0 sunlight, 1 the labelled even lighting. */
   readonly evenLight: UniformNode<'float', number> | null;
+  /** Landmark labels (docs/stories/SS-15.md), and the landmarks with the body-to-scene rotation. */
+  readonly labels: Labels | null;
+  readonly landmarks: readonly Landmark[];
+  readonly bodyToScene: readonly number[] | null;
 }
 
 async function loadJson<T>(path: string): Promise<T> {
@@ -261,6 +281,9 @@ async function createStage(
     terrainLayer: null,
     approximated: false,
     evenLight: null,
+    labels: null,
+    landmarks: [],
+    bodyToScene: null,
   });
   switch (viewpoint.scene) {
     case 'empty':
@@ -282,11 +305,12 @@ async function createStage(
     case 'moon': {
       const setup = viewpoint.moon;
       if (setup === null) throw new Error(`${viewpoint.id} is a Moon scene without a Moon setup`);
-      const [ephemeris, field, textures, layer] = await Promise.all([
+      const [ephemeris, field, textures, layer, landmarkFile] = await Promise.all([
         loadJson<MoonEphemeris>('data/moon/ephemeris.json'),
         loadStarField(),
         setup.albedo === 'map' ? loadMoonTextures(maxAnisotropy) : null,
         setup.relief ? loadTerrainLayer() : null,
+        loadJson<{ landmarks: Landmark[] }>('data/moon/landmarks.json'),
       ]);
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
@@ -308,6 +332,19 @@ async function createStage(
       scene.add(terrain === null ? createMoonMesh(moon) : terrain.group);
       const starExposure = uniform(0);
       scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
+      // Earth in the sky, sunlit (docs/stories/SS-13b.md).
+      scene.add(createEarth(epoch, ephemeris.earth));
+      // Landmark labels, hidden until asked for (docs/stories/SS-15.md).
+      const bodyToScene = bodyFixedToSceneMatrix(epoch);
+      const labels = createLabels(
+        landmarkFile.landmarks,
+        bodyToScene,
+        radiusKm,
+        j2000ToScene(epoch.sunDirectionJ2000),
+      );
+      labels.group.visible = setup.labels;
+      if (setup.labels) labels.set(true, null);
+      scene.add(labels.group);
 
       // Near 10 m over terrain, where the camera comes down to a couple of kilometres; 1 km
       // over the sphere, whose surface is never closer than 870 km. Reversed-Z float depth
@@ -325,6 +362,9 @@ async function createStage(
         radiusKm,
         starExposure,
         evenLight,
+        labels,
+        landmarks: landmarkFile.landmarks,
+        bodyToScene,
         albedoDecodedMean: textures?.decodedMean ?? null,
         albedoGaps: (textures?.gaps ?? null) !== null,
         terrain,
@@ -431,6 +471,7 @@ async function start(): Promise<void> {
     camera.updateProjectionMatrix();
     // Terrain refines against drawing-buffer pixels, the ones the screen shows.
     terrain?.setResolution(camera, canvas.width, canvas.height);
+    stage.labels?.setViewport(height, camera.fov);
     if (starExposure !== null) {
       starExposure.value =
         physicalStarExposure(pixelSolidAngle(camera.fov, height)) * (starBoost[0] ?? 1);
@@ -443,6 +484,19 @@ async function start(): Promise<void> {
     resize();
     const orbitSeed = viewpoint.moon?.orbitSeed ?? null;
     if (orbitSeed !== null) seededOrbitFlight(stage, camera, canvas.height, orbitSeed);
+    const orbitFrom = viewpoint.moon?.orbitFrom ?? null;
+    if (orbitFrom !== null) {
+      const minHeight = sharpOrbitHeightKm(stage, camera, canvas.height);
+      const orbit =
+        minHeight === null ? null : orbitOverLandmark(stage, orbitFrom.landmark, minHeight);
+      if (orbit !== null && stage.radiusKm !== null) {
+        new OrbitFlight(
+          camera,
+          { ...orbit, theta0: (orbitFrom.angleDeg * Math.PI) / 180 },
+          stage.radiusKm,
+        );
+      }
+    }
     if (terrain !== null && !(await terrainLoaded(terrain, camera))) {
       report({ status: 'refused', reason: 'terrain did not finish loading' });
       return;
@@ -499,21 +553,14 @@ async function start(): Promise<void> {
     flight = created;
     return created;
   };
-  // The Orbit button starts from where the gestures left the camera: over the point below it,
-  // at its height (never below the lowest sharp one), heading in a random direction.
+  // The Orbit button starts over a known landmark heading north (ORBIT_START_LANDMARK), at the
+  // height the gestures left the camera (never below the lowest sharp one).
   const startFromView = (): OrbitFlight | null => {
     const minHeight = sharpOrbitHeightKm(stage, camera, canvas.height);
-    if (minHeight === null || stage.orbitInputs === null || stage.radiusKm === null) return null;
-    const p = camera.position;
-    const height = Math.max(p.length() - stage.radiusKm, minHeight);
-    const orbit = orbitFrom(
-      Math.random,
-      [p.x, p.y, p.z],
-      stage.radiusKm,
-      stage.orbitInputs.gmKm3PerS2,
-      height,
-    );
-    return begin(new OrbitFlight(camera, orbit, stage.radiusKm));
+    if (minHeight === null || stage.radiusKm === null) return null;
+    const height = Math.max(camera.position.length() - stage.radiusKm, minHeight);
+    const orbit = orbitOverLandmark(stage, ORBIT_START_LANDMARK, height);
+    return orbit === null ? null : begin(new OrbitFlight(camera, orbit, stage.radiusKm));
   };
   const stopOrbit = (): void => {
     flight?.release();
@@ -612,6 +659,13 @@ async function start(): Promise<void> {
                 );
                 return f === null ? null : describeOrbit(f);
               },
+        onLabels: (on) => {
+          const labels = stage.labels;
+          if (labels === null) return;
+          // The fade runs on three's own node clock, which the shader reads as `time`.
+          labels.group.visible = true;
+          labels.set(on, nodeClockSeconds(renderer));
+        },
         onBoost: (boosted) => {
           starBoost[0] = boosted ? STAR_BOOST : 1;
           resize();
@@ -873,6 +927,50 @@ function seededOrbitFlight(
   return new OrbitFlight(camera, orbit, stage.radiusKm);
 }
 
+/**
+ * three's node clock, seconds: the value the TSL `time` node has this frame. It is internal to
+ * three r184 (NodeFrame.time, pinned); null if a future version moves it, and then labels switch
+ * without a fade rather than fading from the wrong moment.
+ */
+function nodeClockSeconds(renderer: unknown): number | null {
+  const time = (renderer as { _nodes?: { nodeFrame?: { time?: unknown } } })._nodes?.nodeFrame
+    ?.time;
+  return typeof time === 'number' ? time : null;
+}
+
+/** Where the Orbit button starts (docs/stories/SS-15.md). */
+const ORBIT_START_LANDMARK = 'Albategnius';
+
+/**
+ * A circular orbit from over a landmark (public/data/moon/landmarks.json), heading due north
+ * along its meridian, `heightKm` up. Null without a Moon or if the landmark is unknown.
+ */
+function orbitOverLandmark(stage: Stage, name: string, heightKm: number): Orbit | null {
+  const landmark = stage.landmarks.find((l) => l.name === name);
+  const m = stage.bodyToScene;
+  if (
+    landmark === undefined ||
+    m === null ||
+    stage.orbitInputs === null ||
+    stage.radiusKm === null
+  ) {
+    return null;
+  }
+  const toScene = (v: readonly [number, number, number]): [number, number, number] => [
+    (m[0] ?? 0) * v[0] + (m[1] ?? 0) * v[1] + (m[2] ?? 0) * v[2],
+    (m[3] ?? 0) * v[0] + (m[4] ?? 0) * v[1] + (m[5] ?? 0) * v[2],
+    (m[6] ?? 0) * v[0] + (m[7] ?? 0) * v[1] + (m[8] ?? 0) * v[2],
+  ];
+  const { up, north } = upAndNorth(landmark.lonDeg, landmark.latDeg);
+  return orbitHeading(
+    toScene(up),
+    toScene(north),
+    stage.radiusKm,
+    stage.orbitInputs.gmKm3PerS2,
+    heightKm,
+  );
+}
+
 interface MoonControlHandlers {
   /** Orbit mode on or off; returns the line describing the orbit, or null. */
   readonly onOrbit: (on: boolean) => string | null;
@@ -880,6 +978,8 @@ interface MoonControlHandlers {
   /** Set when the page asked for `?orbit`: starts it, returning the description. */
   readonly startInOrbit: (() => string | null) | null;
   readonly onBoost: (boosted: boolean) => void;
+  /** Landmark labels on or off (docs/stories/SS-15.md). */
+  readonly onLabels: (on: boolean) => void;
   readonly onEvenLight: (even: boolean) => void;
 }
 
@@ -889,6 +989,9 @@ const ABOUT = [
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°. The few small places Clementine missed elsewhere (0.06% of the map) are filled from LOLA\u2019s global laser map, which is coarser (3 km), matched to Clementine around each one.',
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
+  'Orbit: starts over the crater Albategnius and heads due north along its meridian, over the central highlands and the Apennines, across the north pole, down the far side and back, with Earth rising ahead over the south pole. Pinch or scroll first to choose the height; it never goes below the height the terrain stays sharp from.',
+  'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Each label rises and sets with its landmark, dims on the night side, and small features wait until you are close enough for them to matter.',
+  'Earth: where it really is at this date, at its measured size, lit by the same Sun. Until Earth has its own data it is a plain sphere of its measured brightness (geometric albedo 0.434, NASA): no clouds, oceans or colour yet.',
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
   'Detail (local mode only): measured shows only measurements. + approximation adds, below about 10 m, small craters and roughness generated from the Moon\u2019s statistics: crater numbers and shapes from NASA\u2019s lunar environment specification, roughness from NASA\u2019s 2 m stereo terrain models. The surface still passes through every measurement, but these are not the real craters there, and the screen says so while it is on.',
 ];
@@ -972,6 +1075,10 @@ function createMoonControls(
     showOrbit(start === null ? handlers.onOrbit(on) : start());
   });
   row.append(orbit);
+  const labelsButton = createToggle({ off: 'Labels', on: 'Labels: on' }, null, notes, (on) => {
+    handlers.onLabels(on);
+  });
+  row.append(labelsButton);
   if (handlers.startInOrbit !== null) {
     orbit.click();
   }

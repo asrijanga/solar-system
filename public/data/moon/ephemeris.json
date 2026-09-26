@@ -13,6 +13,16 @@
     "bodyFixedFrame": "MOON_ME",
     "longitude": "planetocentric, east-positive"
   },
+  "earth": {
+    "name": "Earth",
+    "naifId": 399,
+    "radiiKm": [
+      6378.1366,
+      6378.1366,
+      6356.7519
+    ],
+    "radiiSource": "pck00011.tpc BODY399_RADII"
+  },
   "ephemeris": "DE440 (de440s.bsp), lunar orientation moon_pa_de440_200625.bpc",
   "aberrationCorrection": "LT+S",
   "vectorFrame": "J2000 (ICRF-aligned); scene axes via src/core/frames.ts",

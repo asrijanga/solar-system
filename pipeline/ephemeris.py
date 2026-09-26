@@ -118,6 +118,7 @@ def build() -> dict:
     try:
         radii = spice.bodvrd("MOON", "RADII", 3)[1]
         gm = spice.bodvrd("MOON", "GM", 1)[1][0]
+        earth_radii = spice.bodvrd("EARTH", "RADII", 3)[1]
         epochs = [describe(label, et) for label, et in find_epochs().items()]
     finally:
         spice.kclear()
@@ -131,6 +132,12 @@ def build() -> dict:
             "gmSource": "gm_de440.tpc BODY301_GM",
             "bodyFixedFrame": BODY_FRAME,
             "longitude": "planetocentric, east-positive",
+        },
+        "earth": {
+            "name": "Earth",
+            "naifId": 399,
+            "radiiKm": [float(r) for r in earth_radii],
+            "radiiSource": "pck00011.tpc BODY399_RADII",
         },
         "ephemeris": "DE440 (de440s.bsp), lunar orientation moon_pa_de440_200625.bpc",
         "aberrationCorrection": ABCORR,

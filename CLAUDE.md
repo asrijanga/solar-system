@@ -1,6 +1,6 @@
 # Working in this repo
 
-The plan is `README.md`. The world list is `docs/world-catalogue.md`. Each story has a spec in `docs/stories/SS-n.md`, which is approved before code and records actual effort afterwards.
+The plan is `README.md`. The world list is `docs/world-catalogue.md`. Every world is built by the eight stories of `docs/world-recipe.md`, taken from how the Moon was built. Each story has a spec in `docs/stories/SS-n.md`, which is approved before code and records actual effort afterwards.
 
 ## Stack
 

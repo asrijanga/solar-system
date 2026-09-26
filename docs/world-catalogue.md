@@ -2,7 +2,7 @@
 
 Every body in the solar system that has been imaged well enough to render as a place, sorted by how much data exists rather than by size or distance. The tier is the build queue.
 
-Status is a dropdown on every row. Change it in place as worlds ship, and this tab stays the single answer to what is supported. Everything reads Not started today.
+Status is a dropdown on every row. Change it in place as worlds ship, and this tab stays the single answer to what is supported. Each world is built by one round of `docs/world-recipe.md`.
 
 Radii are approximate mean values for scale only. Do not hardcode them: authoritative body constants live in SPICE PCK kernels, and reading them from there keeps the catalogue honest and removes a whole class of typo.
 
@@ -20,7 +20,7 @@ Five bodies. Everything the terrain pipeline was designed for, and the entire ea
 | Body | Status | Type | Radius (km) | Data from |
 | --- | --- | --- | --- | --- |
 | Earth | Not started | Planet | 6,371 | Copernicus, Sentinel, GEBCO |
-| Moon | Not started | Moon of Earth | 1,737 | LRO, LOLA |
+| Moon | Live: website and local mode | Moon of Earth | 1,737 | LRO, LOLA, Clementine, Kaguya |
 | Mars | Not started | Planet | 3,390 | MOLA, HRSC, CTX, HiRISE |
 | Mercury | Not started | Planet | 2,440 | MESSENGER |
 | Venus | Not started | Planet | 6,052 | Magellan radar |

@@ -41,6 +41,27 @@ const TEXT_SCALE = 3;
 /** Landing sites are points; they are shown as if this wide, so they appear from orbit. */
 const LANDING_SITE_KM = 60;
 
+/**
+ * The label typeface, shipped with the site (public/fonts/, Inter 5.3.0 via @fontsource/inter,
+ * SIL OFL 1.1) so labels are drawn the same on every machine: a system font differs between
+ * phones, desktops and the CI runner, and with it every capture that shows labels.
+ */
+const FONT_FAMILY = 'SolarLabel';
+const FONT_FILES = [
+  ['fonts/inter-latin-600-normal.woff2', 'normal'],
+  ['fonts/inter-latin-600-italic.woff2', 'italic'],
+] as const;
+
+/** Load the label typeface; call before createLabels. `url` resolves a site-root path. */
+export async function loadLabelFont(url: (path: string) => string): Promise<void> {
+  await Promise.all(
+    FONT_FILES.map(async ([path, style]) => {
+      const face = new FontFace(FONT_FAMILY, `url(${url(path)})`, { style, weight: '600' });
+      document.fonts.add(await face.load());
+    }),
+  );
+}
+
 const KIND_COLOUR: Record<Landmark['kind'], string> = {
   mare: '#cfd8e8',
   crater: '#ffffff',
@@ -165,7 +186,7 @@ function drawLabel(landmark: Landmark): {
   aspect: number;
   anchorY: number;
 } {
-  const font = `${landmark.kind === 'mare' ? 'italic ' : ''}600 ${TEXT_PX * TEXT_SCALE}px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`;
+  const font = `${landmark.kind === 'mare' ? 'italic ' : ''}600 ${TEXT_PX * TEXT_SCALE}px ${FONT_FAMILY}`;
   const probe = document.createElement('canvas').getContext('2d');
   if (probe === null) throw new Error('no 2D context for labels');
   probe.font = font;

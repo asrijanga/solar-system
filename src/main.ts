@@ -48,7 +48,7 @@ import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
 import { createDepthTestScene } from './scenes/depthTest';
 import { createEarth } from './scenes/earth';
-import { createLabels, type Labels, type Landmark } from './scenes/labels';
+import { createLabels, loadLabelFont, type Labels, type Landmark } from './scenes/labels';
 import { createMoonMesh, createMoonTerrain, loadMoonTextures } from './scenes/moon';
 import {
   createStarMesh,
@@ -311,6 +311,7 @@ async function createStage(
         setup.albedo === 'map' ? loadMoonTextures(maxAnisotropy) : null,
         setup.relief ? loadTerrainLayer() : null,
         loadJson<{ landmarks: Landmark[] }>('data/moon/landmarks.json'),
+        loadLabelFont(siteUrl),
       ]);
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];

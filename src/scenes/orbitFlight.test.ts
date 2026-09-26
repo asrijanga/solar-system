@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three/webgpu';
-import { horizonDip, randomOrbit, seededRandom, viewDepression } from '../core/orbit';
+import {
+  circularSpeedKmS,
+  horizonDip,
+  randomOrbit,
+  seededRandom,
+  viewDepression,
+} from '../core/orbit';
 import { OrbitFlight } from './orbitFlight';
 
 const R = 1737.4;
@@ -83,5 +89,26 @@ describe('orbit flight', () => {
     camera.updateMatrixWorld();
     expect(camera.position.distanceTo(flown)).toBeLessThan(1e-9 * R);
     expect(camera.getWorldDirection(new Vector3()).dot(view)).toBeCloseTo(1, 12);
+  });
+
+  it('changes height in flight: same point along the track, the new height, its circular speed', () => {
+    const camera = new PerspectiveCamera(50, 1, 0.01, 1e7);
+    const orbit = randomOrbit(seededRandom(9), R, GM, 300, [1, 0, 0]);
+    const flight = new OrbitFlight(camera, orbit, R);
+    flight.frame(1000);
+    flight.frame(31000);
+    const before = at(camera);
+    flight.setHeight(900);
+    const after = at(camera);
+    // Straight up from where it was: same direction from the centre, 900 km up.
+    expect(after.clone().normalize().dot(before.clone().normalize())).toBeCloseTo(1, 12);
+    expect(after.length()).toBeCloseTo(R + 900, 9);
+    const { heightKm, speedKmS } = flight.describe();
+    expect(heightKm).toBeCloseTo(900, 9);
+    expect(speedKmS).toBeCloseTo(circularSpeedKmS(GM, R + 900), 9);
+    // 100 s later it has gone the new speed's distance round.
+    flight.frame(131000);
+    const angle = after.angleTo(at(camera));
+    expect(angle * (R + 900)).toBeCloseTo(circularSpeedKmS(GM, R + 900) * 100, 6);
   });
 });

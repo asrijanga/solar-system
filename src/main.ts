@@ -22,7 +22,7 @@ import {
   type Viewpoint,
 } from './capture/viewpoints';
 import { findEpoch, j2000ToScene, maxTiltDeg, moonViewPose, type MoonEphemeris } from './core/moon';
-import { randomOrbit, seededRandom, sharpHeightKm } from './core/orbit';
+import { orbitFrom, randomOrbit, seededRandom, sharpHeightKm } from './core/orbit';
 import { OrbitFlight } from './scenes/orbitFlight';
 import { physicalStarExposure, pixelSolidAngle } from './core/photometry';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
@@ -99,6 +99,8 @@ const reliefOff = params.get('relief') === 'off';
 const ORBIT_MAX_PX_PER_SAMPLE = 3;
 /** Time factors the orbit's speed button cycles through; 1 is real speed. */
 const ORBIT_TIME_FACTORS = [1, 10, 100] as const;
+/** Orbit height change per pixel of wheel scroll, as a power of e: 500 px doubles it. */
+const ORBIT_WHEEL_PER_PIXEL = Math.LN2 / 500;
 const APPROXIMATION_NOTE =
   'Approximation: below what was measured (about 10 m), small craters and roughness are generated from the Moon\u2019s statistics (NASA DSNE crater counts, NASA LRO stereo models). They are not the real craters here.';
 
@@ -423,7 +425,7 @@ async function start(): Promise<void> {
     // finished it and the compositor has had a chance to present it.
     resize();
     const orbitSeed = viewpoint.moon?.orbitSeed ?? null;
-    if (orbitSeed !== null) createOrbitFlight(stage, camera, canvas.height, orbitSeed);
+    if (orbitSeed !== null) seededOrbitFlight(stage, camera, canvas.height, orbitSeed);
     if (terrain !== null && !(await terrainLoaded(terrain, camera))) {
       report({ status: 'refused', reason: 'terrain did not finish loading' });
       return;
@@ -474,12 +476,27 @@ async function start(): Promise<void> {
   // Orbit mode (docs/stories/SS-11b.md): the controls step aside while the camera flies.
   let flight: OrbitFlight | null = null;
   const northUp = camera.up.clone();
-  const startOrbit = (seed: number): OrbitFlight | null => {
-    const created = createOrbitFlight(stage, camera, canvas.height, seed);
+  const begin = (created: OrbitFlight | null): OrbitFlight | null => {
     if (created === null) return null;
     controls.enabled = false;
     flight = created;
     return created;
+  };
+  // The Orbit button starts from where the gestures left the camera: over the point below it,
+  // at its height (never below the lowest sharp one), heading in a random direction.
+  const startFromView = (): OrbitFlight | null => {
+    const minHeight = sharpOrbitHeightKm(stage, camera, canvas.height);
+    if (minHeight === null || stage.orbitInputs === null || stage.radiusKm === null) return null;
+    const p = camera.position;
+    const height = Math.max(p.length() - stage.radiusKm, minHeight);
+    const orbit = orbitFrom(
+      Math.random,
+      [p.x, p.y, p.z],
+      stage.radiusKm,
+      stage.orbitInputs.gmKm3PerS2,
+      height,
+    );
+    return begin(new OrbitFlight(camera, orbit, stage.radiusKm));
   };
   const stopOrbit = (): void => {
     flight?.release();
@@ -488,6 +505,48 @@ async function start(): Promise<void> {
     controls.enabled = true;
     controls.update();
   };
+  // While orbiting, pinch or scroll raises and lowers the orbit, between the lowest sharp height
+  // and the controls' farthest distance. Gestures only: never in the frame loop.
+  let onOrbitHeight: (() => void) | null = null;
+  const zoomOrbit = (factor: number): void => {
+    const minHeight = sharpOrbitHeightKm(stage, camera, canvas.height);
+    if (flight === null || minHeight === null || stage.radiusKm === null) return;
+    const maxHeight = (MAX_DISTANCE_RADII - 1) * stage.radiusKm;
+    const height = flight.describe().heightKm * factor;
+    flight.setHeight(Math.min(Math.max(height, minHeight), maxHeight));
+    onOrbitHeight?.();
+  };
+  canvas.addEventListener(
+    'wheel',
+    (event) => {
+      if (flight === null) return;
+      event.preventDefault();
+      zoomOrbit(Math.exp(event.deltaY * ORBIT_WHEEL_PER_PIXEL));
+    },
+    { passive: false },
+  );
+  const pinch = new Map<number, { x: number; y: number }>();
+  const spread = (): number => {
+    const [a, b] = [...pinch.values()];
+    return a === undefined || b === undefined ? 0 : Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  canvas.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'touch')
+      pinch.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (!pinch.has(event.pointerId)) return;
+    const before = spread();
+    pinch.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const after = spread();
+    // Fingers apart: the orbit comes down; together: it goes up.
+    if (flight !== null && pinch.size === 2 && before > 0 && after > 0) zoomOrbit(before / after);
+  });
+  const lift = (event: PointerEvent): void => {
+    pinch.delete(event.pointerId);
+  };
+  canvas.addEventListener('pointerup', lift);
+  canvas.addEventListener('pointercancel', lift);
   const overlay = debug ? new DebugOverlay(renderer, device.features.has('timestamp-query')) : null;
 
   // Resizing happens here, never in the frame loop: it stores fractional numbers (aspect,
@@ -499,19 +558,22 @@ async function start(): Promise<void> {
 
   if (stage.caption !== null) {
     const { evenLight } = stage;
-    const { radiusKm } = stage;
     const describeOrbit = (f: OrbitFlight): string => {
-      const { heightKm, speedKmS } = f.describe(radiusKm ?? 0);
-      return `Orbiting ${heightKm.toFixed(0)} km up at ${speedKmS.toFixed(2)} km/s: the lowest height the website\u2019s terrain stays sharp from on this screen.`;
+      const { heightKm, speedKmS } = f.describe();
+      const minHeight = sharpOrbitHeightKm(stage, camera, canvas.height) ?? 0;
+      const floor =
+        heightKm <= minHeight + 0.5
+          ? 'the lowest height the website\u2019s terrain stays sharp from on this screen'
+          : `pinch or scroll to change it; ${minHeight.toFixed(0)} km is the lowest the terrain stays sharp from`;
+      return `Orbiting ${heightKm.toFixed(0)} km up at ${speedKmS.toFixed(2)} km/s: ${floor}.`;
     };
-    createMoonControls(stage.caption, stage.terrainLayer, stage.approximated, {
+    const ui = createMoonControls(stage.caption, stage.terrainLayer, stage.approximated, {
       onOrbit: (on) => {
         if (!on) {
           stopOrbit();
           return null;
         }
-        const seed = Math.floor(Math.random() * 2 ** 31);
-        const f = startOrbit(seed);
+        const f = startFromView();
         return f === null ? null : describeOrbit(f);
       },
       onTimeFactor: (factor) => {
@@ -523,7 +585,9 @@ async function start(): Promise<void> {
           : () => {
               const seed =
                 orbitParam === '' ? Math.floor(Math.random() * 2 ** 31) : Number(orbitParam);
-              const f = startOrbit(Number.isFinite(seed) ? seed : 0);
+              const f = begin(
+                seededOrbitFlight(stage, camera, canvas.height, Number.isFinite(seed) ? seed : 0),
+              );
               return f === null ? null : describeOrbit(f);
             },
       onBoost: (boosted) => {
@@ -534,6 +598,9 @@ async function start(): Promise<void> {
         if (evenLight !== null) evenLight.value = even ? 1 : 0;
       },
     });
+    onOrbitHeight = () => {
+      if (flight !== null) ui.setOrbitLine(describeOrbit(flight));
+    };
   }
 
   // The per-frame path. It allocates nothing: no `new`, no closures, no array or object
@@ -735,18 +802,17 @@ function createToggle(
 }
 
 /**
- * Orbit mode for this stage and screen: a random orbit (core/orbit.ts) at the lowest height where
- * the nearest ground in view shows each measured sample at most ORBIT_MAX_PX_PER_SAMPLE device
- * pixels across. The sample is the finest terrain the whole Moon has, or half the albedo map's
- * texel, whichever is coarser: brightness varies more gently than shape, so it is allowed twice
- * the size on screen. null without a Moon.
+ * The lowest orbit height, km, for this stage and screen: where the nearest ground in view shows
+ * each measured sample at most ORBIT_MAX_PX_PER_SAMPLE device pixels across. The sample is the
+ * finest terrain the whole Moon has, or half the albedo map's texel, whichever is coarser:
+ * brightness varies more gently than shape, so it is allowed twice the size on screen. null
+ * without a Moon.
  */
-function createOrbitFlight(
+function sharpOrbitHeightKm(
   stage: Stage,
   camera: PerspectiveCamera,
   heightPx: number,
-  seed: number,
-): OrbitFlight | null {
+): number | null {
   const inputs = stage.orbitInputs;
   const radiusKm = stage.radiusKm;
   if (inputs === null || radiusKm === null) return null;
@@ -764,9 +830,24 @@ function createOrbitFlight(
   const terrainKm = stage.terrainAvailable === null ? 0 : vertexSpacingKm(finest, radiusKm);
   const sampleKm = Math.max(terrainKm, (inputs.albedoTexelKm ?? 0) / 2, 0.001);
   const fov = (camera.fov * Math.PI) / 180;
-  const minHeight = sharpHeightKm(radiusKm, sampleKm, fov / heightPx, fov, ORBIT_MAX_PX_PER_SAMPLE);
-  const orbit = randomOrbit(seededRandom(seed), radiusKm, inputs.gmKm3PerS2, minHeight, inputs.sun);
-  return new OrbitFlight(camera, orbit, radiusKm);
+  return sharpHeightKm(radiusKm, sampleKm, fov / heightPx, fov, ORBIT_MAX_PX_PER_SAMPLE);
+}
+
+/**
+ * The random orbit `?orbit=<seed>` and the captures fly (core/orbit.ts): 1 to 1.5 times the
+ * lowest sharp height, starting over ground where the Sun is 8° to 35° up. null without a Moon.
+ */
+function seededOrbitFlight(
+  stage: Stage,
+  camera: PerspectiveCamera,
+  heightPx: number,
+  seed: number,
+): OrbitFlight | null {
+  const minHeight = sharpOrbitHeightKm(stage, camera, heightPx);
+  if (minHeight === null || stage.orbitInputs === null || stage.radiusKm === null) return null;
+  const { gmKm3PerS2, sun } = stage.orbitInputs;
+  const orbit = randomOrbit(seededRandom(seed), stage.radiusKm, gmKm3PerS2, minHeight, sun);
+  return new OrbitFlight(camera, orbit, stage.radiusKm);
 }
 
 interface MoonControlHandlers {
@@ -796,7 +877,7 @@ function createMoonControls(
   terrainLayer: string | null,
   approximated: boolean,
   handlers: MoonControlHandlers,
-): void {
+): { setOrbitLine: (line: string) => void } {
   const panel = document.createElement('div');
   panel.id = 'moon-controls';
   const text = document.createElement('p');
@@ -858,7 +939,7 @@ function createMoonControls(
     row.append(time);
     setFactor(0);
   };
-  // `?orbit=<seed>` starts that orbit; the button starts a new random one each time after.
+  // `?orbit=<seed>` starts that orbit; after that the button starts from the current view.
   let pendingStart = handlers.startInOrbit;
   const orbit = createToggle({ off: 'Orbit', on: 'Orbit: on' }, null, notes, (on) => {
     const start = on ? pendingStart : null;
@@ -902,6 +983,11 @@ function createMoonControls(
 
   panel.append(text, row, notes, about);
   document.body.append(panel);
+  return {
+    setOrbitLine: (line) => {
+      orbitLine.textContent = line;
+    },
+  };
 }
 
 start().catch((error: unknown) => {

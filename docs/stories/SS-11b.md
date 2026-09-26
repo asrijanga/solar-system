@@ -85,6 +85,21 @@ GitHub Pages publishes at most about 1 GB, counted uncompressed. Until this part
 
 ![moon-theophilus-tilted before and after](ss11b-theophilus-before-after.png)
 
+## Owner feedback, 2026-09-26: gestures first, then orbit
+
+"Wait i can't zoom out anymore, i need the gesture to zoom in and zoom out and then start orbit."
+
+- **Start:** the Orbit button now starts from the view the gestures left.
+  - It starts over the point below the camera, at the camera's height.
+  - It never goes below the lowest sharp height; the note says so when it is at that floor.
+  - The heading is still random. The Sun-elevation rule no longer applies, because the owner chose the place.
+- **In flight:** pinch or scroll raises and lowers the orbit, between the lowest sharp height and the controls' farthest distance (60 Moon radii).
+  - The speed follows the height, since a real circular orbit is slower higher up.
+  - The note reports the new height and speed.
+- **Unchanged:** `?orbit` and `?orbit=<seed>` still fly the random orbit, which is what the `moon-orbit` capture shows.
+- **Gestures outside orbit:** they work as before. Zooming both ways was checked before and after an orbit, in headless Chromium.
+- **Flight test:** a new test changes height in flight. The camera must stay over the same point along the track, move to the new height, and continue at that height's circular speed.
+
 ## Checks
 
 - **Unit tests** (`src/core/orbit.test.ts`):

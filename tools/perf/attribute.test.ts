@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { attribute, ownerOf, type CallFrame, type ProfileNode } from './attribute.ts';
+import {
+  attribute,
+  mergeAttributions,
+  ownerOf,
+  type CallFrame,
+  type ProfileNode,
+} from './attribute.ts';
 
 const cf = (functionName: string, url: string, lineNumber = 0): CallFrame => ({
   functionName,
@@ -52,5 +58,29 @@ describe('attribute', () => {
     expect(result.frameLoop.ours.bytes).toBe(32);
     expect(result.frameLoop.bytes).toBe(132);
     expect(result.outside.bytes).toBe(5000);
+  });
+
+  it('adds up chunks exactly as one profile of all their samples would', () => {
+    const ours = node(cf('place', 'http://localhost:5173/src/scenes/orbitFlight.ts', 60));
+    const three = node(cf('render', THREE));
+    const loop = node(cf('frame', MAIN), [ours, three]);
+    const startup = node(cf('start', MAIN));
+    const head = node(cf('(root)', ''), [loop, startup]);
+    const a = [
+      { size: 64, nodeId: ours.id },
+      { size: 100, nodeId: three.id },
+    ];
+    const b = [
+      { size: 64, nodeId: ours.id },
+      { size: 7, nodeId: startup.id },
+    ];
+    const merged = mergeAttributions([
+      attribute({ head, samples: a }),
+      attribute({ head, samples: b }),
+    ]);
+    expect(merged).toEqual(attribute({ head, samples: [...a, ...b] }));
+    expect(merged.frameLoop.ours.sites).toEqual([
+      { site: 'place src/scenes/orbitFlight.ts:61', bytes: 128 },
+    ]);
   });
 });

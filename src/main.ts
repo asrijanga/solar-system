@@ -89,6 +89,12 @@ const detailApprox = params.get('detail') === 'approx';
  * `?orbit` starts in orbit mode (docs/stories/SS-11b.md); `?orbit=<seed>` repeats a given orbit.
  */
 const orbitParam = params.get('orbit');
+/**
+ * `?relief=off` draws the smooth sphere without streamed terrain. The allocation gate uses it to
+ * measure orbit mode's own frame code, which SwiftShader cannot draw over terrain to the
+ * horizon fast enough (tools/perf/alloc.ts, docs/stories/SS-11b.md). Never used by a capture.
+ */
+const reliefOff = params.get('relief') === 'off';
 /** Largest size a measured sample may take on screen in orbit mode, in device pixels. */
 const ORBIT_MAX_PX_PER_SAMPLE = 3;
 /** Time factors the orbit's speed button cycles through; 1 is real speed. */
@@ -102,6 +108,11 @@ const APPROXIMATION_NOTE =
  * tilt in degrees from straight down towards lunar north. Works with `?capture=<id>` too, to
  * render that viewpoint's scene from there.
  */
+function withoutReliefIfAsked(viewpoint: Viewpoint | undefined): Viewpoint | undefined {
+  if (!reliefOff || viewpoint?.moon == null) return viewpoint;
+  return { ...viewpoint, moon: { ...viewpoint.moon, relief: false } };
+}
+
 function placedAt(viewpoint: Viewpoint): Viewpoint {
   const at = params.get('at');
   if (at === null || viewpoint.moon === null) return viewpoint;
@@ -321,7 +332,7 @@ async function createStage(
 }
 
 async function start(): Promise<void> {
-  const listed = captureId === null ? INTERACTIVE : findViewpoint(captureId);
+  const listed = captureId === null ? withoutReliefIfAsked(INTERACTIVE) : findViewpoint(captureId);
   const viewpoint = listed === undefined ? undefined : placedAt(listed);
   if (viewpoint === undefined) {
     report({ status: 'refused', reason: `unknown viewpoint: ${String(captureId)}` });
@@ -773,7 +784,7 @@ const ABOUT = [
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°.',
-  "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 2.7 km apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
+  "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
   'Detail (local mode only): measured shows only measurements. + approximation adds, below about 10 m, small craters and roughness generated from the Moon\u2019s statistics: crater numbers and shapes from NASA\u2019s lunar environment specification, roughness from NASA\u2019s 2 m stereo terrain models. The surface still passes through every measurement, but these are not the real craters there, and the screen says so while it is on.',
   'Magenta marks the few small places neither mission measured. They are shown as missing, not filled in.',

@@ -34,9 +34,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # The Moon's terrain tiles (SS-10) are built from pinned, checksummed LOLA products on
-      # every run and never committed: 485 MB, too large for git. The 2.4 GB of sources are
-      # cached; tools/data/download.ts re-verifies each file's SHA-256 either way.
+      # The Moon's terrain tiles (SS-10, SS-11b) are built from pinned, checksummed LOLA products
+      # whenever the build changes and are never committed: 670 MB gzip-compressed, too large for
+      # git. The 2.4 GB of sources are cached; tools/data/download.ts re-verifies each file's
+      # SHA-256 either way.
       - uses: actions/cache@v4
         with:
           path: |
@@ -45,14 +46,21 @@ jobs:
             pipeline/.cache/kaguya_tc_dtm_S09E003S12E006SC.img
           key: lola-terrain-${{ hashFiles('tools/terrain/build.ts', 'tools/data/download.ts') }}
           restore-keys: lola-terrain-
-      - run: npm run pipeline:tiles
+      # The built tiles too: they depend only on the build code and the pinned sources above.
+      - id: tiles
+        uses: actions/cache@v4
+        with:
+          path: public/terrain
+          key: moon-tiles-${{ hashFiles('tools/terrain/**', 'tools/data/download.ts') }}
+      - if: steps.tiles.outputs.cache-hit != 'true'
+        run: npm run pipeline:tiles
       # The Chromium matching the pinned Playwright, which renders WebGPU on SwiftShader.
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npm run capture
       - run: npm run capture:diff
       - run: npm run alloc
-      - run: npm run alloc -- orbit=7
+      - run: npm run alloc -- orbit=7 relief=off
       - uses: actions/upload-artifact@v4
         if: always()
         with:

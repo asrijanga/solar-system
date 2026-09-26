@@ -89,6 +89,12 @@ const detailApprox = params.get('detail') === 'approx';
  * `?orbit` starts in orbit mode (docs/stories/SS-11b.md); `?orbit=<seed>` repeats a given orbit.
  */
 const orbitParam = params.get('orbit');
+/**
+ * `?relief=off` draws the smooth sphere without streamed terrain. The allocation gate uses it to
+ * measure orbit mode's own frame code, which SwiftShader cannot draw over terrain to the
+ * horizon fast enough (tools/perf/alloc.ts, docs/stories/SS-11b.md). Never used by a capture.
+ */
+const reliefOff = params.get('relief') === 'off';
 /** Largest size a measured sample may take on screen in orbit mode, in device pixels. */
 const ORBIT_MAX_PX_PER_SAMPLE = 3;
 /** Time factors the orbit's speed button cycles through; 1 is real speed. */
@@ -102,6 +108,11 @@ const APPROXIMATION_NOTE =
  * tilt in degrees from straight down towards lunar north. Works with `?capture=<id>` too, to
  * render that viewpoint's scene from there.
  */
+function withoutReliefIfAsked(viewpoint: Viewpoint | undefined): Viewpoint | undefined {
+  if (!reliefOff || viewpoint?.moon == null) return viewpoint;
+  return { ...viewpoint, moon: { ...viewpoint.moon, relief: false } };
+}
+
 function placedAt(viewpoint: Viewpoint): Viewpoint {
   const at = params.get('at');
   if (at === null || viewpoint.moon === null) return viewpoint;
@@ -321,7 +332,7 @@ async function createStage(
 }
 
 async function start(): Promise<void> {
-  const listed = captureId === null ? INTERACTIVE : findViewpoint(captureId);
+  const listed = captureId === null ? withoutReliefIfAsked(INTERACTIVE) : findViewpoint(captureId);
   const viewpoint = listed === undefined ? undefined : placedAt(listed);
   if (viewpoint === undefined) {
     report({ status: 'refused', reason: `unknown viewpoint: ${String(captureId)}` });

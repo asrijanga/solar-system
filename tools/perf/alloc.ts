@@ -10,7 +10,12 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
-import { attribute, type SamplingProfile } from './attribute.ts';
+import {
+  attribute,
+  mergeAttributions,
+  type Attribution,
+  type SamplingProfile,
+} from './attribute.ts';
 
 const SWIFTSHADER_FLAGS = [
   '--enable-unsafe-webgpu',
@@ -28,6 +33,8 @@ const SWIFTSHADER_FLAGS = [
 // approved 2026-09-25 (docs/stories/SS-6.md). The pass rule, 0 B from src/, is unchanged.
 const WARMUP_FRAMES = 600;
 const MEASURED_FRAMES = 600;
+/** Frames per profile: see the sampling loop. */
+const CHUNK_FRAMES = 50;
 /**
  * Mean bytes between samples. Sampling is Poisson: an allocation of s bytes is sampled with
  * probability about s / 64. 600 frames of even one 32-byte allocation per frame would yield
@@ -80,33 +87,51 @@ async function main(): Promise<number> {
       polling: 250,
     });
 
+    // Sampled in chunks of CHUNK_FRAMES: one profile of 600 orbit-mode frames, streaming 0.67 km
+    // terrain to the horizon, outgrew the largest string Node can parse (SS-11b). Only frames
+    // rendered wholly inside a chunk are counted; the few between chunks are reported.
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('HeapProfiler.enable');
-    await cdp.send('HeapProfiler.startSampling', {
-      samplingInterval: SAMPLING_INTERVAL,
-      includeObjectsCollectedByMajorGC: true,
-      includeObjectsCollectedByMinorGC: true,
-    });
     const startFrame = await framesRendered(page);
     const startTime = Date.now();
-    await page.waitForFunction(
-      (n) => (window.__stats?.frames ?? 0) >= n,
-      startFrame + MEASURED_FRAMES,
-      { timeout: FRAMES_WAIT_MS, polling: 250 },
-    );
-    const { profile } = (await cdp.send('HeapProfiler.stopSampling')) as {
-      profile: SamplingProfile;
-    };
-    const frames = (await framesRendered(page)) - startFrame;
+    const deadline = startTime + FRAMES_WAIT_MS;
+    const parts: Attribution[] = [];
+    let frames = 0;
+    let chunks = 0;
+    while (frames < MEASURED_FRAMES) {
+      await cdp.send('HeapProfiler.startSampling', {
+        samplingInterval: SAMPLING_INTERVAL,
+        includeObjectsCollectedByMajorGC: true,
+        includeObjectsCollectedByMinorGC: true,
+      });
+      const from = await framesRendered(page);
+      await page.waitForFunction(
+        (n) => (window.__stats?.frames ?? 0) >= n,
+        // One more than it counts: the frame in progress when sampling started is not counted.
+        from + Math.min(CHUNK_FRAMES, MEASURED_FRAMES - frames) + 1,
+        { timeout: Math.max(1, deadline - Date.now()), polling: 250 },
+      );
+      const to = await framesRendered(page);
+      const { profile } = (await cdp.send('HeapProfiler.stopSampling')) as {
+        profile: SamplingProfile;
+      };
+      parts.push(attribute(profile));
+      // A frame that began before sampling started is not counted.
+      frames += Math.max(0, to - from - 1);
+      chunks++;
+    }
+    const unsampledFrames = (await framesRendered(page)) - startFrame - frames;
     const seconds = (Date.now() - startTime) / 1000;
     if (errors.length > 0) throw new Error(`page errors: ${errors.join(' | ')}`);
 
-    const result = attribute(profile);
+    const result = mergeAttributions(parts);
     const perFrame = (bytes: number): string => (bytes / frames).toFixed(1);
     const report = {
       frames,
       seconds,
       samplingInterval: SAMPLING_INTERVAL,
+      chunks,
+      unsampledFrames,
       perFrameBytes: {
         frameLoopTotal: result.frameLoop.bytes / frames,
         ours: result.frameLoop.ours.bytes / frames,
@@ -121,7 +146,7 @@ async function main(): Promise<number> {
     writeFileSync(join(root, 'captures', reportName), `${JSON.stringify(report, null, 2)}\n`);
 
     console.log(
-      `${frames} frames in ${seconds.toFixed(1)} s, sampling every ${SAMPLING_INTERVAL} bytes`,
+      `${frames} frames in ${seconds.toFixed(1)} s, sampling every ${SAMPLING_INTERVAL} bytes, in ${chunks} chunks (${unsampledFrames} frames between them not counted)`,
     );
     console.log(`per-frame allocation on the frame path (sampled estimate):`);
     console.log(

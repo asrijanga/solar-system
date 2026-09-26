@@ -60,7 +60,7 @@ jobs:
       - run: npm run capture
       - run: npm run capture:diff
       - run: npm run alloc
-      - run: npm run alloc -- orbit=7
+      - run: npm run alloc -- orbit=7 relief=off
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -90,3 +90,36 @@ export function attribute(profile: SamplingProfile): Attribution {
   }
   return { frameLoop, outside };
 }
+
+/**
+ * Adds up attributions of consecutive profiles. Long runs are sampled in chunks because one
+ * profile of a heavily allocating page can outgrow the largest string Node can parse.
+ */
+export function mergeAttributions(parts: readonly Attribution[]): Attribution {
+  const owners = ['ours', 'three', 'other'] as const;
+  const siteBytes: Record<Owner, Map<string, number>> = {
+    ours: new Map(),
+    three: new Map(),
+    other: new Map(),
+  };
+  const empty = (): Bucket => ({ bytes: 0, samples: 0, sites: [] });
+  const frameLoop = { ours: empty(), three: empty(), other: empty(), bytes: 0 };
+  const outside = { bytes: 0 };
+  for (const part of parts) {
+    frameLoop.bytes += part.frameLoop.bytes;
+    outside.bytes += part.outside.bytes;
+    for (const owner of owners) {
+      frameLoop[owner].bytes += part.frameLoop[owner].bytes;
+      frameLoop[owner].samples += part.frameLoop[owner].samples;
+      for (const { site, bytes } of part.frameLoop[owner].sites) {
+        siteBytes[owner].set(site, (siteBytes[owner].get(site) ?? 0) + bytes);
+      }
+    }
+  }
+  for (const owner of owners) {
+    frameLoop[owner].sites = [...siteBytes[owner]]
+      .map(([site, bytes]) => ({ site, bytes }))
+      .sort((a, b) => b.bytes - a.bytes);
+  }
+  return { frameLoop, outside };
+}

@@ -70,6 +70,17 @@ GitHub Pages publishes at most about 1 GB, counted uncompressed. Until this part
 - **`moon-theophilus-tilted`:** Theophilus's walls and central peaks now show at 0.67 km.
 - **`moon-albategnius`:** its surroundings outside the high-resolution box sharpen.
 
+**The allocation gate outgrew one profile.** On CI, with 0.67 km terrain everywhere, `npm run alloc -- orbit=7` crashed after its 600 measured frames. Chrome's heap profile came back larger than the longest string Node can parse (512 MB, `ERR_STRING_TOO_LONG`). Orbit mode streams terrain to the horizon, and three.js allocates heavily while it loads.
+- **Fix:** the gate now samples in chunks of 50 frames, one profile each, and adds the chunks up (`mergeAttributions`, unit-tested to match one profile of the same samples).
+- **Unchanged:** the rule (0 B sampled in `src/`), the sampling interval and the 600 frames.
+- **Not counted:** a frame that began before its chunk's sampling started, and the few frames between chunks. The report gives how many.
+
+**Orbit mode is measured without terrain.** With 0.67 km terrain to the horizon, SwiftShader drew orbit mode so slowly that 600 frames did not fit in 30 minutes, even chunked; the run took 44 minutes before timing out.
+- **The switch:** `?relief=off` draws the smooth sphere instead, and CI's second run is now `npm run alloc -- orbit=7 relief=off`. It measures exactly the orbit's own frame code: the flight, and the loop around it.
+- **Where terrain is still covered:** the first run, with terrain streaming, which is unchanged.
+- **Not measured:** allocation from terrain streaming *during orbit*. It is three.js and 3d-tiles-renderer code, not `src/`, and the first run exercises the same code.
+- **Captures:** none use the switch.
+
 ![moon-orbit before and after](ss11b-orbit-before-after.png)
 
 ![moon-theophilus-tilted before and after](ss11b-theophilus-before-after.png)

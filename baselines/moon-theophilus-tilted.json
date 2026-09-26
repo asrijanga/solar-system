@@ -19,6 +19,7 @@
       "distanceKm": 1734.9,
       "fovDeg": 60,
       "tiltDeg": 78,
+      "orbitSeed": null,
       "albedo": "map",
       "shading": "lommel-seeliger",
       "mirrored": false,
@@ -61,7 +62,7 @@
     "results": []
   },
   "git": {
-    "sha": "2267e9299478cc89e2842b35dc9d99ad3904fe51",
-    "dirty": true
+    "sha": "294705c70763590fcba970c1b312974df0640840",
+    "dirty": false
   }
 }

@@ -30,6 +30,8 @@ KERNELS = [
     ("lsk/naif0012.tls", "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b"),
     ("spk/planets/de440s.bsp", "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2"),
     ("pck/pck00011.tpc", "3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1"),
+    # The DE440 gravitational parameters, for orbits (SS-12, orbit mode).
+    ("pck/gm_de440.tpc", "924ddf4fb9ead9fe8a1aa55780bcabde40b09d00065d58226e24b68d8092f140"),
     ("pck/moon_pa_de440_200625.bpc", "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f"),
     ("fk/satellites/moon_de440_250416.tf", "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768"),
 ]
@@ -115,6 +117,7 @@ def build() -> dict:
     kernels = load_kernels()
     try:
         radii = spice.bodvrd("MOON", "RADII", 3)[1]
+        gm = spice.bodvrd("MOON", "GM", 1)[1][0]
         epochs = [describe(label, et) for label, et in find_epochs().items()]
     finally:
         spice.kclear()
@@ -124,6 +127,8 @@ def build() -> dict:
             "naifId": 301,
             "radiiKm": [float(r) for r in radii],
             "radiiSource": "pck00011.tpc BODY301_RADII",
+            "gmKm3PerS2": float(gm),
+            "gmSource": "gm_de440.tpc BODY301_GM",
             "bodyFixedFrame": BODY_FRAME,
             "longitude": "planetocentric, east-positive",
         },

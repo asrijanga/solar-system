@@ -41,6 +41,21 @@ async function framesRendered(page: import('playwright').Page): Promise<number> 
   return page.evaluate(() => window.__stats?.frames ?? 0);
 }
 
+// Extra query parameters for the page, e.g. `npm run alloc -- orbit=7` to measure orbit mode.
+const extraQuery = process.argv
+  .slice(2)
+  .map((p) => `&${p}`)
+  .join('');
+const reportName =
+  ['alloc', ...process.argv.slice(2).map((p) => p.replace(/[^\w]/g, ''))].join('-') + '.json';
+
+/**
+ * How long to wait for each 600 frames: a wait limit, not a pass criterion. SwiftShader draws the
+ * textured Moon at under 3 frames a second (600 frames took 225 s locally, docs/stories/SS-6.md);
+ * orbit mode, with terrain to the horizon, took 524 s locally and over 900 s on CI (SS-11b).
+ */
+const FRAMES_WAIT_MS = 1_800_000;
+
 async function main(): Promise<number> {
   const server = await createServer({
     root,
@@ -56,12 +71,12 @@ async function main(): Promise<number> {
     const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}?software`);
+    await page.goto(`${base}?software${extraQuery}`);
     await page.waitForFunction(() => document.documentElement.dataset['ready'] === 'true', null, {
       timeout: 180_000,
     });
     await page.waitForFunction((n) => (window.__stats?.frames ?? 0) >= n, WARMUP_FRAMES, {
-      timeout: 900_000,
+      timeout: FRAMES_WAIT_MS,
       polling: 250,
     });
 
@@ -77,9 +92,7 @@ async function main(): Promise<number> {
     await page.waitForFunction(
       (n) => (window.__stats?.frames ?? 0) >= n,
       startFrame + MEASURED_FRAMES,
-      // SwiftShader draws the textured Moon at under 3 frames a second: 600 frames took
-      // 225 s locally (docs/stories/SS-6.md). A wait limit, not a pass criterion.
-      { timeout: 900_000, polling: 250 },
+      { timeout: FRAMES_WAIT_MS, polling: 250 },
     );
     const { profile } = (await cdp.send('HeapProfiler.stopSampling')) as {
       profile: SamplingProfile;
@@ -105,7 +118,7 @@ async function main(): Promise<number> {
       outsideFrameLoopBytes: result.outside.bytes,
     };
     mkdirSync(join(root, 'captures'), { recursive: true });
-    writeFileSync(join(root, 'captures', 'alloc.json'), `${JSON.stringify(report, null, 2)}\n`);
+    writeFileSync(join(root, 'captures', reportName), `${JSON.stringify(report, null, 2)}\n`);
 
     console.log(
       `${frames} frames in ${seconds.toFixed(1)} s, sampling every ${SAMPLING_INTERVAL} bytes`,

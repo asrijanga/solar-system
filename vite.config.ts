@@ -18,6 +18,14 @@ export default defineConfig({
   },
   build: {
     target: 'es2023',
+    // One page per world (docs/stories/SS-13.md): the home page picks a world, and each world's
+    // page loads only its own code and data.
+    rolldownOptions: {
+      input: {
+        home: 'index.html',
+        moon: 'moon/index.html',
+      },
+    },
     // three.js alone exceeds Vite's 500 kB default; the real gate is the brotli budget in `npm run size`.
     chunkSizeWarningLimit: 1024,
   },

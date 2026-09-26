@@ -78,7 +78,7 @@ async function main(): Promise<number> {
     const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}?software${extraQuery}`);
+    await page.goto(`${base}moon/?software${extraQuery}`);
     await page.waitForFunction(() => document.documentElement.dataset['ready'] === 'true', null, {
       timeout: 180_000,
     });

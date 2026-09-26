@@ -22,6 +22,7 @@ import {
   vec4,
 } from 'three/tsl';
 import { decodeStars, type StarField } from '../core/stars';
+import { siteUrl } from '../site';
 
 /**
  * Point-spread function width in CSS pixels. Fixed on screen: a star is a point at any zoom,
@@ -49,7 +50,7 @@ export const STAR_BOOST = 100_000;
 export const STAR_BOOST_MAGNITUDES = 12.5;
 
 export async function loadStarField(): Promise<StarField> {
-  const response = await fetch(`${import.meta.env.BASE_URL}data/stars/bsc5.bin`);
+  const response = await fetch(siteUrl('data/stars/bsc5.bin'));
   if (!response.ok) throw new Error(`star catalogue failed to load: HTTP ${response.status}`);
   return decodeStars(await response.arrayBuffer());
 }

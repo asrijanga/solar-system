@@ -67,6 +67,8 @@ GitHub Pages publishes at most about 1 GB, counted uncompressed. The website's t
   - The view's centre is exactly `viewDepression` below the local horizontal, heading along the track, with no roll.
   - Reversing the direction of travel, or the heading, fails them.
 - **Allocation:** CI runs `npm run alloc` a second time with `?orbit=7`.
+  - Orbit mode draws terrain to the horizon, so SwiftShader renders it more slowly: 600 frames took 524 s locally, and on CI the 600 warm-up frames overran the script's 900 s wait.
+  - Its wait limit is now 30 minutes for every run. That is a wait, not a pass criterion: the rule is still 0 B sampled in `src/`.
 
 ## As built (2026-09-26)
 

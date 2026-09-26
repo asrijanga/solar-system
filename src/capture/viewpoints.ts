@@ -26,6 +26,8 @@ export interface MoonSetup {
    * down; near the ground, 80 looks across the terrain towards the horizon.
    */
   readonly tiltDeg: number;
+  /** Orbit mode (docs/stories/SS-11b.md): the seed of a random orbit, shown at its start. */
+  readonly orbitSeed: number | null;
   /** The Clementine map, or a uniform Lommel–Seeliger ϖ for photometry checks. */
   readonly albedo: 'map' | { readonly uniform: number };
   /** 'lambert' only in a negative control; 'albedo' is unlit, for checking the map itself. */
@@ -272,6 +274,7 @@ const MOON_SETUP: MoonSetup = {
   distanceKm: 4 * MOON_RADIUS_KM,
   fovDeg: 40,
   tiltDeg: 0,
+  orbitSeed: null,
   albedo: 'map',
   shading: 'lommel-seeliger',
   mirrored: false,
@@ -689,6 +692,14 @@ export const viewpoints: readonly Viewpoint[] = [
       fovDeg: 60,
       tiltDeg: 78,
     },
+  },
+  {
+    ...SPACE,
+    id: 'moon-orbit',
+    description:
+      'Orbit mode (?orbit=7) at its start, first quarter: a random orbit at the lowest height the website\u2019s terrain stays sharp from for this 1024-pixel view, looking ahead with the horizon above the centre. For eyes.',
+    scene: 'moon',
+    moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', orbitSeed: 7 },
   },
   {
     ...SPACE,

@@ -41,6 +41,14 @@ async function framesRendered(page: import('playwright').Page): Promise<number> 
   return page.evaluate(() => window.__stats?.frames ?? 0);
 }
 
+// Extra query parameters for the page, e.g. `npm run alloc -- orbit=7` to measure orbit mode.
+const extraQuery = process.argv
+  .slice(2)
+  .map((p) => `&${p}`)
+  .join('');
+const reportName =
+  ['alloc', ...process.argv.slice(2).map((p) => p.replace(/[^\w]/g, ''))].join('-') + '.json';
+
 async function main(): Promise<number> {
   const server = await createServer({
     root,
@@ -56,7 +64,7 @@ async function main(): Promise<number> {
     const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}?software`);
+    await page.goto(`${base}?software${extraQuery}`);
     await page.waitForFunction(() => document.documentElement.dataset['ready'] === 'true', null, {
       timeout: 180_000,
     });
@@ -105,7 +113,7 @@ async function main(): Promise<number> {
       outsideFrameLoopBytes: result.outside.bytes,
     };
     mkdirSync(join(root, 'captures'), { recursive: true });
-    writeFileSync(join(root, 'captures', 'alloc.json'), `${JSON.stringify(report, null, 2)}\n`);
+    writeFileSync(join(root, 'captures', reportName), `${JSON.stringify(report, null, 2)}\n`);
 
     console.log(
       `${frames} frames in ${seconds.toFixed(1)} s, sampling every ${SAMPLING_INTERVAL} bytes`,

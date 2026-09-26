@@ -23,7 +23,12 @@ export interface MoonEpoch {
 }
 
 export interface MoonEphemeris {
-  readonly body: { readonly radiiKm: Vec3; readonly bodyFixedFrame: string };
+  readonly body: {
+    readonly radiiKm: Vec3;
+    readonly bodyFixedFrame: string;
+    /** gm_de440.tpc BODY301_GM, km³/s². */
+    readonly gmKm3PerS2: number;
+  };
   readonly epochs: readonly MoonEpoch[];
 }
 

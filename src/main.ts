@@ -21,10 +21,12 @@ import {
   type MoonEpochId,
   type Viewpoint,
 } from './capture/viewpoints';
-import { findEpoch, maxTiltDeg, moonViewPose, type MoonEphemeris } from './core/moon';
+import { findEpoch, j2000ToScene, maxTiltDeg, moonViewPose, type MoonEphemeris } from './core/moon';
+import { randomOrbit, seededRandom, sharpHeightKm } from './core/orbit';
+import { OrbitFlight } from './scenes/orbitFlight';
 import { physicalStarExposure, pixelSolidAngle } from './core/photometry';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
-import { minAltitudeKm, type TileRange } from './core/terrain';
+import { minAltitudeKm, vertexSpacingKm, type TileRange } from './core/terrain';
 import { METRE } from './core/units';
 import { installErrorReporting, showFatal, watchDevice } from './debug/errors';
 import { DebugOverlay } from './debug/overlay';
@@ -83,6 +85,14 @@ const epochParam: MoonEpochId | null = params.get('epoch') === 'full' ? 'full-20
  * (docs/stories/SS-10b.md), served only by `npm run local`. Off unless asked for; never in a check.
  */
 const detailApprox = params.get('detail') === 'approx';
+/**
+ * `?orbit` starts in orbit mode (docs/stories/SS-11b.md); `?orbit=<seed>` repeats a given orbit.
+ */
+const orbitParam = params.get('orbit');
+/** Largest size a measured sample may take on screen in orbit mode, in device pixels. */
+const ORBIT_MAX_PX_PER_SAMPLE = 3;
+/** Time factors the orbit's speed button cycles through; 1 is real speed. */
+const ORBIT_TIME_FACTORS = [1, 10, 100] as const;
 const APPROXIMATION_NOTE =
   'Approximation: below what was measured (about 10 m), small craters and roughness are generated from the Moon\u2019s statistics (NASA DSNE crater counts, NASA LRO stereo models). They are not the real craters here.';
 
@@ -152,6 +162,12 @@ interface Stage {
   /** Streamed LOLA terrain (SS-10), when the view has relief, and which levels exist where. */
   readonly terrain: TilesRenderer | null;
   readonly terrainAvailable: readonly (readonly TileRange[])[] | null;
+  /** What orbit mode needs: the Moon's GM, the Sun's direction (scene), the albedo's texel size. */
+  readonly orbitInputs: {
+    readonly gmKm3PerS2: number;
+    readonly sun: readonly [number, number, number];
+    readonly albedoTexelKm: number | null;
+  } | null;
   readonly caption: string | null;
   /** The terrain layer's name ('moon-local…' when `npm run local` serves it). */
   readonly terrainLayer: string | null;
@@ -211,6 +227,7 @@ async function createStage(
     albedoDecodedMean: null,
     terrain: null,
     terrainAvailable: null,
+    orbitInputs: null,
     caption: null,
     terrainLayer: null,
     approximated: false,
@@ -283,6 +300,12 @@ async function createStage(
         albedoDecodedMean: textures?.decodedMean ?? null,
         terrain,
         terrainAvailable: layer?.available ?? null,
+        orbitInputs: {
+          gmKm3PerS2: ephemeris.body.gmKm3PerS2,
+          sun: j2000ToScene(epoch.sunDirectionJ2000),
+          albedoTexelKm:
+            textures === null ? null : (2 * Math.PI * radiusKm) / textures.manifest.texture.width,
+        },
         terrainLayer: layer?.name ?? null,
         approximated: layer?.approximated ?? false,
         caption:
@@ -388,6 +411,8 @@ async function start(): Promise<void> {
     // Capture mode: exactly one frame, no clock, no controls. Ready means the GPU has
     // finished it and the compositor has had a chance to present it.
     resize();
+    const orbitSeed = viewpoint.moon?.orbitSeed ?? null;
+    if (orbitSeed !== null) createOrbitFlight(stage, camera, canvas.height, orbitSeed);
     if (terrain !== null && !(await terrainLoaded(terrain, camera))) {
       report({ status: 'refused', reason: 'terrain did not finish loading' });
       return;
@@ -435,6 +460,23 @@ async function start(): Promise<void> {
   controls.enableDamping = true;
   controls.update();
 
+  // Orbit mode (docs/stories/SS-11b.md): the controls step aside while the camera flies.
+  let flight: OrbitFlight | null = null;
+  const northUp = camera.up.clone();
+  const startOrbit = (seed: number): OrbitFlight | null => {
+    const created = createOrbitFlight(stage, camera, canvas.height, seed);
+    if (created === null) return null;
+    controls.enabled = false;
+    flight = created;
+    return created;
+  };
+  const stopOrbit = (): void => {
+    flight?.release();
+    flight = null;
+    camera.up.copy(northUp);
+    controls.enabled = true;
+    controls.update();
+  };
   const overlay = debug ? new DebugOverlay(renderer, device.features.has('timestamp-query')) : null;
 
   // Resizing happens here, never in the frame loop: it stores fractional numbers (aspect,
@@ -446,7 +488,33 @@ async function start(): Promise<void> {
 
   if (stage.caption !== null) {
     const { evenLight } = stage;
+    const { radiusKm } = stage;
+    const describeOrbit = (f: OrbitFlight): string => {
+      const { heightKm, speedKmS } = f.describe(radiusKm ?? 0);
+      return `Orbiting ${heightKm.toFixed(0)} km up at ${speedKmS.toFixed(2)} km/s: the lowest height the website\u2019s terrain stays sharp from on this screen.`;
+    };
     createMoonControls(stage.caption, stage.terrainLayer, stage.approximated, {
+      onOrbit: (on) => {
+        if (!on) {
+          stopOrbit();
+          return null;
+        }
+        const seed = Math.floor(Math.random() * 2 ** 31);
+        const f = startOrbit(seed);
+        return f === null ? null : describeOrbit(f);
+      },
+      onTimeFactor: (factor) => {
+        if (flight !== null) flight.setTimeFactor(factor);
+      },
+      startInOrbit:
+        orbitParam === null
+          ? null
+          : () => {
+              const seed =
+                orbitParam === '' ? Math.floor(Math.random() * 2 ** 31) : Number(orbitParam);
+              const f = startOrbit(Number.isFinite(seed) ? seed : 0);
+              return f === null ? null : describeOrbit(f);
+            },
       onBoost: (boosted) => {
         starBoost[0] = boosted ? STAR_BOOST : 1;
         resize();
@@ -465,9 +533,13 @@ async function start(): Promise<void> {
   clock[0] = -1; // previous frame's timestamp, ms
   const frame = (time: number): void => {
     if (stats.frames === 0) overlay?.firstFrame(performance.now());
-    controls.update();
-    // The controls aimed the camera at the Moon's centre; pitch it up by the tilt.
-    camera.quaternion.multiply(tilt);
+    if (flight === null) {
+      controls.update();
+      // The controls aimed the camera at the Moon's centre; pitch it up by the tilt.
+      camera.quaternion.multiply(tilt);
+    } else {
+      flight.frame(time);
+    }
     if (terrain !== null) {
       camera.updateMatrixWorld();
       terrain.update();
@@ -651,7 +723,47 @@ function createToggle(
   return button;
 }
 
+/**
+ * Orbit mode for this stage and screen: a random orbit (core/orbit.ts) at the lowest height where
+ * the nearest ground in view shows each measured sample at most ORBIT_MAX_PX_PER_SAMPLE device
+ * pixels across. The sample is the finest terrain the whole Moon has, or half the albedo map's
+ * texel, whichever is coarser: brightness varies more gently than shape, so it is allowed twice
+ * the size on screen. null without a Moon.
+ */
+function createOrbitFlight(
+  stage: Stage,
+  camera: PerspectiveCamera,
+  heightPx: number,
+  seed: number,
+): OrbitFlight | null {
+  const inputs = stage.orbitInputs;
+  const radiusKm = stage.radiusKm;
+  if (inputs === null || radiusKm === null) return null;
+  let finest = 0;
+  (stage.terrainAvailable ?? []).forEach((ranges, level) => {
+    const whole = ranges.some(
+      (r) =>
+        r.startX === 0 &&
+        r.startY === 0 &&
+        r.endX === 2 ** (level + 1) - 1 &&
+        r.endY === 2 ** level - 1,
+    );
+    if (whole) finest = level;
+  });
+  const terrainKm = stage.terrainAvailable === null ? 0 : vertexSpacingKm(finest, radiusKm);
+  const sampleKm = Math.max(terrainKm, (inputs.albedoTexelKm ?? 0) / 2, 0.001);
+  const fov = (camera.fov * Math.PI) / 180;
+  const minHeight = sharpHeightKm(radiusKm, sampleKm, fov / heightPx, fov, ORBIT_MAX_PX_PER_SAMPLE);
+  const orbit = randomOrbit(seededRandom(seed), radiusKm, inputs.gmKm3PerS2, minHeight, inputs.sun);
+  return new OrbitFlight(camera, orbit, radiusKm);
+}
+
 interface MoonControlHandlers {
+  /** Orbit mode on or off; returns the line describing the orbit, or null. */
+  readonly onOrbit: (on: boolean) => string | null;
+  readonly onTimeFactor: (factor: number) => void;
+  /** Set when the page asked for `?orbit`: starts it, returning the description. */
+  readonly startInOrbit: (() => string | null) | null;
   readonly onBoost: (boosted: boolean) => void;
   readonly onEvenLight: (even: boolean) => void;
 }
@@ -704,6 +816,48 @@ function createMoonControls(
   const row = document.createElement('div');
   row.className = 'row';
   row.append(link, lighting, stars);
+
+  // Orbit mode: a random real orbit, flown automatically; time can be sped up, labelled.
+  const orbitLine = document.createElement('p');
+  orbitLine.className = 'note';
+  const time = document.createElement('button');
+  time.type = 'button';
+  const timeNote = document.createElement('p');
+  timeNote.className = 'note warning';
+  let factorIndex = 0;
+  const setFactor = (index: number): void => {
+    factorIndex = index;
+    const factor = ORBIT_TIME_FACTORS[index] ?? 1;
+    time.textContent = factor === 1 ? 'Time: real' : `Time: \u00d7${factor}`;
+    timeNote.textContent = `Time \u00d7${factor}: the orbit moves ${factor} times faster than it really would.`;
+    if (factor === 1) timeNote.remove();
+    else notes.append(timeNote);
+    handlers.onTimeFactor(factor);
+  };
+  time.addEventListener('click', () => setFactor((factorIndex + 1) % ORBIT_TIME_FACTORS.length));
+  const showOrbit = (line: string | null): void => {
+    if (line === null) {
+      orbitLine.remove();
+      time.remove();
+      timeNote.remove();
+      return;
+    }
+    orbitLine.textContent = line;
+    notes.prepend(orbitLine);
+    row.append(time);
+    setFactor(0);
+  };
+  // `?orbit=<seed>` starts that orbit; the button starts a new random one each time after.
+  let pendingStart = handlers.startInOrbit;
+  const orbit = createToggle({ off: 'Orbit', on: 'Orbit: on' }, null, notes, (on) => {
+    const start = on ? pendingStart : null;
+    pendingStart = null;
+    showOrbit(start === null ? handlers.onOrbit(on) : start());
+  });
+  row.append(orbit);
+  if (handlers.startInOrbit !== null) {
+    orbit.click();
+  }
   // The approximation exists only where `npm run local` serves it.
   if (terrainLayer?.startsWith('moon-local') === true) {
     const detail = document.createElement('a');

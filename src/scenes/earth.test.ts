@@ -6,7 +6,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Vector3 } from 'three/webgpu';
-import { uniform } from 'three/tsl';
 import { j2000ToScene, type MoonEphemeris } from '../core/moon';
 import { createEarth } from './earth';
 
@@ -17,7 +16,7 @@ const ephemeris = JSON.parse(
 describe('Earth', () => {
   for (const epoch of ephemeris.epochs) {
     it(`puts each texel where IAU_EARTH puts its place at ${epoch.id}`, () => {
-      const earth = createEarth(epoch, ephemeris.earth, null, uniform(1));
+      const earth = createEarth(epoch, ephemeris.earth, null);
       earth.updateMatrixWorld();
       const centre = new Vector3().setFromMatrixPosition(earth.matrixWorld);
       const positions = earth.geometry.getAttribute('position');
@@ -56,7 +55,7 @@ describe('Earth', () => {
   it('sits where the ephemeris puts it', () => {
     const epoch = ephemeris.epochs[1];
     if (epoch === undefined) throw new Error('no first-quarter epoch');
-    const earth = createEarth(epoch, ephemeris.earth, null, uniform(1));
+    const earth = createEarth(epoch, ephemeris.earth, null);
     earth.updateMatrixWorld();
     const centre = new Vector3().setFromMatrixPosition(earth.matrixWorld);
     const expected = new Vector3(...j2000ToScene(epoch.earthDirectionJ2000)).multiplyScalar(

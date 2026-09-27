@@ -54,7 +54,7 @@ import {
 import { TilesRenderer } from '3d-tiles-renderer';
 import { QuantizedMeshPlugin } from '3d-tiles-renderer/plugins';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
-import { EXPOSURE, AU_KM } from '../core/photometry';
+import { EXPOSURE, AU_KM, SUNLIT_FADE } from '../core/photometry';
 import { siteUrl } from '../site';
 
 /** The manifest's relevant fields (public/data/moon/albedo.json). */
@@ -178,8 +178,11 @@ export interface MoonOptions {
     readonly angularRadius: number;
     readonly factor: readonly [number, number, number];
   } | null;
-  /** Multiplies the exposure: 1, or the labelled earthshine exposure. A uniform, so it can change. */
-  readonly exposure?: UniformNode<'float', number>;
+  /**
+   * 1 for physical earthshine, or the labelled boost (core/photometry.ts EARTHSHINE_BOOST_STOPS),
+   * applied only where the Sun is down. A uniform, so it can change.
+   */
+  readonly earthshineBoost?: UniformNode<'float', number>;
 }
 
 /** IAU 2015 Resolution B3 nominal solar radius, km. */
@@ -229,10 +232,8 @@ function createMoonMaterial(
   const sun = uniform(new Vector3(...sunScene));
   const r = epoch.sunDistanceKm / AU_KM;
   // Linear display value per unit I/F: exposure and the sun's inverse square (core/photometry.ts).
-  const scale =
-    options.exposure === undefined
-      ? uniform(EXPOSURE / (r * r))
-      : options.exposure.mul(EXPOSURE / (r * r));
+  const scale = uniform(EXPOSURE / (r * r));
+  const earthshineBoost = options.earthshineBoost ?? uniform(1);
   const earthshine = options.earthshine ?? null;
   const earthDirection = earthshine === null ? null : uniform(new Vector3(...earthshine.direction));
   const earthFactor = earthshine === null ? null : uniform(new Vector3(...earthshine.factor));
@@ -370,7 +371,6 @@ function createMoonMaterial(
         radianceFactor = albedo.div(8);
         break;
     }
-    const sunlitColour = vec3(radianceFactor);
     let earthlit = null;
     if (options.shading === 'lommel-seeliger' && earthDirection !== null && earthFactor !== null) {
       // Earthshine: the Moon scatters Earth's light as it scatters the Sun's, coloured by Earth.
@@ -381,8 +381,17 @@ function createMoonMaterial(
         .div(max(muE.add(max(mu, 0)), 1e-6));
       earthlit = earthFactor.mul(earthVisible === null ? fromEarth : fromEarth.mul(earthVisible));
     }
-    const lit = earthlit === null ? sunlitColour : sunlitColour.add(earthlit);
-    const value = lit.mul(scale);
+    // With the labelled boost, earthshine is drawn brighter only where the Sun is down: its
+    // extra weight fades out as the sunlit display value rises through SUNLIT_FADE, so the
+    // sunlit Moon is untouched and the two meet without a seam (docs/stories/SS-13e.md).
+    const sunDisplay = radianceFactor.mul(scale);
+    const boost = mix(
+      float(1),
+      earthshineBoost,
+      float(1).sub(smoothstep(0, SUNLIT_FADE, sunDisplay)),
+    );
+    const value =
+      earthlit === null ? vec3(sunDisplay) : vec3(sunDisplay).add(earthlit.mul(scale).mul(boost));
     const colour = gap === null ? value : mix(value, vec3(...GAP_COLOUR).mul(value), gap);
     return vec4(colour, 1);
   })();

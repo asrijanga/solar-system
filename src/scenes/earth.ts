@@ -12,7 +12,6 @@ import {
   SRGBColorSpace,
   UnsignedByteType,
   Vector3,
-  type UniformNode,
 } from 'three/webgpu';
 import {
   Fn,
@@ -112,18 +111,11 @@ export async function loadEarthFace(
  * built for) it is SS-13b's uniform Lambert sphere of the fact sheet's geometric albedo, lit by
  * the Sun, and the About text says which.
  */
-export function createEarth(
-  epoch: MoonEpoch,
-  body: EarthBody,
-  face: EarthFace | null,
-  exposure: UniformNode<'float', number>,
-): Mesh {
+export function createEarth(epoch: MoonEpoch, body: EarthBody, face: EarthFace | null): Mesh {
   const geometry = ellipsoid(body.radiiKm);
   const mesh = new Mesh(
     geometry,
-    face === null
-      ? createUniformMaterial(epoch, exposure)
-      : createFaceMaterial(epoch, face, exposure),
+    face === null ? createUniformMaterial(epoch) : createFaceMaterial(epoch, face),
   );
   mesh.name = 'earth';
   // The geometry is built in IAU_EARTH-like axes (see `ellipsoid`): its x, y and -z are
@@ -168,24 +160,17 @@ function ellipsoid(radiiKm: readonly [number, number, number]): SphereGeometry {
   return geometry;
 }
 
-function createFaceMaterial(
-  epoch: MoonEpoch,
-  face: EarthFace,
-  exposure: UniformNode<'float', number>,
-): MeshBasicNodeMaterial {
+function createFaceMaterial(epoch: MoonEpoch, face: EarthFace): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial();
-  const scale = exposure.mul(displayValue(1, epoch.earthSunDistanceKm));
+  const scale = uniform(displayValue(1, epoch.earthSunDistanceKm));
   material.colorNode = vec4(texture(face.map, uv()).rgb.mul(scale), 1);
   return material;
 }
 
-function createUniformMaterial(
-  epoch: MoonEpoch,
-  exposure: UniformNode<'float', number>,
-): MeshBasicNodeMaterial {
+function createUniformMaterial(epoch: MoonEpoch): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial();
   const sun = uniform(new Vector3(...j2000ToScene(epoch.sunDirectionJ2000)));
-  const scale = exposure.mul(
+  const scale = uniform(
     displayValue(lambertAlbedoFor(EARTH_GEOMETRIC_ALBEDO), epoch.earthSunDistanceKm),
   );
   const centre = uniform(

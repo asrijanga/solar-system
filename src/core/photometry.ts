@@ -159,9 +159,16 @@ export function earthshineFactor(
 }
 
 /**
- * The labelled earthshine exposure (docs/stories/SS-13e.md): 2¹⁶ times the sunlit exposure,
- * sixteen stops, as a camera is set to photograph earthshine. Earth-lit highlands then show at
- * about a third of display white at first quarter, and anything sunlit is far past white, as
- * in every real photograph of earthshine. Stars use the same exposure.
+ * The labelled earthshine boost (docs/stories/SS-13e.md). Earthshine is about 1/50,000 of
+ * sunlight at first quarter, so at the sunlit exposure it rounds to black. Photographs that show
+ * the earth-lit night side and the sunlit crescent together are composites of two exposures.
+ * So, with the boost on, earthshine alone is drawn 2^13 (8,192) times brighter, and only where
+ * the Sun is down: its weight fades out as the sunlit display value rises through
+ * SUNLIT_FADE. Earth-lit highlands then show at about 0.04 of display white, about as bright as
+ * sunlit ground a few degrees past the terminator, so the two sides meet without a jump. The
+ * sunlit Moon, Earth and the stars are unchanged.
  */
-export const EARTHSHINE_EXPOSURE_STOPS = 16;
+export const EARTHSHINE_BOOST_STOPS = 13;
+
+/** Sunlit display value (linear) over which the boosted earthshine fades out. */
+export const SUNLIT_FADE = 0.05;

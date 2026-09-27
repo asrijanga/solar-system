@@ -39,7 +39,7 @@ import {
 } from './core/orbit';
 import { OrbitFlight } from './scenes/orbitFlight';
 import {
-  EARTHSHINE_EXPOSURE_STOPS,
+  EARTHSHINE_BOOST_STOPS,
   earthshineFactor,
   physicalStarExposure,
   pixelSolidAngle,
@@ -224,8 +224,8 @@ interface Stage {
   readonly approximated: boolean;
   /** 0 sunlight, 1 the labelled even lighting. */
   readonly evenLight: UniformNode<'float', number> | null;
-  /** 1, or the labelled earthshine exposure (docs/stories/SS-13e.md): scales everything drawn. */
-  readonly exposureBoost: UniformNode<'float', number> | null;
+  /** 1, or the labelled earthshine boost, applied where the Sun is down (docs/stories/SS-13e.md). */
+  readonly earthshineBoost: UniformNode<'float', number> | null;
   /** Landmark labels (docs/stories/SS-15.md), and the landmarks with the body-to-scene rotation. */
   readonly labels: Labels | null;
   readonly landmarks: readonly Landmark[];
@@ -288,7 +288,7 @@ async function createStage(
     terrainLayer: null,
     approximated: false,
     evenLight: null,
-    exposureBoost: null,
+    earthshineBoost: null,
     labels: null,
     landmarks: [],
     bodyToScene: null,
@@ -324,8 +324,8 @@ async function createStage(
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
       const evenLight = uniform(setup.lighting === 'even' ? 1 : 0);
-      const exposureBoost = uniform(
-        setup.exposure === 'earthshine' ? 2 ** EARTHSHINE_EXPOSURE_STOPS : 1,
+      const earthshineBoost = uniform(
+        setup.earthshine === 'boosted' ? 2 ** EARTHSHINE_BOOST_STOPS : 1,
       );
       // Earth's face as the satellites measured it at this epoch, where built (SS-13c), and the
       // earthshine it puts on the Moon (SS-13e).
@@ -341,7 +341,7 @@ async function createStage(
         seamFix: setup.seamFix,
         evenLight,
         reliefFlipped: setup.reliefFlipped,
-        exposure: exposureBoost,
+        earthshineBoost,
         earthshine:
           face === null
             ? null
@@ -360,7 +360,7 @@ async function createStage(
       const starExposure = uniform(0);
       scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
       // Earth in the sky (docs/stories/SS-13b.md, SS-13c.md).
-      const earth = createEarth(epoch, ephemeris.earth, face, exposureBoost);
+      const earth = createEarth(epoch, ephemeris.earth, face);
       scene.add(earth);
       // Landmark labels, hidden until asked for (docs/stories/SS-15.md).
       const bodyToScene = bodyFixedToSceneMatrix(epoch);
@@ -391,7 +391,7 @@ async function createStage(
         radiusKm,
         starExposure,
         evenLight,
-        exposureBoost,
+        earthshineBoost,
         labels,
         landmarks: landmarkFile.landmarks,
         bodyToScene,
@@ -504,9 +504,7 @@ async function start(): Promise<void> {
     stage.labels?.setViewport(height, camera.fov);
     if (starExposure !== null) {
       starExposure.value =
-        physicalStarExposure(pixelSolidAngle(camera.fov, height)) *
-        (starBoost[0] ?? 1) *
-        (stage.exposureBoost?.value ?? 1);
+        physicalStarExposure(pixelSolidAngle(camera.fov, height)) * (starBoost[0] ?? 1);
     }
   };
 
@@ -703,11 +701,10 @@ async function start(): Promise<void> {
           starBoost[0] = boosted ? STAR_BOOST : 1;
           resize();
         },
-        onEarthshineExposure: (on) => {
-          if (stage.exposureBoost === null) return;
-          stage.exposureBoost.value = on ? 2 ** EARTHSHINE_EXPOSURE_STOPS : 1;
-          // Stars share the exposure; their uniform is set on resize.
-          resize();
+        onEarthshineBoost: (on) => {
+          if (stage.earthshineBoost !== null) {
+            stage.earthshineBoost.value = on ? 2 ** EARTHSHINE_BOOST_STOPS : 1;
+          }
         },
         onEvenLight: (even) => {
           if (evenLight !== null) evenLight.value = even ? 1 : 0;
@@ -1020,12 +1017,12 @@ interface MoonControlHandlers {
   /** Landmark labels on or off (docs/stories/SS-15.md). */
   readonly onLabels: (on: boolean) => void;
   readonly onEvenLight: (even: boolean) => void;
-  readonly onEarthshineExposure: (on: boolean) => void;
+  readonly onEarthshineBoost: (on: boolean) => void;
 }
 
 const ABOUT = [
   'Lighting: sun is real sunlight at this date, plus earthshine: sunlight reflected by Earth onto the side of the Moon that faces it, coloured by Earth as the weather satellites measured it. At first quarter it is about 50,000 times fainter than sunlight, so at a sunlit exposure the night side is black, as in every photograph of the sunlit Moon. The far side never sees Earth.',
-  'Exposure: earthshine is a real camera setting, sixteen stops (65,536 times) longer, as photographers use for earthshine: the night side shows in Earth\u2019s light, stars come out, and anything sunlit is far past white. At the full-Moon date Earth\u2019s measured face is not built yet, so no earthshine is drawn there; it falls on the day side then anyway.',
+  'Earthshine: boosted draws Earth\u2019s light 8,192 times (13 stops) brighter, only where the Sun is down, so the night side shows beside the sunlit side as in a two-exposure photograph; the sunlit Moon, Earth and the stars are unchanged. At the full-Moon date Earth\u2019s measured face is not built yet, so no earthshine is drawn there; it falls on the day side then anyway.',
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°. The few small places Clementine missed elsewhere (0.06% of the map) are filled from LOLA\u2019s global laser map, which is coarser (3 km), matched to Clementine around each one.',
@@ -1068,11 +1065,11 @@ function createMoonControls(
     notes,
     handlers.onEvenLight,
   );
-  const exposure = createToggle(
-    { off: 'Exposure: sunlight', on: 'Exposure: earthshine' },
-    `Exposure \u00d7${(2 ** EARTHSHINE_EXPOSURE_STOPS).toLocaleString('en')} (${EARTHSHINE_EXPOSURE_STOPS} stops), set for earthshine as a camera would be: anything sunlit is far past white.`,
+  const earthshine = createToggle(
+    { off: 'Earthshine: physical', on: 'Earthshine: boosted' },
+    `Earthshine \u00d7${(2 ** EARTHSHINE_BOOST_STOPS).toLocaleString('en')} (${EARTHSHINE_BOOST_STOPS} stops) brighter than physics, only where the Sun is down, so the night side shows beside the sunlit side, as in a two-exposure photograph.`,
     notes,
-    handlers.onEarthshineExposure,
+    handlers.onEarthshineBoost,
   );
   const stars = createToggle(
     { off: 'Stars: physical', on: 'Stars: boosted' },
@@ -1082,7 +1079,7 @@ function createMoonControls(
   );
   const row = document.createElement('div');
   row.className = 'row';
-  row.append(link, lighting, exposure, stars);
+  row.append(link, lighting, earthshine, stars);
 
   // Orbit mode: a random real orbit, flown automatically; time can be sped up, labelled.
   const orbitLine = document.createElement('p');

@@ -1,0 +1,28 @@
+{
+  "source": "JPL Horizons API (https://ssd.jpl.nasa.gov/api/horizons.api)",
+  "retrieved": "2026-09-26",
+  "request": "COMMAND='399' CENTER='500@301' EPHEM_TYPE=OBSERVER QUANTITIES='14,15' ANG_FORMAT=DEG, one epoch per query (UT)",
+  "columns": "Obsrv-lon Obsrv-lat Solar-lon Solar-lat: the sub-Moon and sub-solar points on Earth, longitude east-positive 0-360, latitude geodetic",
+  "epochs": [
+    {
+      "id": "full-2026-01",
+      "utc": "2026-01-03 10:00",
+      "horizonsEphemeris": "DE441",
+      "row": "2026-Jan-03 10:00:00.000     211.560825  27.221693   31.117682 -22.937669",
+      "subObserverLonDeg": 211.560825,
+      "subObserverLatDeg": 27.221693,
+      "subSolarLonDeg": 31.117682,
+      "subSolarLatDeg": -22.937669
+    },
+    {
+      "id": "first-quarter-2026-01",
+      "utc": "2026-01-26 05:00",
+      "horizonsEphemeris": "DE441",
+      "row": "2026-Jan-26 05:00:00.000     192.019419  17.867575  108.118704 -18.828605",
+      "subObserverLonDeg": 192.019419,
+      "subObserverLatDeg": 17.867575,
+      "subSolarLonDeg": 108.118704,
+      "subSolarLatDeg": -18.828605
+    }
+  ]
+}

@@ -15,28 +15,25 @@
         "kind": "earth"
       },
       "distanceKm": 6949.6,
-      "fovDeg": 40,
+      "fovDeg": 2.4,
       "tiltDeg": 0,
       "orbitSeed": null,
-      "orbitFrom": {
-        "landmark": "Albategnius",
-        "angleDeg": 252
-      },
+      "orbitFrom": null,
       "labels": false,
-      "lookAtEarth": false,
+      "lookAtEarth": true,
       "albedo": "map",
       "shading": "lommel-seeliger",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
-      "relief": true,
+      "relief": false,
       "reliefFlipped": false
     },
     "moonChecks": [],
     "negativeControl": false,
-    "id": "moon-earthrise",
-    "description": "The same orbit 252° on, over the far side heading for the south pole, first quarter: Earth, sunlit, 4° above the horizon ahead (docs/stories/SS-13b.md). For eyes.",
+    "id": "moon-earth",
+    "description": "Earth from the Moon at first quarter, through a 2.4° field so it fills the view: its face as Himawari-9 and GOES-18 measured it at 2026-01-26 05:00 UTC, half lit, Asia and Australia in the afternoon (docs/stories/SS-13c.md). For eyes.",
     "scene": "moon"
   },
   "environment": {

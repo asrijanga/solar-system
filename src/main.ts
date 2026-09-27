@@ -47,7 +47,7 @@ import { DebugOverlay } from './debug/overlay';
 import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/adapter';
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
 import { createDepthTestScene } from './scenes/depthTest';
-import { createEarth } from './scenes/earth';
+import { createEarth, loadEarthFace } from './scenes/earth';
 import { createLabels, loadLabelFont, type Labels, type Landmark } from './scenes/labels';
 import { createMoonMesh, createMoonTerrain, loadMoonTextures } from './scenes/moon';
 import {
@@ -334,7 +334,10 @@ async function createStage(
       const starExposure = uniform(0);
       scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
       // Earth in the sky, sunlit (docs/stories/SS-13b.md).
-      scene.add(createEarth(epoch, ephemeris.earth));
+      // Earth's face as the satellites measured it at this epoch, where built (SS-13c).
+      const face = await loadEarthFace(epoch.id, siteUrl, maxAnisotropy);
+      const earth = createEarth(epoch, ephemeris.earth, face);
+      scene.add(earth);
       // Landmark labels, hidden until asked for (docs/stories/SS-15.md).
       const bodyToScene = bodyFixedToSceneMatrix(epoch);
       const labels = createLabels(
@@ -356,6 +359,7 @@ async function createStage(
       camera.up.set(...pose.up);
       camera.lookAt(0, 0, 0);
       camera.rotateX((setup.tiltDeg * Math.PI) / 180);
+      if (setup.lookAtEarth) camera.lookAt(new Vector3().setFromMatrixPosition(earth.matrix));
       const when = epoch.utc.replace('T', ' ').slice(0, 16);
       return {
         scene,
@@ -993,7 +997,7 @@ const ABOUT = [
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Orbit: glides from your view to the crater Albategnius and heads due north along its meridian, over the central highlands and the Apennines, across the north pole, down the far side and back, with Earth rising ahead over the south pole. Pinch or scroll first to choose the height; it never goes below the height the terrain stays sharp from.',
   'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Each label rises and sets with its landmark, dims on the night side, and small features wait until you are close enough for them to matter.',
-  'Earth: where it really is at this date, at its measured size, lit by the same Sun. Until Earth has its own data it is a plain sphere of its measured brightness (geometric albedo 0.434, NASA): no clouds, oceans or colour yet.',
+  'Earth: where it really is at this date, at its measured size, turned as it really was. On 26 January 2026 at 05:00 UTC it is Earth as the Himawari-9 (JMA) and GOES-18 (NOAA) weather satellites measured it at that moment: the real clouds, oceans, land and blue air, in colour, cross-calibrated and blended. They saw it from other directions than the Moon does, so cloud tops are approximate and the glint of the Sun on the sea that the Moon would see is missing. On 3 January (full Moon) it is still a plain sphere of its measured brightness (geometric albedo 0.434, NASA): that date needs Meteosat data.',
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
   'Detail (local mode only): measured shows only measurements. + approximation adds, below about 10 m, small craters and roughness generated from the Moon\u2019s statistics: crater numbers and shapes from NASA\u2019s lunar environment specification, roughness from NASA\u2019s 2 m stereo terrain models. The surface still passes through every measurement, but these are not the real craters there, and the screen says so while it is on.',
 ];

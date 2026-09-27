@@ -1,0 +1,69 @@
+{
+ "note": "Earth as the geostationary satellites measured it at the app's instants (docs/stories/SS-13c.md). Built by pipeline/earth.py from the files in pipeline/earth_sources.json.",
+ "attribution": "Himawari-9 data: JMA, distributed by NOAA. GOES-18 data: NOAA. Modified: resampled, cross-calibrated and blended; not original, unaltered data.",
+ "conventions": "plate carree, pixel centres, longitude -180..180 east-positive left to right, geodetic latitude 90..-90 top to bottom (GRS80, as the satellites' navigation), IAU_EARTH. RGB: I/F at 0.64 / 0.51 / 0.47 um under that instant's Sun, clipped to 1, sRGB-encoded. Alpha 255 measured, 0 not measured.",
+ "instants": {
+  "first-quarter-2026-01": {
+   "utc": "2026-01-26T05:00:00",
+   "image": "data/earth/first-quarter-2026-01.webp",
+   "satellites": {
+    "Himawari-9 AHI": {
+     "scan": "full disc, start 2026-01-26 05:00 UTC",
+     "subLongitudeDeg": 140.7,
+     "bands": {
+      "B01": 0.4706,
+      "B02": 0.5099,
+      "B03": 0.6397,
+      "B04": 0.8567
+     },
+     "scale": "albedo = c' x radiance (JMA, relative to 1 AU), times r^2 to I/F"
+    },
+    "GOES-18 ABI": {
+     "scan": "full disc, mode 6, start 2026-01-26 05:00:21 UTC",
+     "subLongitudeDeg": -137.0,
+     "bands": {
+      "C01": 0.47,
+      "C02": 0.64,
+      "C03": 0.87
+     },
+     "scale": "reflectance factor = kappa0 x radiance, already I/F"
+    }
+   },
+   "earthSunDistanceAu": 0.9846003103362589,
+   "greenForGoes": {
+    "note": "Himawari-9 0.51 um fitted to its own 0.47, 0.64 and 0.86 um bands (daylight, mu0 > 0.2, within 70 degrees of straight down), applied to GOES-18 0.47, 0.64 and 0.865 um",
+    "coefficients": [
+     0.5940876603126526,
+     0.41153278946876526,
+     -0.0365145206451416
+    ],
+    "r": 0.999649144755479,
+    "rms": 0.004119019955396652,
+    "samples": 351031
+   },
+   "crossCalibration": {
+    "note": "GOES-18 0.47 and 0.64 um put on Himawari-9's scale by fits where both saw the same place in mirror geometry (view zenith and phase angle within 5.0 degrees, daylight, within 70 degrees of straight down), from their scans at 2026-01-26 00:10 UTC. GOES 0.865 um (weight 0.014 in green) is used as measured",
+    "red": {
+     "coefficients": [
+      0.9597931504249573
+     ],
+     "r": 0.9715115983384514,
+     "rms": 0.035238634794950485,
+     "samples": 18537
+    },
+    "blue": {
+     "coefficients": [
+      1.021811604499817
+     ],
+     "r": 0.9705779855230366,
+     "rms": 0.035974856466054916,
+     "samples": 18537
+    }
+   },
+   "blend": "each satellite weighted smoothstep(cos 85, cos 65, cos view zenith) x exp(-(angle between its line of sight and the Moon's / 30 deg)^2) x max(smoothstep(15, 30 deg, its sun-glint angle), 0.001)",
+   "goesShareOfLitDisc": 0.3523661525663463,
+   "measuredFractionOfLitDiscSeenFromMoon": 0.9986106009355424,
+   "clippedFraction": 4.7057317695245515e-06
+  }
+ }
+}

@@ -29,14 +29,14 @@
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
-      "exposure": "earthshine",
+      "earthshine": "boosted",
       "relief": true,
       "reliefFlipped": false
     },
     "moonChecks": [],
     "negativeControl": false,
     "id": "moon-earthshine",
-    "description": "First quarter from over Oceanus Procellarum, on the night side, at the labelled earthshine exposure (16 stops): the night side in Earth’s light, measured by the weather satellites, and the sunlit side far past white (docs/stories/SS-13e.md). For eyes.",
+    "description": "First quarter from over Oceanus Procellarum, with the labelled earthshine boost: the night side in Earth’s light, measured by the weather satellites, beside the sunlit side as it always is (docs/stories/SS-13e.md). For eyes.",
     "scene": "moon"
   },
   "environment": {
@@ -66,7 +66,7 @@
     "results": []
   },
   "git": {
-    "sha": "d10e6707907673ac259bfa09044ed8f1207e5439",
+    "sha": "28736e89ecfcd2f4daaceb69e3b8ead8f987f4bd",
     "dirty": false
   }
 }

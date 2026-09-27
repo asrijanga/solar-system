@@ -1,6 +1,6 @@
 # Solar System Sim — Plan & Iteration Loop
 
-2026-09-24 · @Someone · rewritten for three.js on WebGPU, built by Claude
+2026-09-24 · @Someone · rewritten for three.js on WebGPU, built by Claude · updated 2026-09-27 from how the Moon was built
 
 The app is deployed at <https://asrijanga.github.io/solar-system/> from `main` on every push. Story specs and their outcomes live in [`docs/stories/`](docs/stories/).
 
@@ -198,7 +198,12 @@ One world at a time does not mean one object in the scene. Standing at the Moon 
 
 Each world's scene therefore carries a list of context bodies: nearby significant objects rendered in the background at their real positions, sizes, and phases.
 
-The good news is that this is cheap. A context body needs no terrain, no level of detail, and no streaming, because it is far away and subtends a fixed angle. One low-resolution textured sphere, positioned correctly and lit by the same sun, is the entire implementation. It costs almost nothing against the main world's budget.
+The good news is that this is cheap. A context body needs no terrain, no level of detail, and no streaming, because it is far away and subtends a fixed angle. One textured sphere, positioned and turned correctly, is the entire implementation. It costs almost nothing against the main world's budget: Earth's map in the Moon's sky is 0.7 MB.
+
+*(Learned building Earth in the Moon's sky, SS-13b and SS-13c, 2026-09-26 to 27.)* Two things about that sphere matter more than expected:
+
+- **Show it as it was at that moment.** Earth's look is mostly its weather. A cloud-free composite shows an Earth that never exists, because two-thirds of it is always under cloud. So a neighbour's map is a measurement at the scene's instant. For Earth that means the geostationary weather satellites' calibrated images, and the About text says whose images, and when.
+- **Light it with a phase law that conserves energy, or not at all.** A plain Lambert sphere of Earth's geometric albedo is twice too bright away from full phase: it would reflect 65% of the sunlight it gets, and Earth reflects 30.6%. Measured images need no lighting at all. The Sun's angle, the terminator and the atmosphere are already in them.
 
 Apparent sizes, computed from mean orbital distances and rounded, with our own Moon's half-degree as the yardstick:
 
@@ -224,7 +229,7 @@ Positioning context bodies is exactly what SPICE is for, so adopting it pays off
 Three things fall out of doing it properly, and each is worth more than a paragraph of explanatory text:
 
 - **Phases are complementary.** Light the context body with the same sun and Earth shows a phase opposite to the Moon's as seen from home. Full Moon means new Earth. Nobody expects this and everybody likes it.
-- **Earth does not move in the lunar sky.** Tidal locking holds it near a fixed point, wobbling a few degrees with libration, never rising and never setting. From the far side it is simply never there. That is a whole lesson delivered by geometry alone.
+- **Earth does not move in the lunar sky.** Tidal locking holds it near a fixed point, wobbling a few degrees with libration, never rising and never setting, for anyone standing on the Moon. From the far side it is simply never there. That is a whole lesson delivered by geometry alone. From orbit it is the opposite: Earth sets and rises once an orbit, every two to three hours at the Orbit button's heights, and the Orbit button's path crosses an Earthrise over the south pole like the one Apollo 8 photographed.
 - **Eclipses happen on their own.** A moon passing into its parent's shadow is dramatic, real, and requires no special code once positions and lighting are correct.
 
 One rule keeps the body list from growing without limit: render a neighbour as a sphere when its apparent diameter is large enough to resolve, and leave everything smaller to the star catalogue as a bright point. Mars seen from Jupiter is a dot, and treating it as one is both cheaper and more truthful.
@@ -319,7 +324,8 @@ These go into `CLAUDE.md` in SS-1, so every session inherits them.
 - **Never invent data.** No procedural noise, hallucinated coordinates, or gap-filling. A missing value is a visible missing value.
 - **Combine every available source.** Build each world from all usable real datasets: best source per region, cross-calibrated where they overlap, blended at transitions, provenance kept. See "Combine every available source".
 - **Gather first, then build.** Before building a world, inventory every available dataset for it in `docs/data/<world>.md`, then recreate its terrain and features as real geometry with unshaded albedo from the whole inventory, so lighting works out of the box for any sun angle.
-- **Never tune a check to pass.** Tolerances and thresholds change only with your approval in the PR description. The same goes for skipping or loosening tests.
+- **Never tune a check to pass.** Tolerances and thresholds change only with your approval in the PR description. The same goes for skipping or loosening tests. When a check fails because its reference was physically wrong, the reference is corrected, the tolerance stays, and the change waits for your approval (SS-13c).
+- **Captures do not depend on the machine.** Fonts and every other resource a capture shows ship with the site (SS-15).
 - **Baselines change deliberately.** Capture baselines are updated only by `npm run capture:accept`, in a commit of their own, with before and after images in the PR.
 - **Say what was not verified.** A PR lists what was checked by machine, what needs your eyes, and what was not checked at all.
 
@@ -575,7 +581,14 @@ Two stories are likely to overrun. SS-2, because headless GPU tooling is fiddly 
 
 From here every world is built the same way: one round of the eight stories in **`docs/world-recipe.md`**, taken from how the Moon was actually built. Real acceptance criteria get written in each story's spec only when it is next.
 
-### Where the Moon stands (2026-09-26)
+### Where the Moon stands (2026-09-27)
+
+The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
+- measured terrain streamed to 670 m everywhere, with finer boxes, and everything measured in local mode;
+- gap-free albedo from three instruments;
+- orbit mode starting over Albategnius, gliding in from wherever the camera was;
+- 61 landmark labels that fade with the horizon and the daylight;
+- Earth in the sky as the weather satellites saw it.
 
 | ID | Story | State |
 | --- | --- | --- |
@@ -587,21 +600,33 @@ From here every world is built the same way: one round of the eight stories in *
 | SS-10b | As a learner, I want detail below the measurements, labelled as an approximation | Shipped, local mode only |
 | SS-10c | As a learner, I want the whole Moon at full measured detail without anyone paying for hosting | Shipped: `npm run local` |
 | SS-11 | As a learner, I want to descend to a few kilometres and hover, so that I feel the scale of the terrain | Partly: tilt and ground-following; camera-relative rendering open |
-| SS-11b | As a learner, I want to orbit in a cinematic mode, low enough to see terrain and never blurry | Shipped: gestures first, then orbit |
+| SS-11b | As a learner, I want to orbit in a cinematic mode, low enough to see terrain and never blurry | Shipped: gestures first, then orbit. Since SS-15 it starts over Albategnius heading north and glides in |
 | SS-11c | As a learner, I want no marks breaking the view where one mission missed a spot | Shipped: gaps filled from LOLA |
-| SS-12 | As a learner, I want it to run smoothly on my own machine, so that I can actually use it: first public release | Open. Needs frame-rate numbers from the owner's iPhone |
-| SS-13 | As a learner, I want to pick a world from a home page, each world on its own page with a way back | In review. The true-scale map with real distances stays the goal for the home page |
+| SS-12 | As a learner, I want it to run smoothly on my own machine, so that I can actually use it: first public release | Open. Needs frame-rate numbers from the owner's iPhone, now with labels (61 sprites) and Earth's map in the scene |
+| SS-13 | As a learner, I want to pick a world from a home page, each world on its own page with a way back | Shipped. The true-scale map with real distances stays the goal for the home page |
+| SS-13b | As a learner in orbit, I want to see Earth where it really is, lit by the Sun, rising and setting as I go round | Shipped. Superseded at the first-quarter instant by SS-13c |
+| SS-13c | As a learner, I want Earth to look as it really did at that moment, not a plain ball | Shipped: Himawari-9 and GOES-18 at 2026-01-26 05:00 UTC, in colour, cross-calibrated in mirror geometry |
+| SS-15 | As a learner, I want the famous places named as I fly over them, and an orbit that starts somewhere worth seeing | Shipped for the Moon: 61 Gazetteer landmarks, fading with horizon and daylight; a bundled font; the Albategnius start and the glide |
+
+### Next for the Moon, from what building it surfaced
+
+| ID | Story | Why now |
+| --- | --- | --- |
+| SS-5b | As a learner, I want the Moon rebuilt from its whole inventory (`docs/data/moon.md`), not product by product | The Moon was built before the "gather first" rule. Its inventory lists sources still to evaluate: the LROC WAC Hapke-normalised mosaic, Kaguya MI and the LOLA polar DEMs |
+| SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge | Still open. The full Moon's brightness is the most visible photometric error left |
+| SS-13d | As a learner, I want Earth's real face at the full-Moon instant too | Earth is a thin crescent then, about half of it seen only by Meteosat. It waits on the owner creating a free EUMETSAT account, with its keys in the environment's secrets |
+| SS-13e | As a learner, I want the Moon's night side lit by earthshine | The About text says earthshine is not drawn. SS-13c now gives Earth's measured disc brightness at each instant, which is exactly what earthshine needs |
+| SS-11d | As the developer, I want the allocation gate to cover the Orbit button's glide | `npm run alloc` measures a flight started with `?orbit=`, which has no glide. The glide runs for up to 6 s on every Orbit press |
+| SS-12 | (above) | Frame rate on the owner's iPhone is the one number the cloud can never produce |
 
 ### Next: the worlds, one round of the recipe each
 
 | ID | World | Round | Notes for this world |
 | --- | --- | --- | --- |
-| SS-13b | Earth in the Moon's sky | W8 only | In review. Earth from the ephemeris at its SPICE radii, sunlit, a uniform sphere of measured albedo until Earth's own round. Rises ahead on the Orbit button's orbit |
-| SS-13c | Earth's real face in the Moon's sky | W1 and W3 for Earth, at the Moon's distance | In review. Earth as Himawari-9 and GOES-18 measured it at 2026-01-26 05:00 UTC: clouds, oceans, air and terminator, in colour. The full-Moon instant needs Meteosat (a EUMETSAT account). Inventory `docs/data/earth.md` |
 | SS-14 | Mars | W1–W8 | MOLA global elevation, HRSC and CTX mosaics, HiRISE locally. Likely the first world to need its own data repository (W4) |
 | SS-18 | Mercury | W1–W8 | MESSENGER. Permanently shadowed polar craters, as on the Moon |
 | SS-19 | Venus | W1–W8, adapted | Magellan radar is not albedo. W3 becomes radar brightness, labelled as such, over coarse relief |
-| SS-20 | Earth | W1–W8, plus atmosphere | Copernicus, Sentinel, GEBCO. Ocean, clouds and atmosphere are their own stories |
+| SS-20 | Earth | W1–W8, plus atmosphere | W1 started (`docs/data/earth.md`), and W3 at the Moon's distance is done (SS-13c). The rest: Copernicus, Sentinel, GEBCO. Ocean, clouds and atmosphere are their own stories. Clouds come from the same geostationary satellites at the scene's instant |
 | SS-21 | The major moons | W1–W8 each, lighter | Io, Enceladus and Triton first (the catalogue's priority). Most have imagery but little elevation, so W4 is often a sphere with local relief |
 | SS-22 | The gas giants | Separate renderer | Cloud tops, loaded through a dynamic `import()` |
 
@@ -611,7 +636,7 @@ Each round's W1 inventory comes first and is shown to the owner before any code.
 
 | ID | Story |
 | --- | --- |
-| SS-15 | As a learner, I want named features labelled, so that I know what I am looking at. In review for the Moon: 61 Gazetteer landmarks, fading with the horizon and the sunlight, and the Orbit button now starts over Albategnius heading north |
+| SS-15 | As a learner, I want named features labelled, so that I know what I am looking at. Shipped for the Moon (61 Gazetteer landmarks); part of W7 for every later world |
 | SS-16 | As a learner, I want to see where the data is poor and which mission produced it, so that I understand the limits of what we know |
 | SS-17 | As a learner, I want worlds shown side by side at true relative size, so that I feel how they compare |
 | SS-23 | As a learner, I want to place a station at a chosen altitude and inclination and watch it orbit, so that I see a world the way astronauts do |
@@ -640,11 +665,14 @@ The old version of this section was a curriculum for you to learn Rust and graph
 | Solar irradiance and inverse-square falloff | Sunlight at Neptune is about 1/900 of Earth's; getting this wrong makes every outer world look fake | SS-6 | Deep | `core/` unit test against published solar constant and distances |
 | Radiometric vs photometric units | Radiance, irradiance, luminance, and lux are constantly confused, and the confusion shows up as unfixable lighting bugs | SS-6 | Deep | Units declared in types; one documented conversion point |
 | Exposure and tonemapping | A scene spanning sunlit rock to shadowed crater exceeds any display; how you compress that is an authored choice | SS-6 | Deep | Your eyes, against real photographs |
-| Phase angle and albedo | Geometric vs Bond albedo, and why a full Moon looks flat rather than limb-darkened | SS-6 | Medium | Full-phase capture |
+| Phase angle and albedo | Geometric vs Bond albedo, and why a full Moon looks flat rather than limb-darkened. A world with air or cloud is far from Lambertian: Earth's phase integral is 0.71, not 1.5, so a Lambert sphere of its geometric albedo is twice too bright side-on (SS-13c) | SS-6, SS-13c | Medium | Full-phase capture; a neighbour's disc brightness against a Lambert sphere of its Bond albedo |
+| Scattering depends on where you look from (BRDF) | Two satellites seeing the same cloud from opposite sides can differ by 2×. Cross-calibrating them anywhere else fits the scattering, not the instruments | SS-13c | Medium | Fits only in mirror geometry, recorded |
+| Sun glint and the opposition spot | Both sit where the viewer is, so an instrument's glint is not the app viewer's glint | SS-13c | Trust the check | Each instrument down-weighted inside its own glint |
+| Instrument reflectance scales | Some are relative to the Sun's irradiance at 1 AU, some to the day's; a 3% error that no picture shows | SS-13c | Trust the check | A calibration constant compared across two dates; the file's Earth–Sun distance checked against SPICE |
 | Lommel–Seeliger, then Hapke | Regolith scatters light nothing like a Lambertian surface; this is what makes the Moon look like the Moon | SS-6, SS-8b | Deep | `core/` tests against published phase curves; captures at 0°, 30°, and 90° phase |
 | Reference surfaces and vertical datums | Mars elevations are relative to an areoid, the Moon's to a mean radius; getting this wrong shifts everything | SS-8 | Deep | Known elevations: crater rims, Olympus Mons, Valles Marineris |
 | Body-fixed frames | `MOON_ME` vs `MOON_PA`; the imagery's frame and the orientation's frame must match | SS-5 | Medium | Citation from product label; feature markers land |
-| Planetocentric vs planetographic latitude | Two different definitions, both in common use, silently incompatible | SS-5 | Medium | Citation from product label |
+| Planetocentric vs planetographic latitude | Two different definitions, both in common use, silently incompatible. Earth adds geodetic latitude: satellite navigation uses it, up to 0.19° from planetocentric | SS-5, SS-13c | Medium | Citation from product label; a texel-lands-where-SPICE-puts-it unit test |
 | Longitude conventions | East vs west positive differs by body and by era of dataset; the classic cause of mirrored maps | SS-5 | Medium | Mirroring captures |
 | Map projections and distortion | Equirectangular, polar stereographic, sinusoidal; each source arrives in one and needs another | SS-5 | Trust the check | Round-trip tests in the pipeline |
 | Time systems | UTC, TAI, TT, TDB, leap seconds, Julian dates; SPICE forces this on you | SS-5 | Medium | Horizons comparison at known epochs |
@@ -673,7 +701,9 @@ Claude owns understanding these. You own the check.
 | GC-free render loop | JavaScript garbage-collection pauses become visible hitches | SS-3 | CDP allocation sampling over 600 frames |
 | Reversed-Z depth | Naive depth fails at planetary scale | SS-3 | Paired pass/fail z-fighting captures |
 | GPU timestamp queries | Means hide stutter; CPU timing hides GPU cost | SS-3 | Overlay reports GPU and CPU time separately |
-| Colour management | sRGB vs linear, double decoding, output transfer, tonemapping | SS-4 | Grey-ramp capture; transfer function cited for each texture |
+| Colour management | sRGB vs linear, double decoding, output transfer, tonemapping. Images are decoded byte for byte through a canvas with colour conversion off, never through the browser's colour management | SS-4 | Grey-ramp capture; transfer function cited for each texture |
+| Deterministic captures across machines | A capture that depends on installed fonts differs on the CI runner (SS-15: 0.058% of pixels) | SS-15 | Fonts bundled with the site; baselines accepted from a clean tree |
+| Pixel-centre and index conventions | Whether a coordinate is a pixel's centre or corner, 0- or 1-based: half-pixel shifts that no picture shows | SS-5, SS-13c | A unit test at a point with a known pixel, such as the sub-satellite point |
 | Instanced and storage-buffer drawing | Thousands of stars, and later tiles, in one draw call | SS-4 | Draw-call count in overlay and capture sidecar |
 | TSL node materials | The only shading path; pure functions mirrored in `core/` | SS-6 | Unit test of `core/` function, capture of TSL version |
 | Per-fragment equirectangular mapping | Pole pinch, and mip selection breaking at the longitude wrap | SS-6 | Wrap-line and pole captures |
@@ -706,7 +736,9 @@ An accuracy project needs external ground truth, because plausible and correct l
 | --- | --- |
 | Positions are correct | Query JPL Horizons for the same body and epoch, compare numerically, assert in CI |
 | The sky is not mirrored | Orion capture with celestial north up; axis-mapping determinant test |
-| The map is not mirrored | Pick a known asymmetric feature and verify its longitude sign against published coordinates |
+| The map is not mirrored | Pick a known asymmetric feature and verify its longitude sign against published coordinates. For a neighbour, a unit test that a texel at a given longitude and latitude lands where SPICE puts that place |
+| A neighbour faces the right way | Its sub-observer and sub-solar points against Horizons, from a pinned fixture (SS-13c: within 0.09°) |
+| A neighbour is as bright as it should be | Its disc-averaged I/F at the scene's phase against a Lambert sphere of its Bond albedo, within a tolerance set before measuring |
 | Elevations are correct | Check known values: Olympus Mons height, Valles Marineris depth, specific crater rims |
 | Terrain is correctly placed | Overlay named-feature coordinates from the IAU Gazetteer and check they land on the right landforms |
 | Lighting is correct | Reproduce a real spacecraft photograph: same body, same epoch, same viewing geometry, compare side by side |
@@ -837,6 +869,9 @@ The technical risks are manageable and mostly known. The project risks are attri
 | Review becomes the bottleneck | Specs or PRs waiting on you for more than a week | Smaller stories, not skipped reviews; the review is the part that can't be delegated |
 | Scope creep into a game | Finding yourself designing mechanics | Return to the not-list in Scope; a game is a different project |
 | Motivation decay | Weeks without a merge | Ship something visible, however small; visible progress is the fuel |
+| A check's reference is wrong | A careful check fails by a large, consistent factor (SS-13c: 49%, off by Earth's phase integral) | Find the physics before touching anything. Correct the reference, never the tolerance, and put the change to the owner in the PR |
+| Captures depend on the machine | A capture passes locally and fails in CI by a sliver of pixels | Remove the dependency (SS-15 bundled its font); never widen the tolerance |
+| Only the owner can see Safari | A report like "I can't see anything" from the iPhone that Chromium does not reproduce | Ask exactly what is on screen before changing code; the cloud has no WebKit |
 
 Two things that genuinely would justify changing course.
 

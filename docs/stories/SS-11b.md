@@ -1,6 +1,8 @@
 # SS-11b · Orbit mode: a real orbit, flown for you
 
-Status: **in review** · Release 3 · 2026-09-25
+Status: **done**, merged 2026-09-26 (PR #21, #22, #24) · Release 3 · 2026-09-25
+
+**Since SS-15 (2026-09-26):** the Orbit button no longer picks a random place or heading. It starts over the crater Albategnius heading due north, at the height the gestures chose, and glides there from the current view over 3 to 6 seconds (owner: "fix the best spot first or a known spot and start the orbit there"; "smoothly take the viewer to the starting point instead of it being jerky"). `?orbit` and `?orbit=<seed>` still fly random orbits, for captures and sharing.
 
 As a learner, I want to sit back and orbit the Moon, low enough to see its terrain but never so low that it turns blurry, without steering it with my fingers.
 
@@ -140,3 +142,7 @@ GitHub Pages publishes at most about 1 GB, counted uncompressed. Until this part
 - How it looks and runs on the owner's iPhone.
 - The frame rate while terrain streams in behind a moving camera. The cloud has no GPU.
 - Whether tiles stream in fast enough at ×100 time, over a phone connection.
+
+## Effort
+
+About 4 hours elapsed from the spec's first commit to its last merge (2026-09-26, UTC). The allocation gate that followed (chunked sampling, a 30-minute CI timeout, CI running it only when frame code changes) took PR #27 as well. Measured from git history; working sessions and the owner's review time were not logged separately.

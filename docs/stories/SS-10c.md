@@ -1,6 +1,6 @@
 # SS-10c · The whole Moon at full measured detail, streamed locally
 
-Status: **in review** · Release 3 · 2026-09-25
+Status: **done**, merged 2026-09-26 (PR #17, #18, #26) · Release 3 · 2026-09-25
 
 As a learner, I want to fly anywhere on the Moon and see it as finely as it has been measured, without anyone paying for hosting.
 
@@ -63,3 +63,7 @@ As a learner, I want to fly anywhere on the Moon and see it as finely as it has 
 - Behaviour when PDS or DARTS is slow or down: a tile then fails with a 502 and the library shows the coarser tile.
 - The poles beyond 84°: LDEM_512 is in simple cylindrical projection, so it is heavily stretched there. LOLA's polar stereographic products are the better source; they are in the inventory as "to evaluate".
 - Sharpness: Kaguya's heights are smoothed by the stereo processing, so their true resolution is coarser than their 8.4 m spacing. Truly tiny detail is measured only at NASA's 1–5 m stereo sites (next), with the labelled approximation below that (SS-10b).
+
+## Effort
+
+About 13.5 hours elapsed from the spec's first commit to its last merge (2026-09-25 to 26, UTC), mostly downloads and registration checks. Measured from git history; working sessions and the owner's review time were not logged separately.

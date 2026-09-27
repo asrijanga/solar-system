@@ -19,8 +19,8 @@ Five bodies. Everything the terrain pipeline was designed for, and the entire ea
 
 | Body | Status | Type | Radius (km) | Data from |
 | --- | --- | --- | --- | --- |
-| Earth | Not started | Planet | 6,371 | Copernicus, Sentinel, GEBCO |
-| Moon | Live: website and local mode | Moon of Earth | 1,737 | LRO, LOLA, Clementine, Kaguya |
+| Earth | Seen from the Moon only: its real face at 2026-01-26 05:00 UTC (SS-13c); inventory started | Planet | 6,371 | Copernicus, Sentinel, GEBCO; Himawari-9 and GOES-18 for clouds |
+| Moon | Live: website and local mode, orbit mode, labels, Earth in the sky | Moon of Earth | 1,737 | LRO, LOLA, Clementine, Kaguya |
 | Mars | Not started | Planet | 3,390 | MOLA, HRSC, CTX, HiRISE |
 | Mercury | Not started | Planet | 2,440 | MESSENGER |
 | Venus | Not started | Planet | 6,052 | Magellan radar |

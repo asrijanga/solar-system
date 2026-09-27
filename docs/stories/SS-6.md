@@ -1,6 +1,6 @@
 # SS-6 · The Moon, for real
 
-Status: **in review** · Release 1 · 2026-09-24
+Status: **done**, merged 2026-09-25 (PR #9, #10) · Release 1 · 2026-09-24
 
 As the director, I want the Moon rendered from SS-5's data with a correct sun, so that the whole path from NASA archive to browser pixel is proven, and provably right.
 

@@ -121,6 +121,12 @@ class CommittedMap(unittest.TestCase):
         coverage = (weight * (lit & self.measured)).sum() / (weight * lit).sum()
         self.assertGreater(coverage, 0.995)
 
+    def test_the_recorded_disc_brightness_is_the_committed_maps(self) -> None:
+        stored = FACES["instants"]["first-quarter-2026-01"]["discIOverFFromMoon"]["rgb"]
+        again = earth.disc_i_over_f(self.i_over_f, self.measured, self.epoch)
+        for a, b in zip(stored, again):
+            self.assertAlmostEqual(a, b, places=6)
+
     def test_disc_brightness_matches_earths_bond_albedo_at_this_phase(self) -> None:
         """The disc-averaged I/F the Moon sees, in red (0.64 um, the band nearest the middle of
         the Sun's energy of the three), against a Lambert sphere reflecting Earth's Bond albedo,

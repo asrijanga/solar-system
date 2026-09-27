@@ -49,6 +49,8 @@ export interface MoonSetup {
   readonly stars: 'physical' | 'boosted';
   /** Sunlight, or the labelled even lighting that shows the night and far sides. */
   readonly lighting: 'sun' | 'even';
+  /** The sunlit exposure, or the labelled earthshine exposure, 16 stops longer (SS-13e). */
+  readonly exposure: 'sunlight' | 'earthshine';
   /** LOLA relief (SS-8). Off for the smooth-sphere photometry checks. */
   readonly relief: boolean;
   /** Negative control only: east-west flipped normals. */
@@ -293,6 +295,7 @@ const MOON_SETUP: MoonSetup = {
   seamFix: true,
   stars: 'physical',
   lighting: 'sun',
+  exposure: 'sunlight',
   relief: true,
   reliefFlipped: false,
 };
@@ -751,6 +754,19 @@ export const viewpoints: readonly Viewpoint[] = [
       lookAtEarth: true,
       // The Moon is behind the camera: no terrain to stream.
       relief: false,
+    },
+  },
+  {
+    ...SPACE,
+    id: 'moon-earthshine',
+    description:
+      'First quarter from over Oceanus Procellarum, on the night side, at the labelled earthshine exposure (16 stops): the night side in Earth\u2019s light, measured by the weather satellites, and the sunlit side far past white (docs/stories/SS-13e.md). For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: -45, latDeg: 10 },
+      exposure: 'earthshine',
     },
   },
   {

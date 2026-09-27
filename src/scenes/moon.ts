@@ -167,6 +167,19 @@ export interface MoonOptions {
   readonly evenLight?: number | UniformNode<'float', number>;
   /** Negative control only, on terrain: east-west flipped normals, the classic sign error. */
   readonly reliefFlipped?: boolean;
+  /**
+   * Earthshine (docs/stories/SS-13e.md): Earth's direction in scene axes, its angular radius,
+   * and per channel the fraction of sunlight it puts on a surface facing it squarely
+   * (core/photometry.ts earthshineFactor). Null where no measured face of Earth exists for the
+   * epoch.
+   */
+  readonly earthshine?: {
+    readonly direction: readonly [number, number, number];
+    readonly angularRadius: number;
+    readonly factor: readonly [number, number, number];
+  } | null;
+  /** Multiplies the exposure: 1, or the labelled earthshine exposure. A uniform, so it can change. */
+  readonly exposure?: UniformNode<'float', number>;
 }
 
 /** IAU 2015 Resolution B3 nominal solar radius, km. */
@@ -216,7 +229,13 @@ function createMoonMaterial(
   const sun = uniform(new Vector3(...sunScene));
   const r = epoch.sunDistanceKm / AU_KM;
   // Linear display value per unit I/F: exposure and the sun's inverse square (core/photometry.ts).
-  const scale = uniform(EXPOSURE / (r * r));
+  const scale =
+    options.exposure === undefined
+      ? uniform(EXPOSURE / (r * r))
+      : options.exposure.mul(EXPOSURE / (r * r));
+  const earthshine = options.earthshine ?? null;
+  const earthDirection = earthshine === null ? null : uniform(new Vector3(...earthshine.direction));
+  const earthFactor = earthshine === null ? null : uniform(new Vector3(...earthshine.factor));
   // The Sun's angular radius at the epoch: the width of the penumbra at the horizon.
   const sunRadius = Math.asin(SUN_RADIUS_KM / epoch.sunDistanceKm);
   // Scene to body frame. The Moon is at the scene origin and only rotated, so the inverse is
@@ -293,6 +312,7 @@ function createMoonMaterial(
     const sphereNormal = normalize(positionWorld);
     let normal = sphereNormal;
     let sunVisible = null;
+    let earthVisible = null;
     if (terrain) {
       let bodyNormal = sceneToBody.mul(normalize(normalWorld));
       if (options.reliefFlipped === true) {
@@ -318,6 +338,14 @@ function createMoonMaterial(
         depression.negate().add(sunRadius),
         mu0Sphere,
       );
+      // Earth sets behind the horizon the same way, over its own angular radius.
+      if (earthDirection !== null && earthshine !== null) {
+        earthVisible = smoothstep(
+          depression.negate().sub(earthshine.angularRadius),
+          depression.negate().add(earthshine.angularRadius),
+          dot(sphereNormal, earthDirection),
+        );
+      }
     }
     const mu0 = dot(normal, sun);
     const mu = dot(normal, normalize(cameraPosition.sub(positionWorld)));
@@ -342,9 +370,20 @@ function createMoonMaterial(
         radianceFactor = albedo.div(8);
         break;
     }
-    const value = radianceFactor.mul(scale);
-    const colour =
-      gap === null ? vec3(value) : mix(vec3(value), vec3(...GAP_COLOUR).mul(value), gap);
+    const sunlitColour = vec3(radianceFactor);
+    let earthlit = null;
+    if (options.shading === 'lommel-seeliger' && earthDirection !== null && earthFactor !== null) {
+      // Earthshine: the Moon scatters Earth's light as it scatters the Sun's, coloured by Earth.
+      const muE = max(dot(normal, earthDirection), 0);
+      const fromEarth = albedo
+        .div(4)
+        .mul(muE)
+        .div(max(muE.add(max(mu, 0)), 1e-6));
+      earthlit = earthFactor.mul(earthVisible === null ? fromEarth : fromEarth.mul(earthVisible));
+    }
+    const lit = earthlit === null ? sunlitColour : sunlitColour.add(earthlit);
+    const value = lit.mul(scale);
+    const colour = gap === null ? value : mix(value, vec3(...GAP_COLOUR).mul(value), gap);
     return vec4(colour, 1);
   })();
   return material;

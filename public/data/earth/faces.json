@@ -63,6 +63,14 @@
    "blend": "each satellite weighted smoothstep(cos 85, cos 65, cos view zenith) x exp(-(angle between its line of sight and the Moon's / 30 deg)^2) x max(smoothstep(15, 30 deg, its sun-glint angle), 0.001)",
    "goesShareOfLitDisc": 0.3523661525663463,
    "measuredFractionOfLitDiscSeenFromMoon": 0.9986106009355424,
+   "discIOverFFromMoon": {
+    "note": "Earth's I/F at 0.64 / 0.51 / 0.47 um averaged over its whole disc as the Moon's centre sees it, dark part and unmeasured places as 0: the source of earthshine (docs/stories/SS-13e.md)",
+    "rgb": [
+     0.0704076405407661,
+     0.08191531506688077,
+     0.09439745754779418
+    ]
+   },
    "clippedFraction": 4.7057317695245515e-06
   }
  }

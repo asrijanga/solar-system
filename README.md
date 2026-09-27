@@ -588,7 +588,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 - gap-free albedo from three instruments;
 - orbit mode starting over Albategnius, gliding in from wherever the camera was;
 - 61 landmark labels that fade with the horizon and the daylight;
-- Earth in the sky as the weather satellites saw it.
+- Earth in the sky as the weather satellites saw it, and its earthshine on the night side under a labelled exposure.
 
 | ID | Story | State |
 | --- | --- | --- |
@@ -615,7 +615,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 | SS-5b | As a learner, I want the Moon rebuilt from its whole inventory (`docs/data/moon.md`), not product by product | The Moon was built before the "gather first" rule. Its inventory lists sources still to evaluate: the LROC WAC Hapke-normalised mosaic, Kaguya MI and the LOLA polar DEMs |
 | SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge | Still open. The full Moon's brightness is the most visible photometric error left |
 | SS-13d | As a learner, I want Earth's real face at the full-Moon instant too | Earth is a thin crescent then, about half of it seen only by Meteosat. It waits on the owner creating a free EUMETSAT account, with its keys in the environment's secrets |
-| SS-13e | As a learner, I want the Moon's night side lit by earthshine | The About text says earthshine is not drawn. SS-13c now gives Earth's measured disc brightness at each instant, which is exactly what earthshine needs |
+| SS-13e | As a learner, I want the Moon's night side lit by earthshine | Shipped 2026-09-27: earthshine from Earth's measured disc brightness, shown with a labelled 16-stop "Exposure: earthshine" (docs/stories/SS-13e.md) |
 | SS-11d | As the developer, I want the allocation gate to cover the Orbit button's glide | `npm run alloc` measures a flight started with `?orbit=`, which has no glide. The glide runs for up to 6 s on every Orbit press |
 | SS-12 | (above) | Frame rate on the owner's iPhone is the one number the cloud can never produce |
 

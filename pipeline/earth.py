@@ -298,6 +298,19 @@ def unit_grid() -> np.ndarray:
     return np.stack([np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat)], -1)
 
 
+def disc_i_over_f(rgb: np.ndarray, measured: np.ndarray, epoch: dict) -> list[float]:
+    """Earth's I/F averaged over its whole disc as the Moon's centre sees it, dark part and
+    unmeasured places included as 0, per channel: what earthshine needs (docs/stories/SS-13e.md).
+    Each place counts by its share of the disc, cos(latitude) x the cosine towards the Moon."""
+    normal = unit_grid()
+    moon_fixed = np.array(epoch["j2000ToEarthFixed"]) @ -np.array(epoch["earthDirectionJ2000"])
+    facing = np.clip(normal @ moon_fixed, 0, None)
+    area = np.cos(np.radians(90 - (np.arange(HEIGHT) + 0.5) / HEIGHT * 180))[:, None]
+    weight = area * facing
+    values = np.where(measured[..., None], np.nan_to_num(rgb), 0)
+    return [float((weight * values[..., k]).sum() / weight.sum()) for k in range(3)]
+
+
 def fetch_all(files: list[dict]) -> list[Path]:
     paths = []
     for entry in files:
@@ -455,6 +468,10 @@ def build_instant(epoch: dict, files: list[dict], calibration: dict) -> dict:
     print(f"  measured over {100 * coverage:.3f}% of the lit disc the Moon sees; {100 * clipped:.3f}% clipped above I/F 1")
 
     value = linear_to_srgb(np.clip(np.nan_to_num(rgb), 0, 1))
+    # From the map as stored (8-bit sRGB), so the committed file reproduces it exactly.
+    stored = np.round(value * 255) / 255
+    disc = disc_i_over_f(np.where(stored <= 0.04045, stored / 12.92, ((stored + 0.055) / 1.055) ** 2.4), measured, epoch)
+    print(f"  disc I/F seen from the Moon: {[round(x, 4) for x in disc]}")
     pixels = np.zeros((HEIGHT, WIDTH, 4), np.uint8)
     pixels[..., :3] = np.round(value * 255).astype(np.uint8)
     pixels[..., 3] = np.where(measured, 255, 0)
@@ -490,6 +507,10 @@ def build_instant(epoch: dict, files: list[dict], calibration: dict) -> dict:
         "blend": f"each satellite weighted smoothstep(cos 85, cos 65, cos view zenith) x exp(-(angle between its line of sight and the Moon's / {PREFER_SIGMA_DEG:.0f} deg)^2) x max(smoothstep({GLINT_DEG[0]:.0f}, {GLINT_DEG[1]:.0f} deg, its sun-glint angle), 0.001)",
         "goesShareOfLitDisc": share,
         "measuredFractionOfLitDiscSeenFromMoon": coverage,
+        "discIOverFFromMoon": {
+            "note": "Earth's I/F at 0.64 / 0.51 / 0.47 um averaged over its whole disc as the Moon's centre sees it, dark part and unmeasured places as 0: the source of earthshine (docs/stories/SS-13e.md)",
+            "rgb": disc,
+        },
         "clippedFraction": clipped,
     }
 

@@ -1,6 +1,6 @@
 # SS-10b · Approximated detail below the measurements (optional, labelled)
 
-Status: **in review** · Release 3 · 2026-09-25
+Status: **done**, merged 2026-09-25 (PR #17, #19) · Release 3 · 2026-09-25
 
 As a learner zooming past what any mission measured, I want the ground to keep looking like the Moon rather than smooth polygons. When the app shows me detail that is an approximation and not a measurement, I want to be told.
 
@@ -94,3 +94,7 @@ Three things changed from the plan above. Each is noted here rather than rewritt
 ## Estimate
 
 1 to 2 sessions.
+
+## Effort
+
+About 5 hours elapsed from the spec's first commit to its last merge (2026-09-25, UTC). Measured from git history; working sessions and the owner's review time were not logged separately.

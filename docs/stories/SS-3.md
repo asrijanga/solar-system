@@ -1,6 +1,6 @@
 # SS-3 · A camera, a cube, and a clock
 
-Status: **done** · Release 1 · 2026-09-24
+Status: **done**, merged 2026-09-24 (PR #5–#7) · Release 1 · 2026-09-24
 
 As the director, I want a 3D camera, a test cube, orbit controls, and a frame-time overlay, so that there is a reference object and a real measurement before anything real is on screen.
 
@@ -103,3 +103,7 @@ Reading it:
 
 
 Estimate: 1 session. Actual: 1 long session. The depth test needed three redesigns, and each one found something real.
+
+## Effort
+
+About 14 hours elapsed from the spec's first commit to its last merge (2026-09-24, UTC), shared with SS-2 and SS-4. Measured from git history; working sessions and the owner's review time were not logged separately.

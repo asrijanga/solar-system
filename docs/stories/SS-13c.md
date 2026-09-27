@@ -1,6 +1,6 @@
 # SS-13c · Earth's real face in the Moon's sky
 
-Status: **in review** · 2026-09-26
+Status: **done**, merged 2026-09-27 (PR #30 (spec), #31 (build)) · 2026-09-26
 
 As a learner on the Moon, I want Earth to look as it really did at that moment, with its clouds, oceans, continents and blue air, not a plain ball.
 

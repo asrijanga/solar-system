@@ -1,6 +1,6 @@
 # SS-11c · No magenta: Clementine's last gaps filled from LOLA
 
-Status: **in review** · Release 3 · 2026-09-26
+Status: **done**, merged 2026-09-26 (PR #25) · Release 3 · 2026-09-26
 
 As a learner flying in orbit, I want the whole surface to look like the Moon, with no marks that break the view.
 
@@ -70,3 +70,7 @@ The new `pipeline/test_lola_global.py` checks the label's registration and the s
 ## Not verified
 
 - How the filled strips look up close on real hardware.
+
+## Effort
+
+About 4 hours elapsed from the spec's first commit to its merge (2026-09-26, UTC). Measured from git history; working sessions and the owner's review time were not logged separately.

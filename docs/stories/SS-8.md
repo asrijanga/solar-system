@@ -1,6 +1,6 @@
 # SS-8 · The Moon has real relief (part 1: lighting and shape)
 
-Status: **in review** · Release 2 · 2026-09-25
+Status: **done**, merged 2026-09-25 (PR #12) · Release 2 · 2026-09-25
 
 As a learner, I want the Moon to have real relief, so that craters and mountains read as three-dimensional.
 

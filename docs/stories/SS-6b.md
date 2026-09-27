@@ -1,6 +1,6 @@
 # SS-6b · The Moon's poles from LOLA
 
-Status: **in review** · Release 1 follow-up · 2026-09-25
+Status: **done**, merged 2026-09-25 (PR #11) · Release 1 follow-up · 2026-09-25
 
 As the director, I want the Moon's polar albedo from every available source, so that the polar gaps and the baked-in polar shading are replaced by real measurements.
 

@@ -1,6 +1,6 @@
 # SS-13b · Earth in the Moon's sky
 
-Status: **in review** · Release 4 · 2026-09-26
+Status: **done**, merged 2026-09-26 (PR #28) · Release 4 · 2026-09-26
 
 As a learner orbiting the Moon, I want to see Earth where it really is, lit by the Sun, rising and setting as I go round.
 
@@ -39,3 +39,7 @@ On the Orbit button's orbit (SS-15), Earth sets behind the Moon about 123° alon
 
 - How Earth looks on the owner's iPhone.
 - Earth's colour, clouds and oceans. They wait for Earth's own data round.
+
+## Effort
+
+Built in one session with SS-15 (2026-09-26, UTC). Superseded at the first-quarter instant by SS-13c the next day. Measured from git history; working sessions and the owner's review time were not logged separately.

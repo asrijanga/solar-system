@@ -38,7 +38,12 @@ import {
   type Orbit,
 } from './core/orbit';
 import { OrbitFlight } from './scenes/orbitFlight';
-import { physicalStarExposure, pixelSolidAngle } from './core/photometry';
+import {
+  EARTHSHINE_EXPOSURE_STOPS,
+  earthshineFactor,
+  physicalStarExposure,
+  pixelSolidAngle,
+} from './core/photometry';
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
 import { minAltitudeKm, vertexSpacingKm, type TileRange } from './core/terrain';
 import { METRE } from './core/units';
@@ -219,6 +224,8 @@ interface Stage {
   readonly approximated: boolean;
   /** 0 sunlight, 1 the labelled even lighting. */
   readonly evenLight: UniformNode<'float', number> | null;
+  /** 1, or the labelled earthshine exposure (docs/stories/SS-13e.md): scales everything drawn. */
+  readonly exposureBoost: UniformNode<'float', number> | null;
   /** Landmark labels (docs/stories/SS-15.md), and the landmarks with the body-to-scene rotation. */
   readonly labels: Labels | null;
   readonly landmarks: readonly Landmark[];
@@ -281,6 +288,7 @@ async function createStage(
     terrainLayer: null,
     approximated: false,
     evenLight: null,
+    exposureBoost: null,
     labels: null,
     landmarks: [],
     bodyToScene: null,
@@ -316,6 +324,13 @@ async function createStage(
       const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
       const radiusKm = ephemeris.body.radiiKm[0];
       const evenLight = uniform(setup.lighting === 'even' ? 1 : 0);
+      const exposureBoost = uniform(
+        setup.exposure === 'earthshine' ? 2 ** EARTHSHINE_EXPOSURE_STOPS : 1,
+      );
+      // Earth's face as the satellites measured it at this epoch, where built (SS-13c), and the
+      // earthshine it puts on the Moon (SS-13e).
+      const face = await loadEarthFace(epoch.id, siteUrl, maxAnisotropy);
+      const earthRadiusKm = ephemeris.earth.radiiKm[0];
       const scene = new Scene();
       const moon = {
         epoch,
@@ -326,6 +341,17 @@ async function createStage(
         seamFix: setup.seamFix,
         evenLight,
         reliefFlipped: setup.reliefFlipped,
+        exposure: exposureBoost,
+        earthshine:
+          face === null
+            ? null
+            : {
+                direction: j2000ToScene(epoch.earthDirectionJ2000),
+                angularRadius: Math.asin(earthRadiusKm / epoch.earthDistanceKm),
+                factor: face.discIOverF.map((f) =>
+                  earthshineFactor(f, earthRadiusKm, epoch.earthDistanceKm),
+                ) as [number, number, number],
+              },
       };
       // With relief the Moon is its measured shape, streamed as polygons (SS-10); without,
       // the smooth sphere the photometry checks are written for.
@@ -333,10 +359,8 @@ async function createStage(
       scene.add(terrain === null ? createMoonMesh(moon) : terrain.group);
       const starExposure = uniform(0);
       scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
-      // Earth in the sky, sunlit (docs/stories/SS-13b.md).
-      // Earth's face as the satellites measured it at this epoch, where built (SS-13c).
-      const face = await loadEarthFace(epoch.id, siteUrl, maxAnisotropy);
-      const earth = createEarth(epoch, ephemeris.earth, face);
+      // Earth in the sky (docs/stories/SS-13b.md, SS-13c.md).
+      const earth = createEarth(epoch, ephemeris.earth, face, exposureBoost);
       scene.add(earth);
       // Landmark labels, hidden until asked for (docs/stories/SS-15.md).
       const bodyToScene = bodyFixedToSceneMatrix(epoch);
@@ -367,6 +391,7 @@ async function createStage(
         radiusKm,
         starExposure,
         evenLight,
+        exposureBoost,
         labels,
         landmarks: landmarkFile.landmarks,
         bodyToScene,
@@ -479,7 +504,9 @@ async function start(): Promise<void> {
     stage.labels?.setViewport(height, camera.fov);
     if (starExposure !== null) {
       starExposure.value =
-        physicalStarExposure(pixelSolidAngle(camera.fov, height)) * (starBoost[0] ?? 1);
+        physicalStarExposure(pixelSolidAngle(camera.fov, height)) *
+        (starBoost[0] ?? 1) *
+        (stage.exposureBoost?.value ?? 1);
     }
   };
 
@@ -674,6 +701,12 @@ async function start(): Promise<void> {
         },
         onBoost: (boosted) => {
           starBoost[0] = boosted ? STAR_BOOST : 1;
+          resize();
+        },
+        onEarthshineExposure: (on) => {
+          if (stage.exposureBoost === null) return;
+          stage.exposureBoost.value = on ? 2 ** EARTHSHINE_EXPOSURE_STOPS : 1;
+          // Stars share the exposure; their uniform is set on resize.
           resize();
         },
         onEvenLight: (even) => {
@@ -987,10 +1020,12 @@ interface MoonControlHandlers {
   /** Landmark labels on or off (docs/stories/SS-15.md). */
   readonly onLabels: (on: boolean) => void;
   readonly onEvenLight: (even: boolean) => void;
+  readonly onEarthshineExposure: (on: boolean) => void;
 }
 
 const ABOUT = [
-  'Lighting: sun is real sunlight at this date. The night side, and the far side whenever it faces away from the Sun, are black: the Moon has no air to scatter light, and earthshine is not drawn yet.',
+  'Lighting: sun is real sunlight at this date, plus earthshine: sunlight reflected by Earth onto the side of the Moon that faces it, coloured by Earth as the weather satellites measured it. At first quarter it is about 50,000 times fainter than sunlight, so at a sunlit exposure the night side is black, as in every photograph of the sunlit Moon. The far side never sees Earth.',
+  'Exposure: earthshine is a real camera setting, sixteen stops (65,536 times) longer, as photographers use for earthshine: the night side shows in Earth\u2019s light, stars come out, and anything sunlit is far past white. At the full-Moon date Earth\u2019s measured face is not built yet, so no earthshine is drawn there; it falls on the day side then anyway.',
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°. The few small places Clementine missed elsewhere (0.06% of the map) are filled from LOLA\u2019s global laser map, which is coarser (3 km), matched to Clementine around each one.',
@@ -1033,6 +1068,12 @@ function createMoonControls(
     notes,
     handlers.onEvenLight,
   );
+  const exposure = createToggle(
+    { off: 'Exposure: sunlight', on: 'Exposure: earthshine' },
+    `Exposure \u00d7${(2 ** EARTHSHINE_EXPOSURE_STOPS).toLocaleString('en')} (${EARTHSHINE_EXPOSURE_STOPS} stops), set for earthshine as a camera would be: anything sunlit is far past white.`,
+    notes,
+    handlers.onEarthshineExposure,
+  );
   const stars = createToggle(
     { off: 'Stars: physical', on: 'Stars: boosted' },
     `Stars ×${STAR_BOOST.toLocaleString('en')} (+${STAR_BOOST_MAGNITUDES} mag) brighter than a real exposure shows them.`,
@@ -1041,7 +1082,7 @@ function createMoonControls(
   );
   const row = document.createElement('div');
   row.className = 'row';
-  row.append(link, lighting, stars);
+  row.append(link, lighting, exposure, stars);
 
   // Orbit mode: a random real orbit, flown automatically; time can be sped up, labelled.
   const orbitLine = document.createElement('p');

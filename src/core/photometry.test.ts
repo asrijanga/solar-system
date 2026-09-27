@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AU_KM,
   displayValue,
+  earthshineFactor,
   EARTH_GEOMETRIC_ALBEDO,
   EXPOSURE,
   lambert,
@@ -119,5 +120,31 @@ describe('Earth as a uniform Lambert sphere', () => {
       sum += lambert(albedo, mu, mu) * 2 * rho * (1 / n);
     }
     expect(sum).toBeCloseTo(EARTH_GEOMETRIC_ALBEDO, 4);
+  });
+});
+
+describe('earthshine', () => {
+  it('is the disc I/F times (R/d)², the irradiance of a uniform disc integrated over its cone', () => {
+    // Integrate L cos(t) dΩ over the cone Earth fills, seen from 60 Earth radii, numerically.
+    const discIOverF = 0.3;
+    const radius = 6371;
+    const distance = 60 * radius;
+    const half = Math.asin(radius / distance);
+    const steps = 20000;
+    let sum = 0;
+    for (let i = 0; i < steps; i++) {
+      const t = ((i + 0.5) / steps) * half;
+      sum += Math.cos(t) * Math.sin(t) * 2 * Math.PI * (half / steps);
+    }
+    // Radiance L = I/F · F / π, with F = 1.
+    const integrated = (discIOverF / Math.PI) * sum;
+    expect(earthshineFactor(discIOverF, radius, distance)).toBeCloseTo(integrated, 12);
+  });
+
+  it('is tens of thousands of times fainter than sunlight from the Moon', () => {
+    // A half-lit Earth (disc I/F 0.07, SS-13c) at the Moon's mean distance.
+    const k = earthshineFactor(0.07, 6371, 384_400);
+    expect(1 / k).toBeGreaterThan(30_000);
+    expect(1 / k).toBeLessThan(100_000);
   });
 });

@@ -136,3 +136,32 @@ export function linearToSrgb(linear: number): number {
   const x = Math.min(1, Math.max(0, linear));
   return x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055;
 }
+
+/**
+ * Earthshine (docs/stories/SS-13e.md): the irradiance Earth puts on the Moon, as a fraction of
+ * the sunlight it gets, for a surface facing Earth squarely. Earth as seen from the Moon is a
+ * disc of mean radiance factor `discIOverF` (its I/F averaged over the whole disc, dark part
+ * included, measured by the satellites: pipeline/earth.py). A disc of mean radiance L subtending
+ * a cone of half-angle θ puts E = L · π sin²θ on a surface facing it, L = I/F · F/π, and for a
+ * sphere sin θ = R/d exactly, so E / F = I/F · (R/d)². Earth and the Moon are the same distance
+ * from the Sun to 0.3%, so F is the same at both.
+ *
+ * The Moon then scatters that light as it scatters sunlight: Lommel–Seeliger with Earth's
+ * direction in place of the Sun's, times this factor.
+ */
+export function earthshineFactor(
+  discIOverF: number,
+  earthRadiusKm: number,
+  earthDistanceKm: number,
+): number {
+  const s = earthRadiusKm / earthDistanceKm;
+  return discIOverF * s * s;
+}
+
+/**
+ * The labelled earthshine exposure (docs/stories/SS-13e.md): 2¹⁶ times the sunlit exposure,
+ * sixteen stops, as a camera is set to photograph earthshine. Earth-lit highlands then show at
+ * about a third of display white at first quarter, and anything sunlit is far past white, as
+ * in every real photograph of earthshine. Stars use the same exposure.
+ */
+export const EARTHSHINE_EXPOSURE_STOPS = 16;

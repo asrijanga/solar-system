@@ -771,6 +771,18 @@ export const viewpoints: readonly Viewpoint[] = [
   },
   {
     ...SPACE,
+    id: 'moon-earthrise-tilt',
+    description:
+      'The same orbit 266\u00b0 on, where Earth has climbed past the top of the plain view: the camera tilts up to keep it in frame, with the horizon still in view (docs/stories/SS-11e.md). For eyes.',
+    scene: 'moon',
+    moon: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      orbitFrom: { landmark: 'Albategnius', angleDeg: 266 },
+    },
+  },
+  {
+    ...SPACE,
     id: 'moon-seam',
     description:
       'The ±180° meridian from over 165°E 25°N, unlit albedo, so the wrap crosses 2x2 pixel quads the way it does for anyone orbiting. The texture wrap must leave no line.',

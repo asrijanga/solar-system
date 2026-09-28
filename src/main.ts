@@ -211,11 +211,15 @@ interface Stage {
   /** Streamed LOLA terrain (SS-10), when the view has relief, and which levels exist where. */
   readonly terrain: TilesRenderer | null;
   readonly terrainAvailable: readonly (readonly TileRange[])[] | null;
-  /** What orbit mode needs: the Moon's GM, the Sun's direction (scene), the albedo's texel size. */
+  /**
+   * What orbit mode needs: the Moon's GM, the Sun's direction (scene), the albedo's texel size,
+   * and Earth's centre (scene, km) for the earthrise tilt (docs/stories/SS-11e.md).
+   */
   readonly orbitInputs: {
     readonly gmKm3PerS2: number;
     readonly sun: readonly [number, number, number];
     readonly albedoTexelKm: number | null;
+    readonly earth: readonly [number, number, number];
   } | null;
   readonly caption: string | null;
   /** The terrain layer's name ('moon-local…' when `npm run local` serves it). */
@@ -404,6 +408,11 @@ async function createStage(
           sun: j2000ToScene(epoch.sunDirectionJ2000),
           albedoTexelKm:
             textures === null ? null : (2 * Math.PI * radiusKm) / textures.manifest.texture.width,
+          earth: j2000ToScene(epoch.earthDirectionJ2000).map((c) => c * epoch.earthDistanceKm) as [
+            number,
+            number,
+            number,
+          ],
         },
         terrainLayer: layer?.name ?? null,
         approximated: layer?.approximated ?? false,
@@ -524,6 +533,8 @@ async function start(): Promise<void> {
           camera,
           { ...orbit, theta0: (orbitFrom.angleDeg * Math.PI) / 180 },
           stage.radiusKm,
+          false,
+          stage.orbitInputs?.earth ?? null,
         );
       }
     }
@@ -591,7 +602,11 @@ async function start(): Promise<void> {
     const height = Math.max(camera.position.length() - stage.radiusKm, minHeight);
     const orbit = orbitOverLandmark(stage, ORBIT_START_LANDMARK, height);
     // It glides there from the current view rather than jumping.
-    return orbit === null ? null : begin(new OrbitFlight(camera, orbit, stage.radiusKm, true));
+    return orbit === null
+      ? null
+      : begin(
+          new OrbitFlight(camera, orbit, stage.radiusKm, true, stage.orbitInputs?.earth ?? null),
+        );
   };
   const stopOrbit = (): void => {
     flight?.release();
@@ -958,9 +973,9 @@ function seededOrbitFlight(
 ): OrbitFlight | null {
   const minHeight = sharpOrbitHeightKm(stage, camera, heightPx);
   if (minHeight === null || stage.orbitInputs === null || stage.radiusKm === null) return null;
-  const { gmKm3PerS2, sun } = stage.orbitInputs;
+  const { gmKm3PerS2, sun, earth } = stage.orbitInputs;
   const orbit = randomOrbit(seededRandom(seed), stage.radiusKm, gmKm3PerS2, minHeight, sun);
-  return new OrbitFlight(camera, orbit, stage.radiusKm);
+  return new OrbitFlight(camera, orbit, stage.radiusKm, false, earth);
 }
 
 /**

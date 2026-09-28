@@ -18,12 +18,16 @@
       "fovDeg": 40,
       "tiltDeg": 0,
       "orbitSeed": 7,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
+      "earthshine": "physical",
       "relief": true,
       "reliefFlipped": false
     },
@@ -60,7 +64,7 @@
     "results": []
   },
   "git": {
-    "sha": "9fc7ce1f8874166ad0b91c238d18b984948b49e2",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

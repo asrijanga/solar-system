@@ -16,19 +16,29 @@
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": {
-        "uniform": 0.96
+        "uniform": 0.0832
       },
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
-      "stars": "physical"
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false
     },
     "moonChecks": [
       {
         "kind": "photometry",
-        "name": "Lommel–Seeliger per pixel",
-        "albedo": 0.96,
+        "name": "Hapke per pixel",
+        "model": "hapke",
+        "albedo": 0.0832,
         "tolerance": 2,
         "minFraction": 0.99,
         "limbInsetPx": 2
@@ -36,7 +46,7 @@
     ],
     "negativeControl": false,
     "id": "uniform-ls-quarter",
-    "description": "The uniform Moon at first quarter. Every pixel must match Lommel–Seeliger, which puts the terminator exactly 90° from the sub-solar point.",
+    "description": "The uniform Moon at first quarter. Every pixel must match Hapke, which puts the terminator exactly 90° from the sub-solar point and darkens the limb as the real Moon does at this phase.",
     "scene": "moon"
   },
   "environment": {
@@ -65,14 +75,14 @@
     "ok": true,
     "results": [
       {
-        "name": "Lommel–Seeliger per pixel: 408636 disc pixels, worst 1 levels",
+        "name": "Hapke per pixel: 408636 disc pixels, worst 1 levels",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

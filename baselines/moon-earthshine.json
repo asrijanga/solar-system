@@ -24,7 +24,7 @@
       "labels": false,
       "lookAtEarth": false,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
@@ -66,7 +66,7 @@
     "results": []
   },
   "git": {
-    "sha": "28736e89ecfcd2f4daaceb69e3b8ead8f987f4bd",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

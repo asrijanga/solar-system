@@ -19,12 +19,17 @@
       "distanceKm": 1738.9,
       "fovDeg": 60,
       "tiltDeg": 78,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
+      "earthshine": "physical",
       "relief": true,
       "reliefFlipped": false
     },
@@ -61,7 +66,7 @@
     "results": []
   },
   "git": {
-    "sha": "978454541385b6291fe1b1e12ecb3ff1ad663f87",
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
     "dirty": true
   }
 }

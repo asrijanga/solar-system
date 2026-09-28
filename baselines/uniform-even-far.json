@@ -18,21 +18,29 @@
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": {
-        "uniform": 0.96
+        "uniform": 0.0832
       },
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
-      "lighting": "even"
+      "lighting": "even",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false
     },
     "moonChecks": [
       {
         "kind": "photometry",
         "name": "even lighting per pixel",
         "model": "even",
-        "albedo": 0.96,
+        "albedo": 0.0832,
         "tolerance": 2,
         "minFraction": 0.99,
         "limbInsetPx": 2
@@ -40,7 +48,7 @@
     ],
     "negativeControl": false,
     "id": "uniform-even-far",
-    "description": "The uniform Moon from over the far side at first quarter, where the sun has set, with the labelled even lighting on. Every pixel must be ϖ/8, the zero-phase value: the far side is fully visible.",
+    "description": "The uniform Moon from over the far side at first quarter, where the sun has set, with the labelled even lighting on. Every pixel must be its zero-phase Hapke value, lit from behind the viewer: the far side is fully visible.",
     "scene": "moon"
   },
   "environment": {
@@ -69,14 +77,14 @@
     "ok": true,
     "results": [
       {
-        "name": "even lighting per pixel: 408636 disc pixels, worst 0 levels",
+        "name": "even lighting per pixel: 408636 disc pixels, worst 1 levels",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "a47724b0a32556c4061a3de94c868c7cc4513073",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

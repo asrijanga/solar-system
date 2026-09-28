@@ -25,11 +25,12 @@
       "labels": false,
       "lookAtEarth": false,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
+      "earthshine": "physical",
       "relief": true,
       "reliefFlipped": false
     },
@@ -66,7 +67,7 @@
     "results": []
   },
   "git": {
-    "sha": "bd6b2fd8dca5af40824af5f9251e00e1820e7b02",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

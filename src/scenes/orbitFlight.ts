@@ -227,83 +227,97 @@ export class OrbitFlight {
           (s[BASE + 12 + row] ?? 0) * (s[SPUN + col + 3] ?? 0);
       }
     }
-    if (s[HAS_EARTH] === 1) this.tiltForEarth();
+    // The earthrise tilt (docs/stories/SS-11e.md): pitch WORLD up while Earth is rising in view.
+    // WORLD's columns are the camera's right, up and back axes and its position.
+    //
+    // Written for V8's allocation behaviour on the frame path (CI's allocation gate): inside
+    // place(), whose loops get it optimised early; only const locals; and no Math.atan2,
+    // Math.min, Math.max or Math.abs, which V8's mid tier calls with boxed numbers where it
+    // turns one-argument maths (sqrt, sin, cos, tan, asin, acos, atan, exp) into plain
+    // arithmetic. |x| is written sqrt(x * x), and a clamp to 0..1 is
+    // (sqrt(x^2) - sqrt((x - 1)^2) + 1) / 2.
+    if (s[HAS_EARTH] === 1) {
+      const px = s[WORLD + 12] ?? 0;
+      const py = s[WORLD + 13] ?? 0;
+      const pz = s[WORLD + 14] ?? 0;
+      const dx = (s[EARTH] ?? 0) - px;
+      const dy = (s[EARTH + 1] ?? 0) - py;
+      const dz = (s[EARTH + 2] ?? 0) - pz;
+      const inv = 1 / Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const ex = dx * inv;
+      const ey = dy * inv;
+      const ez = dz * inv;
+      const ux = s[WORLD + 4] ?? 0;
+      const uy = s[WORLD + 5] ?? 0;
+      const uz = s[WORLD + 6] ?? 0;
+      const bx = s[WORLD + 8] ?? 0;
+      const by = s[WORLD + 9] ?? 0;
+      const bz = s[WORLD + 10] ?? 0;
+      const inFront = -(ex * bx + ey * by + ez * bz);
+      const above = ex * ux + ey * uy + ez * uz;
+      const aside = ex * (s[WORLD] ?? 0) + ey * (s[WORLD + 1] ?? 0) + ez * (s[WORLD + 2] ?? 0);
+
+      const halfV = (this.camera.fov * Math.PI) / 360;
+      const halfH = Math.atan(this.camera.aspect * Math.tan(halfV));
+      const r = Math.sqrt(px * px + py * py + pz * pz);
+      // The limb is `dip` below the local horizontal; the view centre is `depression` below it.
+      const dip = Math.acos(this.moonRadiusKm / r);
+      const elevation = Math.asin((ex * px + ey * py + ez * pz) / r);
+      const depression = Math.asin((bx * px + by * py + bz * pz) / r);
+      // Earth's angles from the view centre, up and sideways. Where Earth is behind (inFront
+      // not positive) these are meaningless, and the weight below is zero there.
+      const pitch = Math.atan(above / inFront);
+      const yaw = Math.atan(Math.sqrt(aside * aside) / inFront);
+
+      // Clamped fractions: Earth over the limb, beyond the view's width, and beyond what the
+      // tilt may follow; and 1 where Earth is in front.
+      const upF = (elevation + dip) / EARTH_UP_FADE;
+      const up = 0.5 * (Math.sqrt(upF * upF) - Math.sqrt((upF - 1) * (upF - 1)) + 1);
+      const sideF = (yaw - halfH) / EARTH_SIDE_FADE;
+      const side = 0.5 * (Math.sqrt(sideF * sideF) - Math.sqrt((sideF - 1) * (sideF - 1)) + 1);
+      const frontF = inFront * 1e6;
+      const front = 0.5 * (Math.sqrt(frontF * frontF) - Math.sqrt((frontF - 1) * (frontF - 1)) + 1);
+      // How far up it must pitch to keep Earth inside the top margin, and how far it may.
+      const needed = pitch - (1 - EARTH_MARGIN) * halfV;
+      const mostRaw = depression - dip + HORIZON_FLOOR * halfV;
+      const most = 0.5 * (mostRaw + Math.sqrt(mostRaw * mostRaw));
+      const relF = (needed - most) / EARTH_RELEASE;
+      const release = 0.5 * (Math.sqrt(relF * relF) - Math.sqrt((relF - 1) * (relF - 1)) + 1);
+      const weight =
+        front *
+        up *
+        up *
+        (3 - 2 * up) *
+        (1 - side * side * (3 - 2 * side)) *
+        (1 - release * release * (3 - 2 * release));
+      // min(most, max(needed, 0)), without Math.min or Math.max.
+      const neededPos = 0.5 * (needed + Math.sqrt(needed * needed));
+      const capped = 0.5 * (most + neededPos - Math.sqrt((most - neededPos) * (most - neededPos)));
+      const target = weight * capped;
+
+      if (s[TILT_READY] === 0) {
+        s[TILT] = target;
+        s[TILT_READY] = 1;
+      } else {
+        s[TILT] =
+          (s[TILT] ?? 0) + (target - (s[TILT] ?? 0)) * (1 - Math.exp(-(s[DT] ?? 0) / TILT_EASE_MS));
+      }
+      const tilt = s[TILT] ?? 0;
+      if (tilt !== 0) {
+        // Pitch up about the right axis: up' = up cos + back sin, back' = back cos - up sin.
+        const tc = Math.cos(tilt);
+        const tn = Math.sin(tilt);
+        s[WORLD + 4] = ux * tc + bx * tn;
+        s[WORLD + 5] = uy * tc + by * tn;
+        s[WORLD + 6] = uz * tc + bz * tn;
+        s[WORLD + 8] = bx * tc - ux * tn;
+        s[WORLD + 9] = by * tc - uy * tn;
+        s[WORLD + 10] = bz * tc - uz * tn;
+      }
+    }
     if ((s[ARRIVAL] ?? 0) > 0) this.arrive();
     this.camera.matrix.fromArray(s, WORLD);
     this.camera.matrixWorldNeedsUpdate = true;
-  }
-
-  /**
-   * Pitch WORLD up while Earth is rising in view, so it stays in frame (docs/stories/SS-11e.md).
-   * WORLD's columns are the camera's right, up and back axes and its position.
-   */
-  private tiltForEarth(): void {
-    const s = this.state;
-    const px = s[WORLD + 12] ?? 0;
-    const py = s[WORLD + 13] ?? 0;
-    const pz = s[WORLD + 14] ?? 0;
-    let ex = (s[EARTH] ?? 0) - px;
-    let ey = (s[EARTH + 1] ?? 0) - py;
-    let ez = (s[EARTH + 2] ?? 0) - pz;
-    const en = Math.hypot(ex, ey, ez);
-    ex /= en;
-    ey /= en;
-    ez /= en;
-    const ux = s[WORLD + 4] ?? 0;
-    const uy = s[WORLD + 5] ?? 0;
-    const uz = s[WORLD + 6] ?? 0;
-    const bx = s[WORLD + 8] ?? 0;
-    const by = s[WORLD + 9] ?? 0;
-    const bz = s[WORLD + 10] ?? 0;
-    const inFront = -(ex * bx + ey * by + ez * bz);
-    const above = ex * ux + ey * uy + ez * uz;
-    const aside = ex * (s[WORLD] ?? 0) + ey * (s[WORLD + 1] ?? 0) + ez * (s[WORLD + 2] ?? 0);
-
-    const halfV = (this.camera.fov * Math.PI) / 360;
-    const halfH = Math.atan(this.camera.aspect * Math.tan(halfV));
-    const r = Math.hypot(px, py, pz);
-    // The limb is `dip` below the local horizontal; the view centre is `depression` below it.
-    const dip = Math.acos(Math.min(1, this.moonRadiusKm / r));
-    const elevation = Math.asin((ex * px + ey * py + ez * pz) / r);
-    const depression = Math.asin((bx * px + by * py + bz * pz) / r);
-
-    // Weight: Earth over the limb, and within the view's width, fading in over small bands.
-    let t = (elevation + dip) / EARTH_UP_FADE;
-    t = t < 0 ? 0 : t > 1 ? 1 : t;
-    let w = t * t * (3 - 2 * t);
-    let side = (Math.abs(Math.atan2(aside, inFront)) - halfH) / EARTH_SIDE_FADE;
-    side = side < 0 ? 0 : side > 1 ? 1 : side;
-    w *= 1 - side * side * (3 - 2 * side);
-    if (inFront <= 0) w = 0;
-
-    // How far up it must pitch to keep Earth inside the top margin, and how far it may.
-    const needed = Math.atan2(above, inFront) - (1 - EARTH_MARGIN) * halfV;
-    const most = depression - dip + HORIZON_FLOOR * halfV;
-    let target = needed < 0 ? 0 : needed;
-    if (target > most) target = most > 0 ? most : 0;
-    let release = (needed - most) / EARTH_RELEASE;
-    release = release < 0 ? 0 : release > 1 ? 1 : release;
-    w *= 1 - release * release * (3 - 2 * release);
-    target *= w;
-
-    if (s[TILT_READY] === 0) {
-      s[TILT] = target;
-      s[TILT_READY] = 1;
-    } else {
-      const k = 1 - Math.exp(-(s[DT] ?? 0) / TILT_EASE_MS);
-      s[TILT] = (s[TILT] ?? 0) + (target - (s[TILT] ?? 0)) * k;
-    }
-    const tilt = s[TILT] ?? 0;
-    if (tilt === 0) return;
-    // Pitch up about the right axis: up' = up cos + back sin, back' = back cos - up sin.
-    const c = Math.cos(tilt);
-    const n = Math.sin(tilt);
-    s[WORLD + 4] = ux * c + bx * n;
-    s[WORLD + 5] = uy * c + by * n;
-    s[WORLD + 6] = uz * c + bz * n;
-    s[WORLD + 8] = bx * c - ux * n;
-    s[WORLD + 9] = by * c - uy * n;
-    s[WORLD + 10] = bz * c - uz * n;
   }
 
   /**

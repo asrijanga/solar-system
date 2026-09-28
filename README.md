@@ -617,6 +617,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 | SS-13d | As a learner, I want Earth's real face at the full-Moon instant too | Earth is a thin crescent then, about half of it seen only by Meteosat. It waits on the owner creating a free EUMETSAT account, with its keys in the environment's secrets |
 | SS-13e | As a learner, I want the Moon's night side lit by earthshine | Shipped 2026-09-27: earthshine from Earth's measured disc brightness, with a labelled "Earthshine: boosted" that brightens it only where the Sun is down (docs/stories/SS-13e.md) |
 | SS-11d | As the developer, I want the allocation gate to cover the Orbit button's glide | `npm run alloc` measures a flight started with `?orbit=`, which has no glide. The glide runs for up to 6 s on every Orbit press |
+| SS-11e | As a learner in orbit, I want Earth to stay in view when it rises | Shipped 2026-09-28: the camera tilts up while Earth rises ahead, and settles back to the terrain (docs/stories/SS-11e.md) |
 | SS-12 | (above) | Frame rate on the owner's iPhone is the one number the cloud can never produce |
 
 ### Next: the worlds, one round of the recipe each

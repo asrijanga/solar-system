@@ -157,4 +157,89 @@ describe('orbit flight', () => {
       camera.getWorldDirection(new Vector3()).dot(plain.getWorldDirection(new Vector3())),
     ).toBeCloseTo(1, 12);
   });
+
+  describe('the earthrise tilt (docs/stories/SS-11e.md)', () => {
+    // The iPhone's portrait view (60 degrees tall, 390 x 844), 400 km up, at x10 time.
+    const FOV = 60;
+    const ASPECT = 390 / 844;
+    const orbit = randomOrbit(seededRandom(21), R, GM, 400, [1, 0, 0]);
+    const u = new Vector3(...orbit.u);
+    const v = new Vector3(...orbit.v);
+    const sign = Math.sign(orbit.omega);
+    // Earth in the orbit's plane, 120 degrees ahead of the start, at its real distance.
+    const ahead = orbit.theta0 + sign * ((120 * Math.PI) / 180);
+    const earth = u
+      .clone()
+      .multiplyScalar(Math.cos(ahead))
+      .addScaledVector(v, Math.sin(ahead))
+      .multiplyScalar(384_400);
+    const earthTuple: [number, number, number] = [earth.x, earth.y, earth.z];
+
+    /** Per 16 ms frame through the rise: Earth in frame, Earth up and in view's width, the horizon. */
+    function fly(withEarth: boolean): { inFrame: boolean; horizon: number; view: Vector3 }[] {
+      const camera = new PerspectiveCamera(FOV, ASPECT, 0.01, 1e7);
+      const flight = new OrbitFlight(camera, orbit, R, false, withEarth ? earthTuple : null);
+      flight.setTimeFactor(10);
+      const out = [];
+      for (let t = 0; t < 400_000; t += 16) {
+        flight.frame(t);
+        const position = at(camera);
+        const toEarth = earth.clone().sub(position).normalize();
+        const up = position.clone().normalize();
+        const dip = Math.acos(R / position.length());
+        const ndc = earth.clone().project(camera);
+        const view = camera.getWorldDirection(new Vector3());
+        const visible = toEarth.dot(view) > 0 && Math.asin(toEarth.dot(up)) > -dip;
+        // The limb's angle above the view centre: the view's depression minus the dip.
+        const horizon = Math.asin(-view.dot(up)) - dip;
+        out.push({
+          inFrame: visible && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1,
+          horizon,
+          view,
+        });
+      }
+      return out;
+    }
+
+    const plain = fly(false);
+    const tilted = fly(true);
+    const halfV = (FOV * Math.PI) / 360;
+
+    it('keeps a rising Earth in frame at least twice as long as the plain flight', () => {
+      const count = (frames: { inFrame: boolean }[]): number =>
+        frames.filter((f) => f.inFrame).length;
+      expect(count(plain)).toBeGreaterThan(0);
+      expect(count(tilted)).toBeGreaterThan(2 * count(plain));
+    });
+
+    it('never pushes the horizon more than the floor below the centre of the view', () => {
+      for (const f of tilted) expect(f.horizon).toBeGreaterThan(-0.6 * halfV - 1e-6);
+    });
+
+    it('moves the view smoothly: no frame turns it by more than a small step', () => {
+      let largest = 0;
+      for (let i = 1; i < tilted.length; i++) {
+        const a = tilted[i]?.view ?? new Vector3();
+        const b = tilted[i - 1]?.view ?? new Vector3();
+        largest = Math.max(largest, a.angleTo(b));
+      }
+      expect(largest).toBeLessThan((0.1 * Math.PI) / 180);
+    });
+
+    it('changes nothing while Earth is behind', () => {
+      const camera = new PerspectiveCamera(FOV, ASPECT, 0.01, 1e7);
+      const behind: [number, number, number] = [-earth.x, -earth.y, -earth.z];
+      const flight = new OrbitFlight(camera, orbit, R, false, behind);
+      const reference = new PerspectiveCamera(FOV, ASPECT, 0.01, 1e7);
+      const plainFlight = new OrbitFlight(reference, orbit, R);
+      for (const t of [0, 16, 1000]) {
+        flight.frame(t);
+        plainFlight.frame(t);
+        expect(at(camera).distanceTo(at(reference))).toBeLessThan(1e-9);
+        expect(
+          camera.getWorldDirection(new Vector3()).dot(reference.getWorldDirection(new Vector3())),
+        ).toBeCloseTo(1, 12);
+      }
+    });
+  });
 });

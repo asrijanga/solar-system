@@ -140,12 +140,22 @@
   },
   "masterSha256": "8dd70ca47c23a71b5d01d3817d0ce405db867556f6427a2dd4e6e0f02401d788",
   "calibration": {
-    "geometricAlbedo": 0.12,
-    "source": "NASA Moon Fact Sheet, 'Visual geometric albedo 0.12' (https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html)",
-    "model": "Lommel-Seeliger, I/F = (w/4) mu0/(mu0+mu), w = albedoScale * texture value in [0, 1]",
-    "method": "zero-phase disc mean of I/F equals the geometric albedo: albedoScale = 8p / mean(v), v weighted by projected area over the hemisphere facing longitude 0, latitude 0, gaps excluded",
+    "model": "Hapke (src/core/hapke.ts): I/F = albedoScale * v * Hapke(i, e, g; tile) / Hapke(30, 0, 30; tile), v the texture value in [0, 1], tile parameters from public/data/moon/hapke.bin",
+    "reference": "LRO WAC 566 nm Hapke parameter maps, Sato et al. (2014), doi:10.1002/2013JE004580: each tile's absolute I/F at Clementine's standard geometry i = 30, e = 0, g = 30",
+    "method": "least squares through zero of the WAC I/F at the standard geometry against the mean texture value, per 1-degree tile, 70N to 70S, tiles with never-imaged pixels left out",
+    "fit": {
+      "tiles": 50400,
+      "albedoScale": 0.522878,
+      "r": 0.9586,
+      "rmsResidual": 0.007498,
+      "relativeRmsResidual": 0.0916,
+      "withOffsetNotUsed": {
+        "slope": 0.415455,
+        "offset": 0.017946
+      }
+    },
+    "albedoScale": 0.522878,
     "discMeanTextureValue": 0.121185,
-    "albedoScale": 7.92177,
     "script": "pipeline/calibrate.py",
     "decodedMean": 41.3731
   }

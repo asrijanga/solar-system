@@ -44,21 +44,8 @@ export const MOON_OPPOSITION_DISTANCE_KM = 378_000;
 export const EXPOSURE = 2;
 
 /**
- * Lommel–Seeliger radiance factor: I/F = (ϖ/4) · μ0 / (μ0 + μ), for single-scattering albedo
- * ϖ, μ0 the cosine of the incidence angle and μ the cosine of the emission angle. Zero where
- * the sun is below the horizon or the point faces away from the viewer.
- *
- * Unlike Lambert it has no darkening towards the limb at full phase: with μ0 = μ it is ϖ/8
- * everywhere on the disc, which is why a full Moon looks like a flat plate, not a ball.
- */
-export function lommelSeeliger(albedo: number, mu0: number, mu: number): number {
-  if (mu0 <= 0 || mu <= 0) return 0;
-  return ((albedo / 4) * mu0) / (mu0 + mu);
-}
-
-/**
- * Lambert radiance factor: I/F = A · μ0. Not used to shade the Moon. It exists only for the
- * negative-control capture that proves the photometry check can tell the two apart.
+ * Lambert radiance factor: I/F = A · μ0. Not used to shade the Moon (core/hapke.ts does). Earth's
+ * uniform fallback sphere uses it.
  */
 export function lambert(albedo: number, mu0: number, mu: number): number {
   if (mu0 <= 0 || mu <= 0) return 0;
@@ -79,16 +66,6 @@ export const EARTH_GEOMETRIC_ALBEDO = 0.434;
  */
 export function lambertAlbedoFor(geometricAlbedo: number): number {
   return 1.5 * geometricAlbedo;
-}
-
-/**
- * Lommel–Seeliger ϖ for a surface of uniform albedo whose disc at zero phase has geometric
- * albedo p. At zero phase I/F = ϖ/8 at every point of the disc, and p is the disc's mean I/F
- * there, so ϖ = 8p. It exceeds 1 for p > 0.125: as used here ϖ is an effective parameter that
- * absorbs the opposition surge, not a physical single-scattering albedo (Hapke, SS-8b).
- */
-export function lommelSeeligerAlbedoFor(geometricAlbedo: number): number {
-  return 8 * geometricAlbedo;
 }
 
 /** Linear display value for a radiance factor, sun at `sunDistanceKm`. */
@@ -146,7 +123,7 @@ export function linearToSrgb(linear: number): number {
  * sphere sin θ = R/d exactly, so E / F = I/F · (R/d)². Earth and the Moon are the same distance
  * from the Sun to 0.3%, so F is the same at both.
  *
- * The Moon then scatters that light as it scatters sunlight: Lommel–Seeliger with Earth's
+ * The Moon then scatters that light as it scatters sunlight: Hapke (core/hapke.ts) with Earth's
  * direction in place of the Sun's, times this factor.
  */
 export function earthshineFactor(

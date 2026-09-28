@@ -8,8 +8,6 @@ import {
   lambert,
   lambertAlbedoFor,
   linearToSrgb,
-  lommelSeeliger,
-  lommelSeeligerAlbedoFor,
   MOON_GEOMETRIC_ALBEDO,
   MOON_OPPOSITION_DISTANCE_KM,
   MOON_OPPOSITION_MAGNITUDE,
@@ -18,35 +16,9 @@ import {
   SUN_V_MAGNITUDE,
   zeroPhaseMagnitude,
 } from './photometry';
+import { hapke, hapkeAtClementineStandard } from './hapke';
 
 const MOON_RADIUS_KM = 1737.4;
-
-describe('Lommel–Seeliger', () => {
-  it('is flat across the disc at zero phase, where Lambert darkens to the limb', () => {
-    const centre = lommelSeeliger(1, 1, 1);
-    for (const mu of [0.9, 0.5, 0.1, 0.01]) {
-      expect(lommelSeeliger(1, mu, mu)).toBeCloseTo(centre, 12);
-    }
-    expect(lambert(1, 0.1, 0.1) / lambert(1, 1, 1)).toBeCloseTo(0.1, 12);
-  });
-
-  it('is ϖ/8 at zero phase, so ϖ = 8p gives geometric albedo p', () => {
-    const albedo = lommelSeeligerAlbedoFor(MOON_GEOMETRIC_ALBEDO);
-    expect(albedo).toBeCloseTo(0.96, 12);
-    expect(lommelSeeliger(albedo, 0.7, 0.7)).toBeCloseTo(MOON_GEOMETRIC_ALBEDO, 12);
-  });
-
-  it('is zero on the night side and on the far side', () => {
-    expect(lommelSeeliger(1, -0.1, 0.5)).toBe(0);
-    expect(lommelSeeliger(1, 0, 0.5)).toBe(0);
-    expect(lommelSeeliger(1, 0.5, -0.2)).toBe(0);
-  });
-
-  it('never exceeds ϖ/4, reached only at grazing emission', () => {
-    expect(lommelSeeliger(1, 1, 1e-9)).toBeCloseTo(0.25, 6);
-    expect(lommelSeeliger(1, 0.3, 0.2)).toBeLessThan(0.25);
-  });
-});
 
 describe('the constants against the fact sheet', () => {
   it('reproduce the full Moon at −12.74 from geometric albedo 0.12', () => {
@@ -70,11 +42,13 @@ describe('display values', () => {
     expect(displayValue(0.1, 2 * AU_KM)).toBeCloseTo((EXPOSURE * 0.1) / 4, 12);
   });
 
-  it('keep the brightest Lommel–Seeliger point of a full Moon below display white', () => {
-    // Twice the disc-mean albedo is brighter than any large lunar region; grazing emission
-    // doubles I/F. At perihelion distance (0.983 AU) that is still under 1.
-    const albedo = 2 * lommelSeeligerAlbedoFor(MOON_GEOMETRIC_ALBEDO);
-    expect(displayValue(lommelSeeliger(albedo, 1, 1), 0.983 * AU_KM)).toBeLessThan(1);
+  it('keep the brightest 1° tile of the Moon below display white, even at zero phase', () => {
+    // The brightest tile's I/F at Clementine's standard geometry is 0.173 (hapke.json
+    // standardRange); at zero phase, seen from above, the median tile is 2.34 times brighter
+    // than at that geometry. At perihelion distance (0.983 AU) that is still under 1.
+    const median = { w: 0.33778, b: 0.233157, c: 0.369601, bs0: 1.715581, hs: 0.059936 };
+    const iOverF = (0.173478 * hapke(1, 1, 1, median)) / hapkeAtClementineStandard(median);
+    expect(displayValue(iOverF, 0.983 * AU_KM)).toBeLessThan(1);
   });
 });
 

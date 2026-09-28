@@ -1,4 +1,4 @@
-"""Unit tests for the albedo calibration's weighting. No files needed."""
+"""Unit tests for the albedo calibration's weighting, tiling and fit. No files needed."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from calibrate import disc_weighted_mean
+from calibrate import disc_weighted_mean, fit_through_zero, tile_means
 
 
 class DiscWeightedMean(unittest.TestCase):
@@ -36,6 +36,45 @@ class DiscWeightedMean(unittest.TestCase):
         gap[40:50, 85:95] = True
         values[gap] = math.nan
         self.assertAlmostEqual(disc_weighted_mean(np.nan_to_num(values), gap), 0.25, 12)
+
+
+class TileMeans(unittest.TestCase):
+    def test_puts_each_pixel_in_the_tile_its_centre_falls_in(self) -> None:
+        # 2 pixels per degree; texture column 0 at -180, tile column 0 at 0E.
+        h, w = 360, 720
+        values = np.zeros((h, w))
+        lon = (np.arange(w) + 0.5) * 360 / w - 180
+        values[:, (lon > 10) & (lon < 11)] = 1.0  # tile column 10
+        values[:, (lon > -1) & (lon < 0)] = 0.5  # tile column 359
+        means, gappy = tile_means(values, np.zeros((h, w), bool))
+        self.assertEqual(means.shape, (180, 360))
+        self.assertTrue(np.all(means[:, 10] == 1.0))
+        self.assertTrue(np.all(means[:, 359] == 0.5))
+        self.assertEqual(float(means[:, 11].max()), 0.0)
+        self.assertFalse(gappy.any())
+
+    def test_flags_tiles_with_any_gap(self) -> None:
+        h, w = 360, 720
+        gap = np.zeros((h, w), bool)
+        gap[0, 360] = True  # row 0 (89.75N), longitude 0.25E: tile (0, 0)
+        _, gappy = tile_means(np.ones((h, w)), gap)
+        self.assertTrue(gappy[0, 0])
+        self.assertEqual(int(gappy.sum()), 1)
+
+
+class FitThroughZero(unittest.TestCase):
+    def test_recovers_an_exact_scale(self) -> None:
+        x = np.linspace(0.05, 0.4, 50)
+        fit = fit_through_zero(x, 0.52 * x)
+        self.assertAlmostEqual(fit["k"], 0.52, 12)
+        self.assertAlmostEqual(fit["rmsResidual"], 0.0, 12)
+        self.assertAlmostEqual(fit["r"], 1.0, 12)
+
+    def test_reports_an_offset_without_using_it(self) -> None:
+        x = np.linspace(0.05, 0.4, 50)
+        fit = fit_through_zero(x, 0.4 * x + 0.02)
+        self.assertAlmostEqual(fit["withOffset"]["offset"], 0.02, 10)
+        self.assertGreater(fit["k"], 0.4)
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ import {
 import { decideSupport, refusalMessages, type Refusal } from './core/support';
 import { minAltitudeKm, vertexSpacingKm, type TileRange } from './core/terrain';
 import { METRE } from './core/units';
-import { installErrorReporting, showFatal, watchDevice } from './debug/errors';
+import { describe, installErrorReporting, showFatal, watchDevice } from './debug/errors';
 import { DebugOverlay } from './debug/overlay';
 import { describeAdapter, logAdapter, probeAdapter, requestDevice } from './gpu/adapter';
 import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/renderer';
@@ -1185,7 +1185,5 @@ function createMoonControls(
 }
 
 start().catch((error: unknown) => {
-  showFatal(
-    `failed to start: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`,
-  );
+  showFatal(`failed to start: ${describe(error)}`);
 });

@@ -35,9 +35,19 @@ export function showFatal(message: string): void {
   document.body.append(panel);
 }
 
-function describe(value: unknown): string {
-  if (value instanceof Error) return `${value.name}: ${value.message}`;
-  return String(value);
+/**
+ * An error's name, message and where it was thrown. The stack's first frames are kept because
+ * Safari can only be debugged from a screenshot of this panel (CLAUDE.md): a bare
+ * "InvalidStateError" says nothing about which call raised it.
+ */
+export function describe(value: unknown): string {
+  if (!(value instanceof Error)) return String(value);
+  const frames = (value.stack ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith(`${value.name}:`))
+    .slice(0, 8);
+  return [`${value.name}: ${value.message}`, ...frames].join('\n');
 }
 
 /**

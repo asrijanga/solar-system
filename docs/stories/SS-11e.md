@@ -21,12 +21,12 @@ The owner chose the recommendation: "Yeah let's do it."
 
 ## What it does
 
-While Earth is above the horizon and within the view's width, the camera pitches up just enough to keep Earth 20% of the half field below the top edge (`src/scenes/orbitFlight.ts`, `tiltForEarth`).
+While Earth is above the horizon and within the view's width, the camera pitches up just enough to keep Earth 20% of the half field below the top edge (`src/scenes/orbitFlight.ts`, inside `place()`).
 - **Floor:** the tilt never takes the horizon more than 60% of the half field below the centre, so the terrain always fills the lower part of the view.
 - **Easing:** the tilt follows its target with a 1.5-second time constant in real time, whatever the time factor.
 - **Release:** once Earth climbs beyond what the tilt may follow, the tilt lets go over a further 25° of Earth's climb, so the camera settles back to the terrain slowly.
 - **Earth behind:** with Earth behind the camera or below the horizon, the flight is exactly as before.
-- **Frame loop:** everything is computed in the flight's typed array, like the rest of the orbit, so it allocates nothing.
+- **Frame loop:** everything is computed in the flight's typed array, like the rest of the orbit, so it allocates nothing (see *Allocation* below).
 - **Where it applies:** the Orbit button, `?orbit=` and captures, since all of them pass Earth's position from the ephemeris.
 
 ![After: 266° along the orbit, where the plain view had lost Earth](ss11e-earthrise-tilt.png)
@@ -55,10 +55,20 @@ While Earth is above the horizon and within the view's width, the camera pitches
 - The new `moon-earthrise-tilt` shows 266° along the orbit.
 - Every existing capture is unchanged, `moon-earthrise` included: at 252° Earth is already in frame, so no tilt is needed.
 
+**Allocation** (`npm run alloc -- orbit=7 relief=off`). The first version, a separate `tiltForEarth` method, failed CI's gate at 133.6 B a frame. Rewriting it with only `const` locals still allocated 160 B. Moving it inline into `place()` still allocated 168.8 B.
+
+The cause is V8's tiering. At 600 to 1,200 frames, Chrome runs this code in its middle tier. There, fractional temporaries passed to `Math.atan2`, `Math.min`, `Math.max` and `Math.abs` are boxed on the heap. The one-argument functions (`sqrt`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `exp`) do not allocate.
+
+The committed form drops those four builtins:
+- |x| is written sqrt(x²);
+- a clamp to 0..1 is (sqrt(x²) − sqrt((x − 1)²) + 1) / 2;
+- min and max are written the same way.
+
+The gate then measured 0 B a frame from `src/`. Node's top tier barely allocates for any of these versions, so only Chrome can check this.
+
 ## Not verified
 
 - How it feels on the owner's iPhone at ×1, ×10 and ×100.
-- The allocation gate for the new code, which CI runs, since `src/scenes` changed.
 
 ## Effort
 

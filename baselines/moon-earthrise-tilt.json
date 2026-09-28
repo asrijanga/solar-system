@@ -1,0 +1,73 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "moon": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 6949.6,
+      "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": {
+        "landmark": "Albategnius",
+        "angleDeg": 266
+      },
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "lommel-seeliger",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": true,
+      "reliefFlipped": false
+    },
+    "moonChecks": [],
+    "negativeControl": false,
+    "id": "moon-earthrise-tilt",
+    "description": "The same orbit 266° on, where Earth has climbed past the top of the plain view: the camera tilts up to keep it in frame, with the horizon still in view (docs/stories/SS-11e.md). For eyes.",
+    "scene": "moon"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": []
+  },
+  "git": {
+    "sha": "5b41dc7c6e6a7b2f2ec507d16841fa64505d7ffe",
+    "dirty": false
+  }
+}

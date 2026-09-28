@@ -112,6 +112,8 @@ Before this story, Lommel–Seeliger was about 0.75 mag (a factor of 2) too brig
 
 ## What changes on screen
 
+![Before (Lommel–Seeliger) and after (Hapke): first quarter, full Moon, orbit](ss8b-before-after.png)
+
 - The quarter Moon is about half as bright as before, as dim as the real one.
 - The full Moon brightens sharply in the last few degrees before opposition.
 - Towards the terminator, brightness falls off more gradually, and rough ground darkens it as it does on the real Moon.

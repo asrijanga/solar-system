@@ -58,6 +58,10 @@ The kernels are checked by SHA-256, and CI re-derives the output and diffs it.
 
 **Checked against:** JPL Horizons, with the request and the returned rows pinned as a test fixture (`test/fixtures/horizons-*.json`). Horizons gives Earth's latitudes as geodetic, so the test converts them before comparing.
 
+**Mars** (SS-14): `pipeline/ephemeris_mars.py`, `public/data/mars/ephemeris.json`, with Phobos and Deimos from `mar099s.bsp`, at the Moon's two instants so the app keeps one clock.
+- **Horizons' conventions:** Horizons gives Mars's longitudes west-positive and its latitudes planetodetic. Read them from its header for every world.
+- **Light time:** check the vectors the app draws against Horizons seen from somewhere close to the world, not from Earth. From Earth Mars is seen 20 minutes late, and has turned 5° by then.
+
 ### W3 · True albedo, from every source
 
 The surface's brightness, with no lighting baked in:

@@ -1,0 +1,54 @@
+{
+  "source": "Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MARS_nomenclature_center_pts.zip",
+  "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MARS_nomenclature_center_pts.zip",
+  "sha256": "a6d1b4e23923c0f5ba5737a0669ae717a88c2977c9f4984fbedb5234fe6ff268",
+  "retrieved": "2026-09-29",
+  "longitudeConvention": "Gazetteer gives 0 to 360, 'Positive East' (metadata_nomenclature_points_MARS.xml). lonEastDeg keeps that value; lonDeg is the same longitude in -180 to 180, the texture's convention.",
+  "features": [
+    {
+      "name": "Syrtis Major",
+      "type": "Albedo Feature",
+      "lonEastDeg": 70.0,
+      "lonDeg": 70.0,
+      "latDeg": 9.885,
+      "gazetteer": "http://planetarynames.wr.usgs.gov/Feature/5795",
+      "expect": "dark"
+    },
+    {
+      "name": "Mare Acidalium",
+      "type": "Albedo Feature",
+      "lonEastDeg": 330.0,
+      "lonDeg": -30.0,
+      "latDeg": 44.6618,
+      "gazetteer": "http://planetarynames.wr.usgs.gov/Feature/3663",
+      "expect": "dark"
+    },
+    {
+      "name": "Tharsis",
+      "type": "Albedo Feature",
+      "lonEastDeg": 260.0,
+      "lonDeg": -100.0,
+      "latDeg": 0.0,
+      "gazetteer": "http://planetarynames.wr.usgs.gov/Feature/5947",
+      "expect": "bright"
+    },
+    {
+      "name": "Hellas",
+      "type": "Albedo Feature",
+      "lonEastDeg": 70.0,
+      "lonDeg": 70.0,
+      "latDeg": -39.6672,
+      "gazetteer": "http://planetarynames.wr.usgs.gov/Feature/2429",
+      "expect": "bright"
+    },
+    {
+      "name": "Arabia Terra",
+      "type": "Terra, terrae",
+      "lonEastDeg": 5.7185,
+      "lonDeg": 5.7185,
+      "latDeg": 21.249,
+      "gazetteer": "http://planetarynames.wr.usgs.gov/Feature/336",
+      "expect": "bright"
+    }
+  ]
+}

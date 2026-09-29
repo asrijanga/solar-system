@@ -1,0 +1,120 @@
+{
+  "product": {
+    "name": "Mars Express OMEGA 1.08 um Lambert albedo R1080, Ody et al. (2012), ESA PSA MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0",
+    "url": "https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/OMEGA/MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0/DATA/ALBEDO/ALBEDO_R1080_EQU_MAP.IMG",
+    "sha256": "3fc99ad4190ba509492e2d2435f561c37f87251a96d037b596526e45c801e9c5",
+    "quantity": "I/F / cos(i) at 1.08 um, assuming a Lambertian surface; each sample the average of observations from 2004-01-08 to 2010-08-20 (label)",
+    "chosen": "owner, 2026-09-29: a long-term average, built from OMEGA checked by TES (docs/stories/SS-14.md)",
+    "missingFraction": 0.02902,
+    "missingFractionByLatitude": {
+      "90..60": 0.0099,
+      "60..30": 0.038,
+      "30..0": 0.0564,
+      "0..-30": 0.0311,
+      "-30..-60": 0.0159,
+      "-60..-90": 0.0228
+    }
+  },
+  "gapFill": {
+    "source": "MGS TES bolometric albedo, Christensen; PDS MGS-M-TES-SPECIAL-V1 global_albedo_8ppd",
+    "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-tes-special-v1/global_albedo_8ppd.img",
+    "sha256": "47ee17fc9aca6aa9fd5d49e383c1acc366d4cb31cab4635bc823bc27a33283c7",
+    "method": "TES x (OMEGA / TES) averaged over the surrounding 41 x 41 TES cells (5.1 deg) that OMEGA measured completely; filled pixels keep TES's 7.4 km cells",
+    "agreementWithOmega": {
+      "withinLatitude60": {
+        "cells": 2631677,
+        "correlation": 0.9489,
+        "throughZeroSlope": 1.4099
+      },
+      "withinLatitude90": {
+        "cells": 3982225,
+        "correlation": 0.6638,
+        "throughZeroSlope": 1.4273
+      }
+    },
+    "check": {
+      "method": "1% of the TES cells OMEGA measured completely, chosen with seed 14, removed from the ratio and predicted",
+      "within60": {
+        "cells": 26485,
+        "correlation": 0.9784,
+        "meanRelativeError": 0.0057,
+        "rmsRelativeError": 0.0729
+      },
+      "poleward60": {
+        "cells": 13451,
+        "correlation": 0.6683,
+        "meanRelativeError": 0.0711,
+        "rmsRelativeError": 0.3582
+      }
+    }
+  },
+  "conventions": {
+    "projection": "equirectangular (simple cylindrical); both sources on a 3396.0 km sphere (labels)",
+    "latitude": "planetocentric",
+    "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
+    "rows": "row 0 = +90 deg latitude",
+    "bodyFixedFrame": "IAU_MARS; see ephemeris.json",
+    "values": "OMEGA 1.08 um Lambert albedo, stored as byte = 255 sqrt(A / 1.0). Not yet scaled to visible light"
+  },
+  "texture": {
+    "file": "albedo.webp",
+    "width": 8192,
+    "height": 4096,
+    "encoding": {
+      "curve": "sqrt",
+      "maxAlbedo": 1.0
+    },
+    "clippedPixels": 6,
+    "kmPerPixelAtEquator": 2.605,
+    "sha256": "431f66ed0d75c269e275301cb989bebe3a51e46a526bd331371368080d5afd4d",
+    "source": {
+      "file": "albedo-source.png",
+      "values": "0 = every source sample OMEGA; 1-255 = the share of the pixel filled from TES, rounded up",
+      "pixelsWithFill": 1115074,
+      "sha256": "65bb9e838e336afee5ba2847558cc989d5a14d5d2bc7e775ab8786ca8480291f"
+    },
+    "gpuBytesR8WithMips": 44739242
+  },
+  "formatChoice": {
+    "rule": "smallest albedo at most 6291456 bytes with PSNR >= 42.0 dB over all pixels (the Moon's rule)",
+    "chosen": "webp-q70",
+    "trials": [
+      {
+        "format": "webp-lossless",
+        "bytes": 8328990,
+        "psnrDb": null,
+        "maxAbsError": 0
+      },
+      {
+        "format": "webp-q95",
+        "bytes": 1888396,
+        "psnrDb": 48.68,
+        "maxAbsError": 14
+      },
+      {
+        "format": "webp-q90",
+        "bytes": 1193182,
+        "psnrDb": 46.73,
+        "maxAbsError": 18
+      },
+      {
+        "format": "webp-q85",
+        "bytes": 797448,
+        "psnrDb": 45.46,
+        "maxAbsError": 25
+      },
+      {
+        "format": "webp-q80",
+        "bytes": 588074,
+        "psnrDb": 44.37,
+        "maxAbsError": 34
+      },
+      {
+        "format": "webp-q70",
+        "bytes": 425616,
+        "psnrDb": 43.35,
+        "maxAbsError": 37
+      }
+    ]
+  }
+}

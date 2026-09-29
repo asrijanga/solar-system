@@ -16,7 +16,7 @@ import {
   SUN_V_MAGNITUDE,
   zeroPhaseMagnitude,
 } from './photometry';
-import { hapke, hapkeAtClementineStandard } from './hapke';
+import { hapke, hapkeAtStandard } from './hapke';
 
 const MOON_RADIUS_KM = 1737.4;
 
@@ -43,11 +43,12 @@ describe('display values', () => {
   });
 
   it('keep the brightest 1° tile of the Moon below display white, even at zero phase', () => {
-    // The brightest tile's I/F at Clementine's standard geometry is 0.173 (hapke.json
-    // standardRange); at zero phase, seen from above, the median tile is 2.34 times brighter
-    // than at that geometry. At perihelion distance (0.983 AU) that is still under 1.
+    // The brightest tile's I/F at the map's standard geometry (i = g = 60, e = 0) is 0.0845
+    // (hapke.json standardRange); at zero phase, seen from above, the median tile is brighter
+    // than at that geometry by hapke(1, 1, 1) / hapkeAtStandard. At perihelion distance
+    // (0.983 AU) that is still under 1.
     const median = { w: 0.33778, b: 0.233157, c: 0.369601, bs0: 1.715581, hs: 0.059936 };
-    const iOverF = (0.173478 * hapke(1, 1, 1, median)) / hapkeAtClementineStandard(median);
+    const iOverF = (0.084546 * hapke(1, 1, 1, median)) / hapkeAtStandard(median);
     expect(displayValue(iOverF, 0.983 * AU_KM)).toBeLessThan(1);
   });
 });

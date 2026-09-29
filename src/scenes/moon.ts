@@ -59,6 +59,7 @@ import { QuantizedMeshPlugin } from '3d-tiles-renderer/plugins';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
 import type { HapkeParameters } from '../core/hapke';
 import { EXPOSURE, AU_KM, SUNLIT_FADE } from '../core/photometry';
+import type Node from 'three/src/nodes/core/Node.js';
 import { hapkeNode, type HapkeNodes } from './hapkeNode';
 import { siteUrl } from '../site';
 
@@ -70,12 +71,29 @@ export interface AlbedoManifest {
     readonly mask: string | null;
     readonly width: number;
     readonly height: number;
+    /** byte = 255 sqrt(I/F / maxIOverF), I/F at the standard geometry (pipeline/moon.py). */
+    readonly encoding: { readonly curve: 'sqrt'; readonly maxIOverF: number };
   };
-  readonly calibration: { readonly albedoScale: number; readonly discMeanTextureValue: number };
+  /**
+   * The measured colour (docs/stories/SS-5b.md): red = I/F(643 nm) / I/F(566 nm) and green =
+   * I/F(415 nm) / I/F(566 nm), each byte linear over its range.
+   */
+  readonly colour: {
+    readonly file: string;
+    readonly width: number;
+    readonly height: number;
+    readonly ranges: {
+      readonly '643/566': readonly [number, number];
+      readonly '415/566': readonly [number, number];
+    };
+  };
+  readonly calibration: { readonly discMeanIOverF: number };
 }
 
 export interface MoonTextures {
   readonly albedo: DataTexture;
+  /** The colour ratios, coarser than the albedo (AlbedoManifest.colour). */
+  readonly colour: DataTexture;
   /** One bit per texel, 8 texels per byte along a row; bit set = never measured. Null when every
    * texel was measured. */
   readonly gaps: DataTexture | null;
@@ -95,7 +113,7 @@ interface HapkeManifest {
 
 /**
  * The Moon's Hapke parameters per 1° tile (docs/stories/SS-8b.md). `parameters` holds
- * (w, b, c, Bs0) and `extra` (hs, I/F at Clementine's standard geometry), half floats, linearly
+ * (w, b, c, Bs0) and `extra` (hs, I/F at the map's standard geometry), half floats, linearly
  * filtered, column 0 centred at 0.5°E and row 0 at 89.5°N. The median tile stands in where a
  * Moon of uniform albedo is drawn.
  */
@@ -154,9 +172,15 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   const manifest = (await response.json()) as AlbedoManifest;
   const { width, height } = manifest.texture;
   const mask = manifest.texture.mask;
-  const [albedoBytes, maskBytes] = await Promise.all([
+  const [albedoBytes, maskBytes, colourChannels] = await Promise.all([
     decodeGrey(`${base}${manifest.texture.file}`, width, height),
     mask === null ? null : decodeGrey(`${base}${mask}`, width, height),
+    decodeChannels(
+      `${base}${manifest.colour.file}`,
+      manifest.colour.width,
+      manifest.colour.height,
+      [0, 1],
+    ),
   ]);
 
   let sum = 0;
@@ -172,8 +196,28 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   albedo.anisotropy = maxAnisotropy;
   albedo.needsUpdate = true;
 
+  // Red and green of the colour file into one two-channel texture: the ratios, linear.
+  const [red, green] = colourChannels;
+  const cw = manifest.colour.width;
+  const ch = manifest.colour.height;
+  const rg = new Uint8Array(cw * ch * 2);
+  for (let i = 0; i < cw * ch; i++) {
+    rg[i * 2] = red?.[i] ?? 0;
+    rg[i * 2 + 1] = green?.[i] ?? 0;
+  }
+  const colour = new DataTexture(rg, cw, ch, RGFormat, UnsignedByteType);
+  colour.colorSpace = NoColorSpace; // ratios, linear: not a colour to be managed
+  colour.wrapS = RepeatWrapping;
+  colour.wrapT = ClampToEdgeWrapping;
+  colour.magFilter = LinearFilter;
+  colour.minFilter = LinearMipmapLinearFilter;
+  colour.generateMipmaps = true;
+  colour.anisotropy = maxAnisotropy;
+  colour.needsUpdate = true;
+
   return {
     albedo,
+    colour,
     gaps: maskBytes === null ? null : packGaps(maskBytes, width, height),
     manifest,
     decodedMean: sum / albedoBytes.length,
@@ -208,8 +252,8 @@ export interface MoonOptions {
   readonly epoch: MoonEpoch;
   readonly radiusKm: number;
   /**
-   * The mapped albedo, or for photometry checks a uniform one: I/F at Clementine's standard
-   * geometry (core/hapke.ts CLEMENTINE_STANDARD_DEG), scattered with the median tile's
+   * The mapped albedo, or for photometry checks a uniform one: I/F at the map's standard
+   * geometry (core/hapke.ts MAP_STANDARD_DEG), scattered with the median tile's
    * parameters.
    */
   readonly albedo: MoonTextures | { readonly uniform: number };
@@ -252,20 +296,7 @@ export interface MoonOptions {
    * applied only where the Sun is down. A uniform, so it can change.
    */
   readonly earthshineBoost?: UniformNode<'float', number>;
-  /**
-   * 0 for Hapke. 1 for the model before SS-8b, Lommel–Seeliger with SS-6's calibration, drawn
-   * only so it can be compared on screen and labelled as such (docs/stories/SS-8b.md). A uniform,
-   * so it can change.
-   */
-  readonly oldScattering?: UniformNode<'float', number>;
 }
-
-/**
- * SS-6's Lommel–Seeliger calibration, ϖ = 7.92177 per texture unit (public/data/moon/albedo.json
- * before SS-8b, at commit 30d1667), as a multiple of this calibration's I/F at Clementine's
- * standard geometry per texture unit: ϖ = OLD_ALBEDO_SCALE / albedoScale × R30.
- */
-const OLD_ALBEDO_SCALE = 7.92177;
 
 /** IAU 2015 Resolution B3 nominal solar radius, km. */
 const SUN_RADIUS_KM = 695_700;
@@ -359,9 +390,11 @@ function createMoonMaterial(
     const gradX = vec2(mix(dxShifted, dx.x, step(abs(dx.x), abs(dxShifted))), dx.y);
     const gradY = vec2(mix(dyShifted, dy.x, step(abs(dy.x), abs(dyShifted))), dy.y);
 
-    // I/F at Clementine's standard geometry, and the tile's Hapke parameters with its own I/F at
+    // I/F at the map's standard geometry, and the tile's Hapke parameters with its own I/F at
     // that geometry: the map's value scales Hapke's angular behaviour (docs/stories/SS-8b.md).
     let albedo;
+    // Measured colour relative to 566 nm; white where none is drawn (a uniform Moon).
+    let tint: Node<'vec3'> = vec3(1, 1, 1);
     let gap = null;
     let hapke: HapkeNodes;
     let standard;
@@ -383,7 +416,21 @@ function createMoonMaterial(
       const sample = (options.seamFix === false ? map : map.grad(gradX, gradY)).toVar(
         'moonAlbedoSample',
       );
-      albedo = sample.r.mul(maps.manifest.calibration.albedoScale);
+      // byte = 255 sqrt(I/F / maxIOverF) (pipeline/moon.py): square it back.
+      albedo = sample.r.mul(sample.r).mul(maps.manifest.texture.encoding.maxIOverF);
+      const c = texture(maps.colour, uv);
+      const colourSample = (options.seamFix === false ? c : c.grad(gradX, gradY)).toVar(
+        'moonColourSample',
+      );
+      const [redLo, redHi] = maps.manifest.colour.ranges['643/566'];
+      const blueLo = maps.manifest.colour.ranges['415/566'][0];
+      const blueHi = maps.manifest.colour.ranges['415/566'][1];
+      // Red, green and blue are 643, 566 and 415 nm, relative to 566 nm.
+      tint = vec3(
+        colourSample.r.mul(redHi - redLo).add(redLo),
+        1,
+        colourSample.g.mul(blueHi - blueLo).add(blueLo),
+      );
 
       if (maps.gaps !== null) {
         const { width, height } = maps.manifest.texture;
@@ -398,8 +445,7 @@ function createMoonMaterial(
         gap = float(byte.shiftRight(uint(column.bitAnd(7))).bitAnd(1)).toVar('moonGap');
         // Gaps are shaded with the disc-mean albedo, so their shape and lighting read, and
         // coloured so they can never pass for data.
-        const meanAlbedo =
-          maps.manifest.calibration.albedoScale * maps.manifest.calibration.discMeanTextureValue;
+        const meanAlbedo = maps.manifest.calibration.discMeanIOverF;
         albedo = mix(albedo, float(meanAlbedo), gap);
       }
     }
@@ -462,20 +508,6 @@ function createMoonMaterial(
     switch (options.shading) {
       case 'hapke': {
         let sunlit = lit(mu0, dot(sun, view));
-        if (options.oldScattering !== undefined) {
-          // The pre-SS-8b model, for the labelled comparison only.
-          // A uniform Moon had ϖ = 0.96 (geometric albedo 0.12) under SS-6.
-          const scaleToOld =
-            'uniform' in options.albedo
-              ? 0.96 / options.albedo.uniform
-              : OLD_ALBEDO_SCALE / options.albedo.manifest.calibration.albedoScale;
-          const varpi = albedo.mul(scaleToOld);
-          const old = varpi
-            .div(4)
-            .mul(max(mu0, 0))
-            .div(max(max(mu0, 0).add(max(mu, 0)), 1e-6));
-          sunlit = mix(sunlit, old, options.oldScattering);
-        }
         if (sunVisible !== null) sunlit = sunlit.mul(sunVisible);
         const even = options.evenLight ?? 0;
         // Even lighting: lit from behind the viewer everywhere at once, so i = e and g = 0.
@@ -506,8 +538,9 @@ function createMoonMaterial(
       earthshineBoost,
       float(1).sub(smoothstep(0, SUNLIT_FADE, sunDisplay)),
     );
-    const value =
-      earthlit === null ? vec3(sunDisplay) : vec3(sunDisplay).add(earthlit.mul(scale).mul(boost));
+    const value = (
+      earthlit === null ? vec3(sunDisplay) : vec3(sunDisplay).add(earthlit.mul(scale).mul(boost))
+    ).mul(tint);
     const colour = gap === null ? value : mix(value, vec3(...GAP_COLOUR).mul(value), gap);
     return vec4(colour, 1);
   })();

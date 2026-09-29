@@ -1,9 +1,10 @@
-"""The Moon's albedo where Clementine never imaged it, from LOLA's global laser albedo.
+"""The Moon's albedo where the base map never measured it, from LOLA's global laser albedo.
 
 Owner decision, 2026-09-26: "This purple is distracting and disrupting the cinematic effect,
 drop purple and fill gaps." The gaps are filled with a measurement, not invented. LOLA lights
-the surface with its own laser, so it measured albedo everywhere Clementine's camera missed
-(README, "Combine every available source").
+the surface with its own laser, so it measured albedo everywhere the cameras missed (README,
+"Combine every available source"). Since SS-5b the base map is LRO WAC's Hapke-normalised
+mosaic (wac.py); before, it was Clementine.
 
 Source: LOLA LDAM_10_FLOAT, Lemelin et al. (2016), PDS data set LRO-L-LOLA-4-GDR-V1.0. From its
 label (ldam_10_float.lbl):
@@ -17,19 +18,17 @@ label (ldam_10_float.lbl):
 - **Interpolation:** the label says the ground tracks were interpolated with Generic Mapping
   Tools; that is the publisher's product.
 
-Combination:
-- **Calibration:** Clementine value = gain * LOLA albedo + offset, least squares, over
-  |latitude| < 60 degrees where Clementine imaged the surface. The fit's r and RMS residual
-  are recorded.
-- **Local match:** Clementine and LOLA differ in wavelength (750 and 1064 nm) and resolution,
-  so a gap filled with the global fit alone can show its outline. The difference (Clementine
-  minus calibrated LOLA) is known wherever Clementine measured. Inside each gap it is carried
-  in from the gap's surroundings by the same pull-push spreading the encoder uses
-  (moon.pull_push_fill), and added to the calibrated LOLA value. At a gap's edge the fill then
-  meets Clementine; inside, the detail is LOLA's. The recorded statistics say how large this
-  local correction is.
+Combination, in the base map's units (I/F):
+- **Calibration:** base = gain * LOLA albedo + offset, least squares, over |latitude| < 60
+  degrees where the base measured. The fit's r and RMS residual are recorded.
+- **Local match:** the base and LOLA differ in wavelength and resolution, so a gap filled with
+  the global fit alone can show its outline. The difference (base minus calibrated LOLA) is
+  known wherever the base measured. Inside each gap it is carried in from the gap's
+  surroundings by the same pull-push spreading the encoder uses (moon.pull_push_fill), and
+  added to the calibrated LOLA value. At a gap's edge the fill then meets the base; inside, the
+  detail is LOLA's. The recorded statistics say how large this local correction is.
 - **Where:** used only where no earlier source measured a pixel (after the LOLA polar step,
-  lola_poles.py). Every Clementine and polar LOLA value is unchanged.
+  lola_poles.py). Every earlier value is unchanged.
 """
 
 from __future__ import annotations
@@ -80,10 +79,10 @@ def bilinear(image: np.ndarray, line: np.ndarray, sample: np.ndarray) -> np.ndar
 def fill(
     combined: np.ndarray, spread: Callable[[np.ndarray, np.ndarray], np.ndarray]
 ) -> tuple[np.ndarray, dict]:
-    """Fill the pixels still 0 (never measured) in the combined uint8 albedo with calibrated LOLA.
+    """Fill the pixels still NaN (never measured) in the combined I/F map with calibrated LOLA.
 
     `spread(values, valid)` carries values into the invalid pixels from their surroundings
-    (moon.pull_push_fill). Returns the filled image and a record of the fit and the fill.
+    (moon.pull_push_fill). Returns the filled map and a record of the fit and the fill.
     """
     height, width = combined.shape
     lola = load()
@@ -95,8 +94,8 @@ def fill(
     l_vals = bilinear(lola, line, sample)
     del lat_g, lon_g, line, sample
 
-    measured = combined > 0
-    values = combined.astype(np.float64)
+    measured = np.isfinite(combined)
+    values = np.nan_to_num(combined)
     fit = measured & (np.abs(lat)[:, None] < FIT_MAX_LAT) & np.isfinite(l_vals)
     x = l_vals[fit]
     y = values[fit]
@@ -107,8 +106,7 @@ def fill(
 
     gaps = ~measured
     correction = spread(np.where(measured, values - calibrated, 0.0), measured)
-    filled_values = calibrated + correction
-    out = np.where(gaps, np.clip(np.rint(filled_values), 1, 255), values).astype(np.uint8)
+    out = np.where(gaps, calibrated + correction, values)
     c = correction[gaps]
 
     record = {
@@ -116,18 +114,18 @@ def fill(
         "url": URL,
         "sha256": SHA256,
         "fit": {
-            "model": "clementine = gain * lola_albedo + offset",
-            "band": f"|latitude| < {FIT_MAX_LAT:g} deg, Clementine valid",
+            "model": "base I/F = gain * lola_albedo + offset",
+            "band": f"|latitude| < {FIT_MAX_LAT:g} deg, base measured",
             "pixels": int(fit.sum()),
-            "gain": round(float(gain), 4),
-            "offset": round(float(offset), 4),
+            "gain": round(float(gain), 6),
+            "offset": round(float(offset), 6),
             "r": round(r, 4),
-            "rmsResidual": round(float(np.sqrt(np.mean(residual**2))), 3),
+            "rmsResidual": round(float(np.sqrt(np.mean(residual**2))), 6),
         },
         "localMatch": {
-            "method": "Clementine minus calibrated LOLA, spread into each gap by pull-push",
-            "medianAbsCorrection": round(float(np.median(np.abs(c))), 3) if c.size else 0.0,
-            "p99AbsCorrection": round(float(np.percentile(np.abs(c), 99)), 3) if c.size else 0.0,
+            "method": "base minus calibrated LOLA, spread into each gap by pull-push",
+            "medianAbsCorrection": round(float(np.median(np.abs(c))), 6) if c.size else 0.0,
+            "p99AbsCorrection": round(float(np.percentile(np.abs(c), 99)), 6) if c.size else 0.0,
         },
         "pixelsFilled": int(gaps.sum()),
     }

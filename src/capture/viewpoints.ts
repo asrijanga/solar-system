@@ -38,7 +38,7 @@ export interface MoonSetup {
   /** Turn from the vantage to look at Earth's centre instead of the Moon's (SS-13c). */
   readonly lookAtEarth: boolean;
   /**
-   * The Clementine map, or for photometry checks a uniform I/F at Clementine's standard
+   * The LRO WAC map, or for photometry checks a uniform I/F at the map's standard
    * geometry, scattered with the median tile's Hapke parameters (docs/stories/SS-8b.md).
    */
   readonly albedo: 'map' | { readonly uniform: number };
@@ -304,10 +304,10 @@ const MOON_SETUP: MoonSetup = {
 };
 
 /**
- * I/F at Clementine's standard geometry (i = 30°, e = 0°, g = 30°): about the median 1° tile's,
- * 0.083182 (public/data/moon/hapke.json medianAtStandard).
+ * I/F at the map's standard geometry (i = g = 60°, e = 0°): about the median 1° tile's,
+ * 0.038891 (public/data/moon/hapke.json medianAtStandard).
  */
-const UNIFORM_ALBEDO = 0.0832;
+const UNIFORM_ALBEDO = 0.0389;
 
 /**
  * IAU Gazetteer features (test/fixtures/iau-gazetteer-moon.json). Radii and the qualitative
@@ -826,7 +826,7 @@ export const viewpoints: readonly Viewpoint[] = [
     ...SPACE,
     id: 'moon-south-pole',
     description:
-      'Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 75° the albedo is LOLA laser albedo, blended into Clementine across 65–75° (docs/stories/SS-6b.md): no gaps, no step at the blend. For eyes.',
+      'Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 70° the albedo is LOLA laser albedo, blended into the LRO WAC mosaic across 62–70° (docs/stories/SS-6b.md, SS-5b.md): no gaps, no step at the blend. For eyes.',
     scene: 'moon',
     moon: {
       ...MOON_SETUP,

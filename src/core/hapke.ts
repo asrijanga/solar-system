@@ -40,12 +40,12 @@ export interface HapkeParameters {
 export const HAPKE_ROUGHNESS_DEG = 23.6566;
 
 /**
- * Standard geometry of the Clementine UVVIS mosaic, degrees: "normalized to R30, the
- * reflectance expected at an incidence angle (i) and phase angle (p) of 30.0 degrees and an
- * emission angle (e) of 0.0 degrees" (Clementine UVVIS global mosaic volume, VOLINFO.HTM,
- * section 8). The map's values are reflectance at this geometry, relative.
+ * Standard geometry of the Moon's map, degrees: LRO WAC's Hapke-normalised mosaic is "Normalized
+ * to the angles of phase (g) = incidence (i) = 60°, emission (e) = 0° by Hapke bidirectional
+ * reflectance function" (WAC_HAPKE product description; docs/stories/SS-5b.md). The map's values
+ * are I/F at this geometry.
  */
-export const CLEMENTINE_STANDARD_DEG = { incidence: 30, emission: 0, phase: 30 } as const;
+export const MAP_STANDARD_DEG = { incidence: 60, emission: 0, phase: 60 } as const;
 
 /** Floor for tangents and cosines that would otherwise divide by zero at grazing angles. */
 const TINY = 1e-6;
@@ -141,9 +141,9 @@ export function hapke(mu0: number, mu: number, cosG: number, p: HapkeParameters)
   return (p.w / 4) * (mu0e / (mu0e + mue)) * (single + multiple) * s;
 }
 
-/** I/F at Clementine's standard geometry: the denominator that turns its map into I/F. */
-export function hapkeAtClementineStandard(p: HapkeParameters): number {
-  const { incidence, emission, phase } = CLEMENTINE_STANDARD_DEG;
+/** I/F at the map's standard geometry: the denominator that turns its values into I/F anywhere. */
+export function hapkeAtStandard(p: HapkeParameters): number {
+  const { incidence, emission, phase } = MAP_STANDARD_DEG;
   const rad = Math.PI / 180;
   return hapke(Math.cos(incidence * rad), Math.cos(emission * rad), Math.cos(phase * rad), p);
 }

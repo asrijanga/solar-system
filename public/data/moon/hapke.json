@@ -24,7 +24,7 @@
     "file": "hapke.bin",
     "width": 360,
     "height": 180,
-    "layout": "half floats, little-endian: RGBA (w, b, c, Bs0) for all texels, then RG (hs, I/F at Clementine’s standard geometry i = 30, e = 0, g = 30); row 0 at 89.5N, column 0 at 0.5E"
+    "layout": "half floats, little-endian: RGBA (w, b, c, Bs0) for all texels, then RG (hs, I/F at the map’s standard geometry i = 60, e = 0, g = 60, core/hapke.ts MAP_STANDARD_DEG); row 0 at 89.5N, column 0 at 0.5E"
   },
   "poles": {
     "rows": "rows 0-19 (90N-70N) and 160-179 (70S-90S)",
@@ -38,10 +38,10 @@
     "bs0": 1.715581,
     "hs": 0.059936
   },
-  "medianAtStandard": 0.083182,
+  "medianAtStandard": 0.038891,
   "standardRange": [
-    0.03338,
-    0.173478
+    0.014586,
+    0.084546
   ],
   "tilesWithZeroSurgeWidth": 227,
   "zeroSurgeWidthNote": "hs = 0 means the fitted surge is narrower than the data resolve: no surge outside zero phase. Kept as measured; the model floors hs at 1e-6 to stay finite."

@@ -230,8 +230,6 @@ interface Stage {
   readonly evenLight: UniformNode<'float', number> | null;
   /** 1, or the labelled earthshine boost, applied where the Sun is down (docs/stories/SS-13e.md). */
   readonly earthshineBoost: UniformNode<'float', number> | null;
-  /** 1 while the labelled pre-SS-8b scattering is shown for comparison. */
-  readonly oldScattering: UniformNode<'float', number> | null;
   /** Landmark labels (docs/stories/SS-15.md), and the landmarks with the body-to-scene rotation. */
   readonly labels: Labels | null;
   readonly landmarks: readonly Landmark[];
@@ -295,7 +293,6 @@ async function createStage(
     approximated: false,
     evenLight: null,
     earthshineBoost: null,
-    oldScattering: null,
     labels: null,
     landmarks: [],
     bodyToScene: null,
@@ -335,8 +332,6 @@ async function createStage(
       const earthshineBoost = uniform(
         setup.earthshine === 'boosted' ? 2 ** EARTHSHINE_BOOST_STOPS : 1,
       );
-      // Off in every capture: the pre-SS-8b model exists only for the labelled comparison.
-      const oldScattering = uniform(0);
       // Earth's face as the satellites measured it at this epoch, where built (SS-13c), and the
       // earthshine it puts on the Moon (SS-13e).
       const face = await loadEarthFace(epoch.id, siteUrl, maxAnisotropy);
@@ -353,7 +348,6 @@ async function createStage(
         evenLight,
         reliefFlipped: setup.reliefFlipped,
         earthshineBoost,
-        oldScattering,
         earthshine:
           face === null
             ? null
@@ -404,7 +398,6 @@ async function createStage(
         starExposure,
         evenLight,
         earthshineBoost,
-        oldScattering,
         labels,
         landmarks: landmarkFile.landmarks,
         bodyToScene,
@@ -733,9 +726,6 @@ async function start(): Promise<void> {
         onEvenLight: (even) => {
           if (evenLight !== null) evenLight.value = even ? 1 : 0;
         },
-        onOldScattering: (old) => {
-          if (stage.oldScattering !== null) stage.oldScattering.value = old ? 1 : 0;
-        },
       },
     );
     onOrbitHeight = () => {
@@ -1044,8 +1034,6 @@ interface MoonControlHandlers {
   /** Landmark labels on or off (docs/stories/SS-15.md). */
   readonly onLabels: (on: boolean) => void;
   readonly onEvenLight: (even: boolean) => void;
-  /** The labelled pre-SS-8b scattering, for comparison (docs/stories/SS-8b.md). */
-  readonly onOldScattering: (old: boolean) => void;
   readonly onEarthshineBoost: (on: boolean) => void;
 }
 
@@ -1054,7 +1042,7 @@ const ABOUT = [
   'Earthshine: boosted draws Earth\u2019s light 8,192 times (13 stops) brighter, only where the Sun is down, so the night side shows beside the sunlit side as in a two-exposure photograph; the sunlit Moon, Earth and the stars are unchanged. At the full-Moon date Earth\u2019s measured face is not built yet, so no earthshine is drawn there; it falls on the day side then anyway.',
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
-  'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°. The few small places Clementine missed elsewhere (0.06% of the map) are filled from LOLA\u2019s global laser map, which is coarser (3 km), matched to Clementine around each one.',
+  'Surface brightness and colour come from the Lunar Reconnaissance Orbiter (LRO). Its Wide Angle Camera photographed the Moon about 124,000 times from 2010 to 2013, from 70\u00b0N to 70\u00b0S; each point is the median of years of pictures, corrected to one lighting angle, so no shadows are baked in. Colour is measured too: red, green and blue are its 643, 566 and 415 nm bands, which is why the maria look faintly brown or blue. Near the poles the Sun is always low, so there the map is LOLA, LRO\u2019s laser, which measured brightness with its own light, blended in between 62\u00b0 and 70\u00b0. No colour was measured there: the poles take the Moon\u2019s average colour. The few small places the camera missed are filled from LOLA\u2019s global laser map, matched to the camera around each one.',
   'How brightness changes with the Sun\u2019s angle comes from LRO\u2019s Wide Angle Camera, which watched every square degree of the Moon from 70\u00b0N to 70\u00b0S under many angles of light (Sato and others, 2014). So the Moon brightens sharply towards full, as the real one does, and the quarter Moon is about a tenth as bright as the full Moon, not half. Nearer the poles than 70\u00b0 the Moon\u2019s typical behaviour is used.',
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Orbit: glides from your view to the crater Albategnius and heads due north along its meridian, over the central highlands and the Apennines, across the north pole, down the far side and back, with Earth rising ahead over the south pole. Pinch or scroll first to choose the height; it never goes below the height the terrain stays sharp from.',
@@ -1101,12 +1089,6 @@ function createMoonControls(
     notes,
     handlers.onEarthshineBoost,
   );
-  const scattering = createToggle(
-    { off: 'Scattering: Hapke', on: 'Scattering: old' },
-    'Old scattering is the model used before 29 September 2026 (Lommel\u2013Seeliger), shown only to compare: it has no brightening towards full Moon and is about twice too bright at quarter phase.',
-    notes,
-    handlers.onOldScattering,
-  );
   const stars = createToggle(
     { off: 'Stars: physical', on: 'Stars: boosted' },
     `Stars ×${STAR_BOOST.toLocaleString('en')} (+${STAR_BOOST_MAGNITUDES} mag) brighter than a real exposure shows them.`,
@@ -1115,7 +1097,7 @@ function createMoonControls(
   );
   const row = document.createElement('div');
   row.className = 'row';
-  row.append(link, lighting, earthshine, scattering, stars);
+  row.append(link, lighting, earthshine, stars);
 
   // Orbit mode: a random real orbit, flown automatically; time can be sped up, labelled.
   const orbitLine = document.createElement('p');

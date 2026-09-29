@@ -1,25 +1,18 @@
-"""Absolute scale for the Moon's relative albedo map.
+"""The Moon's albedo map against LRO's Hapke parameter maps: a consistency record.
 
     npm run pipeline:calibrate
 
-Neither Clementine label gives a reflectance scale (docs/stories/SS-5.md). Its values are
-reflectance at one standard geometry, incidence 30, emission 0, phase 30 degrees ("R30",
-Clementine UVVIS mosaic VOLINFO.HTM, section 8), up to an unknown factor. That factor comes
-from LRO's Wide Angle Camera (docs/stories/SS-8b.md): Sato et al. (2014) fitted Hapke's model
-to the WAC's calibrated I/F in every 1-degree tile, so each tile's I/F at the standard geometry
-is known absolutely (tools/data/hapke.ts writes it into public/data/moon/hapke.bin).
+Since SS-5b the map is LRO WAC's Hapke-normalised mosaic (moon.py), absolute I/F at the
+standard geometry i = g = 60 deg, e = 0. No scale is fitted: the renderer draws
+I/F = map I/F * Hapke(i, e, g; tile) / Hapke(60, 0, 60; tile) with the tile's parameters from
+public/data/moon/hapke.bin (docs/stories/SS-8b.md, SS-5b.md).
 
-The factor k is the least-squares fit, through zero, of
-
-    I/F at the standard geometry (WAC, 566 nm)  =  k * mean texture value in the tile
-
-over every tile the product covers (70N to 70S) with no never-imaged pixel in it. The fit is
-recorded, with its correlation and residual, and the fit with an offset is reported beside it
-but not used: an offset would add light that neither instrument measured. The renderer then
-draws I/F = k v(x) * Hapke(i, e, g; tile) / Hapke(30, 0, 30; tile).
-
-The 750 nm map supplies the pattern of relative albedo; the absolute scale is 566 nm, the WAC
-band nearest the V band the display shows. Deterministic: CI re-runs it and diffs.
+The mosaic and the parameter maps come from the same WAC observations (Sato et al. 2014), so
+each 1-degree tile's mean map I/F should equal the I/F its Hapke parameters give at the
+standard geometry. This script measures that, per tile over 70 N to 70 S: the slope through
+zero, the correlation and the residual are recorded. It is how a mistake in reading, placing
+or encoding either product would show: a flipped or shifted map, or a wrong scale, spoils the
+agreement. Deterministic: CI re-runs it and diffs.
 """
 
 from __future__ import annotations
@@ -88,45 +81,40 @@ def standard_iof() -> np.ndarray:
     return rg[:, :, 1].astype(np.float64)
 
 
+def decode(manifest: dict, decoded: np.ndarray) -> np.ndarray:
+    """The texture's bytes as I/F (moon.py: byte = 255 sqrt(I/F / maxIOverF))."""
+    encoding = manifest["texture"]["encoding"]
+    if encoding["curve"] != "sqrt":
+        raise RuntimeError(f"unknown encoding {encoding}")
+    return encoding["maxIOverF"] * (decoded / 255.0) ** 2
+
+
 def calibrate() -> dict:
     manifest = json.loads(MANIFEST_PATH.read_text())
     folder = MANIFEST_PATH.parent
     decoded = np.array(Image.open(folder / manifest["texture"]["file"]).convert("L"))
-    values = decoded / 255.0
-    mask = manifest["texture"]["mask"]
-    gap = (
-        np.zeros(values.shape, dtype=bool)
-        if mask is None
-        else np.array(Image.open(folder / mask).convert("L")) > 0
-    )
-    means, gappy = tile_means(values, gap)
+    iof = decode(manifest, decoded.astype(np.float64))
+    gap = np.zeros(iof.shape, dtype=bool)
+    means, gappy = tile_means(iof, gap)
     first, last = MEASURED_ROWS
     use = ~gappy[first:last]
-    x = means[first:last][use]
-    y = standard_iof()[first:last][use]
+    x = standard_iof()[first:last][use]
+    y = means[first:last][use]
     fit = fit_through_zero(x, y)
     manifest["calibration"] = {
-        "model": "Hapke (src/core/hapke.ts): I/F = albedoScale * v * Hapke(i, e, g; tile) / Hapke(30, 0, 30; tile), v the texture value in [0, 1], tile parameters from public/data/moon/hapke.bin",
-        "reference": "LRO WAC 566 nm Hapke parameter maps, Sato et al. (2014), doi:10.1002/2013JE004580: each tile's absolute I/F at Clementine's standard geometry i = 30, e = 0, g = 30",
-        "method": "least squares through zero of the WAC I/F at the standard geometry against the mean texture value, per 1-degree tile, 70N to 70S, tiles with never-imaged pixels left out",
-        "fit": {
+        "model": "I/F = map I/F at i = g = 60, e = 0, times Hapke(i, e, g; tile) / Hapke(60, 0, 60; tile), tile parameters from public/data/moon/hapke.bin; no scale fitted",
+        "consistency": {
+            "what": "per 1-degree tile, 70 N to 70 S: mean map I/F against the I/F the tile's Hapke parameters give at the standard geometry",
             "tiles": int(x.size),
-            "albedoScale": round(fit["k"], 6),
+            "slopeThroughZero": round(fit["k"], 4),
             "r": round(fit["r"], 4),
-            "rmsResidual": round(fit["rmsResidual"], 6),
             "relativeRmsResidual": round(fit["relativeRmsResidual"], 4),
-            "withOffsetNotUsed": {
-                "slope": round(fit["withOffset"]["slope"], 6),
-                "offset": round(fit["withOffset"]["offset"], 6),
-            },
         },
-        "albedoScale": round(fit["k"], 6),
-        # The mean texture value over the disc facing (0, 0), weighted by projected area: never-
-        # imaged pixels, if any, are shaded with it.
-        "discMeanTextureValue": round(disc_weighted_mean(values, gap), 6),
+        # Mean I/F over the disc facing (0, 0), weighted by projected area.
+        "discMeanIOverF": round(disc_weighted_mean(iof, gap), 6),
         "script": "pipeline/calibrate.py",
-        # Mean of every decoded byte, gaps included. The capture harness compares the
-        # browser's decode against it, so a colour-managed or resampled decode is caught.
+        # Mean of every decoded byte. The capture harness compares the browser's decode
+        # against it, so a colour-managed or resampled decode is caught.
         "decodedMean": round(float(decoded.mean()), 4),
     }
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
@@ -134,6 +122,5 @@ def calibrate() -> dict:
 
 
 if __name__ == "__main__":
-    c = calibrate()
-    f = c["fit"]
-    print(f"albedo scale {c['albedoScale']} over {f['tiles']} tiles, r {f['r']}, relative rms {f['relativeRmsResidual']}")
+    c = calibrate()["consistency"]
+    print(f"map against parameters over {c['tiles']} tiles: slope {c['slopeThroughZero']}, r {c['r']}, relative rms {c['relativeRmsResidual']}")

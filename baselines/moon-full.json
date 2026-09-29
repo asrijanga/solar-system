@@ -121,34 +121,34 @@
     "ok": true,
     "results": [
       {
-        "name": "Tycho brighter (113 px): ratio 1.080",
+        "name": "Tycho brighter (113 px): ratio 1.064",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Copernicus brighter (154 px): ratio 1.239",
+        "name": "Copernicus brighter (154 px): ratio 1.190",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Aristarchus brighter (13 px): ratio 1.451",
+        "name": "Aristarchus brighter (13 px): ratio 1.381",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Mare Crisium darker (1135 px): ratio 0.741",
+        "name": "Mare Crisium darker (1135 px): ratio 0.821",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Statio Tranquillitatis darker (76 px): ratio 0.735",
+        "name": "Statio Tranquillitatis darker (76 px): ratio 0.842",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "30d1667f65740587224889597b529f824e9aae71",
-    "dirty": true
+    "sha": "ace9cf96537c36930aa78cccea1ced36290c2ea9",
+    "dirty": false
   }
 }

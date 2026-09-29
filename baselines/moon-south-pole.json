@@ -36,7 +36,7 @@
     "moonChecks": [],
     "negativeControl": false,
     "id": "moon-south-pole",
-    "description": "Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 75° the albedo is LOLA laser albedo, blended into Clementine across 65–75° (docs/stories/SS-6b.md): no gaps, no step at the blend. For eyes.",
+    "description": "Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 70° the albedo is LOLA laser albedo, blended into the LRO WAC mosaic across 62–70° (docs/stories/SS-6b.md, SS-5b.md): no gaps, no step at the blend. For eyes.",
     "scene": "moon"
   },
   "environment": {
@@ -66,7 +66,7 @@
     "results": []
   },
   "git": {
-    "sha": "30d1667f65740587224889597b529f824e9aae71",
-    "dirty": true
+    "sha": "ace9cf96537c36930aa78cccea1ced36290c2ea9",
+    "dirty": false
   }
 }

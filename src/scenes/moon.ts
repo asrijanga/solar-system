@@ -58,6 +58,7 @@ import { TilesRenderer } from '3d-tiles-renderer';
 import { QuantizedMeshPlugin } from '3d-tiles-renderer/plugins';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
 import type { HapkeParameters } from '../core/hapke';
+import { colourWeights } from '../core/moonColour';
 import { EXPOSURE, AU_KM, SUNLIT_FADE } from '../core/photometry';
 import type Node from 'three/src/nodes/core/Node.js';
 import { hapkeNode, type HapkeNodes } from './hapkeNode';
@@ -75,8 +76,8 @@ export interface AlbedoManifest {
     readonly encoding: { readonly curve: 'sqrt'; readonly maxIOverF: number };
   };
   /**
-   * The measured colour (docs/stories/SS-5b.md): red = I/F(643 nm) / I/F(566 nm) and green =
-   * I/F(415 nm) / I/F(566 nm), each byte linear over its range.
+   * The measured colour (docs/stories/SS-5b.md): red, green and blue hold I/F(643 nm),
+   * I/F(415 nm) and I/F(689 nm) over I/F(566 nm), each byte linear over its range.
    */
   readonly colour: {
     readonly file: string;
@@ -85,6 +86,7 @@ export interface AlbedoManifest {
     readonly ranges: {
       readonly '643/566': readonly [number, number];
       readonly '415/566': readonly [number, number];
+      readonly '689/566': readonly [number, number];
     };
   };
   readonly calibration: { readonly discMeanIOverF: number };
@@ -179,7 +181,7 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
       `${base}${manifest.colour.file}`,
       manifest.colour.width,
       manifest.colour.height,
-      [0, 1],
+      [0, 1, 2],
     ),
   ]);
 
@@ -196,16 +198,18 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   albedo.anisotropy = maxAnisotropy;
   albedo.needsUpdate = true;
 
-  // Red and green of the colour file into one two-channel texture: the ratios, linear.
-  const [red, green] = colourChannels;
+  // The colour file's three channels, the band ratios, into one texture, linear.
+  const [red, green, blue] = colourChannels;
   const cw = manifest.colour.width;
   const ch = manifest.colour.height;
-  const rg = new Uint8Array(cw * ch * 2);
+  const rgba = new Uint8Array(cw * ch * 4);
   for (let i = 0; i < cw * ch; i++) {
-    rg[i * 2] = red?.[i] ?? 0;
-    rg[i * 2 + 1] = green?.[i] ?? 0;
+    rgba[i * 4] = red?.[i] ?? 0;
+    rgba[i * 4 + 1] = green?.[i] ?? 0;
+    rgba[i * 4 + 2] = blue?.[i] ?? 0;
+    rgba[i * 4 + 3] = 255;
   }
-  const colour = new DataTexture(rg, cw, ch, RGFormat, UnsignedByteType);
+  const colour = new DataTexture(rgba, cw, ch, RGBAFormat, UnsignedByteType);
   colour.colorSpace = NoColorSpace; // ratios, linear: not a colour to be managed
   colour.wrapS = RepeatWrapping;
   colour.wrapT = ClampToEdgeWrapping;
@@ -297,6 +301,9 @@ export interface MoonOptions {
    */
   readonly earthshineBoost?: UniformNode<'float', number>;
 }
+
+/** Display colour per band ratio (core/moonColour.ts), computed once. */
+const COLOUR_WEIGHTS = colourWeights();
 
 /** IAU 2015 Resolution B3 nominal solar radius, km. */
 const SUN_RADIUS_KM = 695_700;
@@ -422,14 +429,24 @@ function createMoonMaterial(
       const colourSample = (options.seamFix === false ? c : c.grad(gradX, gradY)).toVar(
         'moonColourSample',
       );
-      const [redLo, redHi] = maps.manifest.colour.ranges['643/566'];
-      const blueLo = maps.manifest.colour.ranges['415/566'][0];
-      const blueHi = maps.manifest.colour.ranges['415/566'][1];
-      // Red, green and blue are 643, 566 and 415 nm, relative to 566 nm.
+      const ranges = maps.manifest.colour.ranges;
+      const ratio = (byte: typeof colourSample.r, [lo, hi]: readonly [number, number]) =>
+        byte.mul(hi - lo).add(lo);
+      // Band ratios at 415, 643 and 689 nm (566 nm is 1), then the display colour: each
+      // channel a fixed weighted sum of them (core/moonColour.ts).
+      const r415 = ratio(colourSample.g, ranges['415/566']);
+      const r643 = ratio(colourSample.r, ranges['643/566']);
+      const r689 = ratio(colourSample.b, ranges['689/566']);
+      const channel = (row: readonly number[]) =>
+        r415
+          .mul(row[0] ?? 0)
+          .add(row[1] ?? 0)
+          .add(r643.mul(row[2] ?? 0))
+          .add(r689.mul(row[3] ?? 0));
       tint = vec3(
-        colourSample.r.mul(redHi - redLo).add(redLo),
-        1,
-        colourSample.g.mul(blueHi - blueLo).add(blueLo),
+        channel(COLOUR_WEIGHTS[0] ?? []),
+        channel(COLOUR_WEIGHTS[1] ?? []),
+        channel(COLOUR_WEIGHTS[2] ?? []),
       );
 
       if (maps.gaps !== null) {

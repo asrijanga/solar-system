@@ -18,9 +18,10 @@ Outputs in public/data/moon/, column 0 = longitude -180 deg (west edge), row 0 =
   byte = 255 * sqrt(I/F / MAX_IOF): the source is floating point, and a square-root curve puts
   the 8 bits where the Moon's values are (median I/F 0.034), about 2% of I/F per step in the
   maria. The renderer squares it back.
-- albedo-colour.png, 2048 x 1024, lossless RGB: red = I/F(643 nm) / I/F(566 nm), green =
-  I/F(415 nm) / I/F(566 nm), each linear in the range the manifest gives; blue unused. The
-  renderer's red, green and blue are 643, 566 and 415 nm. Colour is 4 times coarser than
+- albedo-colour.png, 2048 x 1024, lossless RGB: the ratios I/F(643 nm), I/F(415 nm) and
+  I/F(689 nm) to I/F(566 nm), in red, green and blue, each linear in the range the manifest
+  gives. The renderer turns them into a display colour (core/moonColour.ts: the spectrum
+  through the bands, lit by sunlight, CIE 1931 to sRGB). Colour is 4 times coarser than
   brightness (5.3 km at the equator), as in photographs, so the GPU memory stays within the
   mobile budget. Poleward of 70 deg, and in the mosaic's few gaps, no colour was measured:
   there the ratios are the Moon's median colour, blended in from 62 to 70 deg like the
@@ -147,28 +148,29 @@ def brightness() -> np.ndarray:
     return iof
 
 
-def colour() -> tuple[np.ndarray, np.ndarray, dict]:
-    """643/566 and 415/566 ratios on the colour grid, with the median colour where none was
-    measured, blended in over the brightness's polar band."""
-    sums = {band: accumulate(band, COLOUR_WIDTH, COLOUR_HEIGHT) for band in ("566NM", "643NM", "415NM")}
+def colour() -> tuple[dict, dict]:
+    """643/566, 415/566 and 689/566 ratios on the colour grid, with the median colour where none
+    was measured, blended in over the brightness's polar band."""
+    sums = {band: accumulate(band, COLOUR_WIDTH, COLOUR_HEIGHT) for band in ("566NM", "643NM", "415NM", "689NM")}
     measured = np.all([c > 0 for _, c in sums.values()], axis=0)
     mean = {band: t / np.maximum(c, 1) for band, (t, c) in sums.items()}
     measured &= mean["566NM"] > 0
-    red = np.where(measured, mean["643NM"] / np.where(measured, mean["566NM"], 1), np.nan)
-    blue = np.where(measured, mean["415NM"] / np.where(measured, mean["566NM"], 1), np.nan)
-    median_red = float(np.nanmedian(red))
-    median_blue = float(np.nanmedian(blue))
     lat = 90 - (np.arange(COLOUR_HEIGHT) + 0.5) * 180 / COLOUR_HEIGHT
     w = smoothstep(BLEND_BAND[0], BLEND_BAND[1], np.abs(lat))[:, None]
-    red = np.where(measured, (1 - w) * np.nan_to_num(red) + w * median_red, median_red)
-    blue = np.where(measured, (1 - w) * np.nan_to_num(blue) + w * median_blue, median_blue)
+    ratios = {}
+    medians = {}
+    for band in ("643NM", "415NM", "689NM"):
+        r = np.where(measured, mean[band] / np.where(measured, mean["566NM"], 1), np.nan)
+        m = float(np.nanmedian(r))
+        ratios[band] = np.where(measured, (1 - w) * np.nan_to_num(r) + w * m, m)
+        medians[f"{band[:3]}/566"] = round(m, 6)
     record = {
-        "medianRatios": {"643/566": round(median_red, 6), "415/566": round(median_blue, 6)},
+        "medianRatios": medians,
         "measuredCells": int(measured.sum()),
         "unmeasuredCells": int((~measured).sum()),
         "unmeasuredEquatorwardOf70": int((~measured & (np.abs(lat) < 70)[:, None]).sum()),
     }
-    return red, blue, record
+    return ratios, record
 
 
 def encode_ratio(r: np.ndarray, lo: float, hi: float) -> np.ndarray:
@@ -197,14 +199,14 @@ def build() -> dict:
     out.write_bytes(chosen["_data"])
     (OUT_DIR / "albedo-mask.png").unlink(missing_ok=True)
 
-    red, blue, colour_record = colour()
+    ratios, colour_record = colour()
     ranges = {
-        "643/566": [math.floor(float(red.min()) * 100) / 100, math.ceil(float(red.max()) * 100) / 100],
-        "415/566": [math.floor(float(blue.min()) * 100) / 100, math.ceil(float(blue.max()) * 100) / 100],
+        f"{band[:3]}/566": [math.floor(float(r.min()) * 100) / 100, math.ceil(float(r.max()) * 100) / 100]
+        for band, r in ratios.items()
     }
     rgb = np.zeros((COLOUR_HEIGHT, COLOUR_WIDTH, 3), dtype=np.uint8)
-    rgb[:, :, 0] = encode_ratio(red, *ranges["643/566"])
-    rgb[:, :, 1] = encode_ratio(blue, *ranges["415/566"])
+    for c, band in enumerate(("643NM", "415NM", "689NM")):
+        rgb[:, :, c] = encode_ratio(ratios[band], *ranges[f"{band[:3]}/566"])
     colour_out = OUT_DIR / "albedo-colour.png"
     Image.fromarray(rgb, mode="RGB").save(colour_out, optimize=True)
 
@@ -214,7 +216,7 @@ def build() -> dict:
             "url": WAC_SOURCES["base"],
             "files": "pipeline/wac_sources.json: 8 tiles per band, MD5 from each label, SHA-256 pinned",
             "normalisation": "I/F normalised to phase = incidence = 60 deg, emission = 0 deg by the Hapke function with the Sato et al. (2014) parameter maps",
-            "bands": {"brightness": "566 nm", "colour": "643 nm and 415 nm, as ratios to 566 nm"},
+            "bands": {"brightness": "566 nm", "colour": "415, 643 and 689 nm, as ratios to 566 nm"},
             "chosen": "owner, 2026-09-29: replace Clementine between 70 N and 70 S, and show the measured colour (docs/stories/SS-5b.md)",
             "wacMissingPixels": wac_missing,
             "wacMissingWithin70Deg": wac_missing_within_70,
@@ -258,9 +260,9 @@ def build() -> dict:
             "file": colour_out.name,
             "width": COLOUR_WIDTH,
             "height": COLOUR_HEIGHT,
-            "channels": "red = I/F(643 nm) / I/F(566 nm), green = I/F(415 nm) / I/F(566 nm), each byte linear over its range; blue unused",
+            "channels": "red = I/F(643 nm) / I/F(566 nm), green = I/F(415 nm) / I/F(566 nm), blue = I/F(689 nm) / I/F(566 nm), each byte linear over its range",
             "ranges": ranges,
-            "display": "the renderer's red, green and blue are 643, 566 and 415 nm",
+            "display": "core/moonColour.ts: the reflectance spectrum linear between 415, 566, 643 and 689 nm and flat beyond, lit by a 5772 K blackbody, CIE 1931 to linear sRGB, white-balanced to sunlight",
             "unmeasured": "poleward of 70 deg and in the mosaic's gaps: the Moon's median ratios, blended in from 62 to 70 deg",
             **colour_record,
             "sha256": sha256(colour_out),

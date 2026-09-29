@@ -121,6 +121,46 @@
    "md5": "6c5cfe9947b801a9ffa4dd5da657f444",
    "sha256": "78bbc3fdacd5f855d7004c66799f4f5a8db5a227a9c3af5e6cccd8094898e766",
    "bytes": 145582560
+  },
+  "WAC_HAPKE_689NM_E350N0450": {
+   "md5": "efe2c45fd15e524b64144682c10c7824",
+   "sha256": "86d2105ab2794cee5363bc7e69e2551e234ba3b81698e8c7bff1ee2fafb3e101",
+   "bytes": 145609920
+  },
+  "WAC_HAPKE_689NM_E350N1350": {
+   "md5": "e1ed33295cdd4112dd57a4cd1fba9633",
+   "sha256": "dd072d4cbe162da60e3efca25d5cb7d7cf33f9c0d490640f0f7ccf0390066dec",
+   "bytes": 145609920
+  },
+  "WAC_HAPKE_689NM_E350N2250": {
+   "md5": "64ac7b4b4cb7b6196b3800f4b7e04c04",
+   "sha256": "6305ce22ad4f8eb9b257a520ff9660b8e69b7f98024f2eab263d29b8709af3a5",
+   "bytes": 145609920
+  },
+  "WAC_HAPKE_689NM_E350N3150": {
+   "md5": "c91d5b30e052b365924f5b7b2f8563c2",
+   "sha256": "b13ea18691cbdd2f3fa89ce7647eab7af1135ff97f63f92ed0274b615c961439",
+   "bytes": 145609920
+  },
+  "WAC_HAPKE_689NM_E350S0450": {
+   "md5": "ff6f2e31d5e01974d08007198baa6246",
+   "sha256": "e64b0de91da8767b664aad4590f54268c6b6224e688364c7704a831e4e7a2e7c",
+   "bytes": 145582560
+  },
+  "WAC_HAPKE_689NM_E350S1350": {
+   "md5": "2478bd75800c8be80441e1c87ca1d31c",
+   "sha256": "abe8f40226b8acf23fe1396c75e48844970ba0f565d8dcfb3d17b26409e8897f",
+   "bytes": 145582560
+  },
+  "WAC_HAPKE_689NM_E350S2250": {
+   "md5": "cd2fbbb66b3b3d166173ee1d841b15e7",
+   "sha256": "8fb0ad03241d492b8b636a65488212aca8b21987a95d894616bff0881f2dbe8b",
+   "bytes": 145582560
+  },
+  "WAC_HAPKE_689NM_E350S3150": {
+   "md5": "16eba55cb39b458db66ed33abdb8a263",
+   "sha256": "811645f19be5fbe31e0c2cb0b26a65a57d2440b8c28fb4a1744de65c12138cfa",
+   "bytes": 145582560
   }
  }
 }

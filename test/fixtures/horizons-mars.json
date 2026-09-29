@@ -1,0 +1,43 @@
+{
+  "source": "JPL Horizons API (https://ssd.jpl.nasa.gov/api/horizons.api)",
+  "retrieved": "2026-09-29",
+  "subSolarRequest": "COMMAND='499' CENTER='500@399' EPHEM_TYPE=OBSERVER QUANTITIES='15' ANG_FORMAT=DEG, one epoch per query (UT)",
+  "subSolarConvention": "Horizons header: 'Target pole/equ : IAU_MARS {West-longitude positive}'; 'Latitude is the angle between the equatorial plane and the line perpendicular to the reference ellipsoid' (planetodetic), radii 3396.19, 3396.19, 3376.2 km",
+  "satelliteRequest": "COMMAND='401' and '402' CENTER='500@499' EPHEM_TYPE=VECTORS TIME_TYPE=UT REF_PLANE=FRAME REF_SYSTEM=ICRF VEC_TABLE=1 VEC_CORR=NONE OUT_UNITS=KM-S, one epoch per query",
+  "frameStatedByHorizons": "IAU_MARS",
+  "epochs": [
+    {
+      "id": "full-2026-01",
+      "utc": "2026-01-03 10:00",
+      "row": "2026-Jan-03 10:00:00.000     324.066714  -8.564642",
+      "subSolarWestLonDeg": 324.066714,
+      "subSolarPlanetodeticLatDeg": -8.564642,
+      "satellitesJ2000Km": {
+        "Phobos": [-1302.154929211959, 7958.857246003843, 4993.422986684875],
+        "Deimos": [18774.1974363871, 13896.72916952506, -2165.390049042276]
+      },
+      "fromPhobos": {
+        "row": "2026-Jan-03 10:00:00.000     328.940451  -8.568025",
+        "subSolarWestLonDeg": 328.940451,
+        "subSolarPlanetodeticLatDeg": -8.568025
+      }
+    },
+    {
+      "id": "first-quarter-2026-01",
+      "utc": "2026-01-26 05:00",
+      "row": "2026-Jan-26 05:00:00.000      28.561091 -13.932967",
+      "subSolarWestLonDeg": 28.561091,
+      "subSolarPlanetodeticLatDeg": -13.932967,
+      "satellitesJ2000Km": {
+        "Phobos": [-185.8361825312261, -8190.375997650488, -4273.310208167639],
+        "Deimos": [14280.97353717771, 18445.65190995495, 2423.741435121976]
+      },
+      "fromPhobos": {
+        "row": "2026-Jan-26 05:00:00.000      33.387747 -13.936069",
+        "subSolarWestLonDeg": 33.387747,
+        "subSolarPlanetodeticLatDeg": -13.936069
+      }
+    }
+  ],
+  "subSolarFromPhobosRequest": "COMMAND='499' CENTER='500@401' EPHEM_TYPE=OBSERVER QUANTITIES='15' ANG_FORMAT=DEG, one epoch per query (UT). Seen from Phobos, light time 0.03 s: Mars as it is at the instant, which is what the app draws. From Earth, Mars is seen about 20 minutes earlier, when it had turned about 5 degrees less"
+}

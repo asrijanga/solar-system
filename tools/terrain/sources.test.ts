@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Blend, Grid, boxMean } from './sources.ts';
+import { Blend, Grid, LatitudeBlend, boxMean } from './sources.ts';
 
 /** A 10 x 10 degree grid at 10 px/deg, north edge 0, west edge 0, constant height. */
 function flat(km: number, nanAt?: [number, number]): Grid {
@@ -40,5 +40,25 @@ describe('boxMean', () => {
     const out = boxMean(grid, 5, 5, 3);
     expect(out[2 * 5 + 2]).toBeCloseTo((6 + 7 + 8 + 11 + 12 + 13 + 16 + 17 + 18) / 9);
     expect(out[0]).toBeCloseTo((0 + 0 + 1 + 0 + 0 + 1 + 5 + 5 + 6) / 9);
+  });
+});
+
+describe('LatitudeBlend', () => {
+  /** Constant fields: heightM returns `m` everywhere. */
+  const field = (m: number) => ({ contains: () => true, heightM: () => m });
+
+  it('is the band equatorward, the base poleward, smooth between, at both poles', () => {
+    const blend = new LatitudeBlend(field(1000), field(0), 58, 60);
+    expect(blend.heightM(0, 10)).toBe(1000);
+    expect(blend.heightM(57.9, 10)).toBe(1000);
+    expect(blend.heightM(-59, 10)).toBeCloseTo(500, 9);
+    expect(blend.heightM(60, 10)).toBe(0);
+    expect(blend.heightM(-75, 10)).toBe(0);
+  });
+
+  it('takes the base where the band has no measurement', () => {
+    const blend = new LatitudeBlend(field(Number.NaN), field(7), 58, 60);
+    expect(blend.heightM(0, 10)).toBe(7);
+    expect(blend.heightM(59, 10)).toBe(7);
   });
 });

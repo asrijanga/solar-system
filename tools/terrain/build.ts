@@ -5,7 +5,12 @@
 // The whole Moon at full measured detail is `npm run local` (SS-10c); this is the part that
 // fits GitHub Pages:
 //
-// - Everywhere, levels 0-5 from LOLA LDEM_64 (474 m): vertices 2.7 km apart at level 5.
+// - Everywhere, levels 0-7 (vertices 0.67 km apart at level 7). Within 58 degrees of the
+//   equator from SLDEM2015 (LOLA with Kaguya TC stereo, Barker et al. 2016), area-averaged
+//   from 128 to 64 px/deg; poleward of 60 degrees from LOLA LDEM_64 (474 m); smoothstep between
+//   (docs/stories/SS-10d.md). LOLA's grid is interpolated between laser tracks several km apart
+//   near the equator; SLDEM2015 fills between them with Kaguya's stereo, so the relief there is
+//   measured, not interpolated.
 // - Around Albategnius, levels 6-11 from LOLA LDEM_512 (59 m), a pinned byte range of the PDS
 //   file covering 45 S - 0, 0 - 90 E: vertices 83 m apart over the crater, 41 m at its peak.
 // - Over the crater's floor and central peak, levels 12-13 from SELENE (Kaguya) TC DTM_MAP_02
@@ -22,7 +27,8 @@ import { dirname, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { fetchPinned } from '../data/download.ts';
 import { encodeTile, tileBounds, type HeightSource } from './quantizedMesh.ts';
-import { Blend, Grid, boxMean, type HeightField } from './sources.ts';
+import { openSync, readSync, closeSync } from 'node:fs';
+import { Blend, Grid, LatitudeBlend, boxMean, type HeightField } from './sources.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const OUT = join(ROOT, 'public', 'terrain');
@@ -32,6 +38,21 @@ const PDS =
 // LOLA LDEM_64_FLOAT (PDS LRO-L-LOLA-4-GDR-V1.0): 23040 x 11520 little-endian float km from
 // the 1737.4 km sphere, pixel-registered from 90 N and 0 E (pipeline/terrain.py pins it too).
 const LDEM64_SHA256 = '4dd151f230984316602f13df36214563ff575683cb5612f1a7bc4699188ec25b';
+
+// SLDEM2015_128_60S_60N_000_360_FLOAT (PDS LRO-L-LOLA-4-GDR-V1.0, product version V2.0), from
+// its label: SIMPLE CYLINDRICAL, 128 px/deg, 15360 lines from 60 N by 46080 samples from 0 E,
+// pixel-registered (LINE_PROJECTION_OFFSET 7679.5, SAMPLE_PROJECTION_OFFSET 23039.5), PC_REAL
+// 32-bit little-endian km above the 1737.4 km sphere (OFFSET), POSITIVE_LONGITUDE_DIRECTION
+// EAST, frame MEAN EARTH/POLAR AXIS OF DE421: the same frame, sphere and units as LDEM_64. LOLA
+// publishes no checksum; the SHA-256 is pinned from the first download, whose size matched the
+// label (15360 records of 184320 bytes).
+const SLDEM_URL =
+  'https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/sldem2015/global/float_img/sldem2015_128_60s_60n_000_360_float.img';
+const SLDEM_SHA256 = 'd937ff8f2f09dae2c56512f49649000b49ee79c50aa18ee7b5fb5d26a0d00e06';
+const SLDEM_LINES = 15360;
+const SLDEM_SAMPLES = 46080;
+/** |latitude| where the blend from SLDEM2015 into LDEM_64 starts and ends, degrees. */
+const SLDEM_BLEND = [58, 60] as const;
 
 // LDEM_512 tile 45 S - 0, 0 - 90 E: 46080 samples per row. Rows 2560-8704 are latitude 5 S to
 // 17 S; the first 10 degrees of longitude are kept.
@@ -89,6 +110,95 @@ function floats(path: string, bigEndianInt16 = false): Float32Array {
 async function ldem64(): Promise<Grid> {
   const path = await fetchPinned(`${PDS}ldem_64_float.img`, LDEM64_SHA256, 'ldem_64_float.img');
   return new Grid(floats(path), 11520, 23040, 90, 0, 64, true);
+}
+
+/**
+ * SLDEM2015 area-averaged 2 x 2 to 64 px/deg (474 m, LDEM_64's grid): finer than the website's
+ * finest global vertex spacing, and a quarter of the memory. Read two lines at a time.
+ */
+async function sldem64(): Promise<Grid> {
+  const path = await fetchPinned(
+    SLDEM_URL,
+    SLDEM_SHA256,
+    'sldem2015_128_60s_60n_000_360_float.img',
+  );
+  const rows = SLDEM_LINES / 2;
+  const cols = SLDEM_SAMPLES / 2;
+  const out = new Float32Array(rows * cols);
+  const lineBytes = SLDEM_SAMPLES * 4;
+  const buffer = Buffer.alloc(lineBytes * 2);
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const fd = openSync(path, 'r');
+  try {
+    for (let r = 0; r < rows; r++) {
+      if (readSync(fd, buffer, 0, buffer.length, r * buffer.length) !== buffer.length) {
+        throw new Error('SLDEM2015 is shorter than its label says');
+      }
+      for (let c = 0; c < cols; c++) {
+        let sum = 0;
+        let n = 0;
+        for (const offset of [0, lineBytes]) {
+          for (const dc of [0, 1]) {
+            const v = view.getFloat32(offset + (2 * c + dc) * 4, true);
+            if (Number.isFinite(v)) {
+              sum += v;
+              n++;
+            }
+          }
+        }
+        out[r * cols + c] = n === 0 ? Number.NaN : sum / n;
+      }
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return new Grid(out, rows, cols, 60, 0, 64, true);
+}
+
+/**
+ * How SLDEM2015 (averaged to 64 px/deg) sits against LDEM_64 on the same grid, equatorward of
+ * the blend: mean and RMS difference, and correlation. Barker et al. co-registered it to LOLA,
+ * so a mean beyond a few metres would mean a misread file.
+ */
+function agreement(band: Grid, lola: Grid) {
+  const rowOffset = (lola.latTop - band.latTop) * band.ppd;
+  let n = 0;
+  let sd = 0;
+  let sdd = 0;
+  let sx = 0;
+  let sy = 0;
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  for (let r = 0; r < band.rows; r++) {
+    const lat = band.latTop - (r + 0.5) / band.ppd;
+    if (Math.abs(lat) >= SLDEM_BLEND[0]) continue;
+    for (let c = 0; c < band.cols; c++) {
+      const x = (band.km[r * band.cols + c] ?? Number.NaN) * 1000;
+      const y = (lola.km[(r + rowOffset) * lola.cols + c] ?? Number.NaN) * 1000;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      const d = x - y;
+      n++;
+      sd += d;
+      sdd += d * d;
+      sx += x;
+      sy += y;
+      sxx += x * x;
+      syy += y * y;
+      sxy += x * y;
+    }
+  }
+  const mean = sd / n;
+  const round = (v: number, digits: number): number => Number(v.toFixed(digits));
+  return {
+    samples: n,
+    meanDifferenceM: round(mean, 2),
+    rmsDifferenceM: round(Math.sqrt(sdd / n), 2),
+    correlation: round(
+      (n * sxy - sx * sy) / Math.sqrt((n * sxx - sx * sx) * (n * syy - sy * sy)),
+      6,
+    ),
+  };
 }
 
 async function albategnius(): Promise<Grid> {
@@ -252,7 +362,7 @@ function source(field: HeightField): HeightSource {
 }
 
 async function build(
-  global: Grid,
+  global: HeightField,
   regions: readonly (readonly [number, HeightField])[],
 ): Promise<number> {
   rmSync(OUT, { recursive: true, force: true });
@@ -312,14 +422,25 @@ async function build(
     available,
     extensions: ['octvertexnormals'],
     attribution:
-      'LOLA LDEM_64 and LDEM_512 (PDS LRO-L-LOLA-4-GDR-V1.0); SELENE TC DTM_MAP_02 (JAXA)',
+      'SLDEM2015 (LOLA and SELENE TC), LOLA LDEM_64 and LDEM_512 (PDS LRO-L-LOLA-4-GDR-V1.0); SELENE TC DTM_MAP_02 (JAXA)',
   };
   writeFileSync(join(OUT, 'layer.json'), JSON.stringify(layer, null, 1));
   return count;
 }
 
 if (import.meta.main) {
-  const [global, lola, fine] = await Promise.all([ldem64(), albategnius(), kaguya()]);
+  const [ldem, band, lola, fine] = await Promise.all([
+    ldem64(),
+    sldem64(),
+    albategnius(),
+    kaguya(),
+  ]);
+  const bandFit = agreement(band, ldem);
+  console.log(`SLDEM2015 against LDEM_64: ${JSON.stringify(bandFit)}`);
+  if (Math.abs(bandFit.meanDifferenceM) > 5) {
+    throw new Error('SLDEM2015 no longer agrees with LDEM_64 within 5 m on average: review');
+  }
+  const global = new LatitudeBlend(band, ldem, SLDEM_BLEND[0], SLDEM_BLEND[1]);
   const fit = registration(fine, lola, [3.1, -11.9, 5.9, -9.1]);
   console.log(`Kaguya against LOLA: ${JSON.stringify(fit)}`);
   // Registration within one Kaguya sample and a sub-metre vertical offset are below what either
@@ -340,7 +461,18 @@ if (import.meta.main) {
     join(OUT, 'sources.json'),
     `${JSON.stringify(
       {
-        global: `LOLA LDEM_64_FLOAT (PDS LRO-L-LOLA-4-GDR-V1.0), levels 0-${GLOBAL_LEVELS}`,
+        global: {
+          levels: `0-${GLOBAL_LEVELS}`,
+          band: {
+            source:
+              'SLDEM2015_128_60S_60N_000_360_FLOAT (PDS LRO-L-LOLA-4-GDR-V1.0, V2.0): LOLA with Kaguya TC stereo, Barker et al. (2016)',
+            sha256: SLDEM_SHA256,
+            averaged: '2 x 2 to 64 px/deg',
+            agreementWithLdem64: bandFit,
+          },
+          poles: 'LOLA LDEM_64_FLOAT (PDS LRO-L-LOLA-4-GDR-V1.0)',
+          blend: `smoothstep from SLDEM2015 at |latitude| ${SLDEM_BLEND[0]} to LDEM_64 at ${SLDEM_BLEND[1]} deg`,
+        },
         compression: 'gzip, level 9',
         albategnius: {
           source: 'LOLA LDEM_512_45S_00S_000_090_FLOAT, rows 2560-8704 (byte range)',

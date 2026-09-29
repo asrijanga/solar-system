@@ -128,6 +128,47 @@ export class Blend implements HeightField {
   }
 }
 
+/**
+ * A grid that covers a band of latitude (SLDEM2015, 60 S to 60 N), blended into a global base
+ * towards the band's edges. Equatorward of `innerDeg` the heights are the band's; poleward of
+ * `outerDeg` the base's; smoothstep between. Where the band has no measurement, the base's.
+ */
+export class LatitudeBlend implements HeightField {
+  readonly band: HeightField;
+  readonly base: HeightField;
+  readonly innerDeg: number;
+  readonly outerDeg: number;
+
+  constructor(band: HeightField, base: HeightField, innerDeg: number, outerDeg: number) {
+    this.band = band;
+    this.base = base;
+    this.innerDeg = innerDeg;
+    this.outerDeg = outerDeg;
+  }
+
+  contains(west: number, south: number, east: number, north: number): boolean {
+    return this.base.contains(west, south, east, north);
+  }
+
+  /** The band's weight: 1 equatorward of innerDeg, 0 poleward of outerDeg. */
+  weight(lat: number): number {
+    const t = Math.min(
+      Math.max((this.outerDeg - Math.abs(lat)) / (this.outerDeg - this.innerDeg), 0),
+      1,
+    );
+    return t * t * (3 - 2 * t);
+  }
+
+  heightM(lat: number, lon: number): number {
+    const w = this.weight(lat);
+    const base = w < 1 ? this.base.heightM(lat, lon) : 0;
+    if (w === 0) return base;
+    const band = this.band.heightM(lat, lon);
+    if (Number.isNaN(band)) return w < 1 ? base : this.base.heightM(lat, lon);
+    return w === 1 ? band : base + w * (band - base);
+  }
+}
+
 /** Mean over the n x n neighbourhood of every sample (n odd); edges repeat outwards. */
 export function boxMean(values: Float32Array, rows: number, cols: number, n: number): Float32Array {
   const half = Math.floor(n / 2);

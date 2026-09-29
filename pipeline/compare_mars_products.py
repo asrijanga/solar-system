@@ -8,7 +8,8 @@ covers the same region and is resampled by area averaging to the same size, from
 own grid (east-positive longitude, as each header states).
 
 Each albedo panel gets its own linear 0.5-99.5 percentile stretch, so compare shading and
-texture, not absolute brightness. The relief panel is not a candidate. It is the HRSC-MOLA DEM,
+texture, not absolute brightness. The OMEGA panel is enlarged by
+repeating pixels, so its 1.5 km cells show as they are. The relief panel is not a candidate. It is the HRSC-MOLA DEM,
 lit from the west at 30 degrees by this script, only so that shading baked into a candidate
 can be recognised: a slope that is bright or dark in a candidate the way it is here.
 """
@@ -17,6 +18,8 @@ from __future__ import annotations
 
 import math
 import sys
+
+import urllib.request
 
 import numpy as np
 import rasterio
@@ -33,8 +36,16 @@ PANEL = (720, 540)  # 12 deg x 9 deg
 
 PRODUCTS = [
     ("Viking MDIM 2.1 colour, 232 m", "Mars_Viking_MDIM21_ClrMosaic_global_232m.tif"),
-    ("MGS TES Lambert albedo, 7.4 km", "Mars_MGS_TES_Albedo_mosaic_global_7410m.tif"),
+    ("MGS TES bolometric albedo, 7.4 km", "Mars_MGS_TES_Albedo_mosaic_global_7410m.tif"),
 ]
+# Mars Express OMEGA 1.08 um Lambert albedo (Ody et al. 2012), ESA PSA, PDS3. From its label:
+# 7200 x 14400 LSB 16-bit, value = OFFSET + SCALING_FACTOR * DN, missing -32768, 40 px/deg,
+# planetocentric, east-positive, LINE_PROJECTION_OFFSET 3600.5, SAMPLE_PROJECTION_OFFSET 7200.5.
+OMEGA = (
+    "Mars Express OMEGA 1.08 um Lambert albedo, 1.5 km (2004-2010)",
+    "https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/OMEGA/MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0/DATA/ALBEDO/ALBEDO_R1080_EQU_MAP.IMG",
+)
+OMEGA_OFFSET, OMEGA_SCALE, OMEGA_PPD, OMEGA_SAMPLES = 5.2414565669e-01, 1.4522365285e-05, 40, 14400
 DEM = ("Relief for reference (HRSC-MOLA DEM, lit from the west)", "Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif")
 
 
@@ -56,6 +67,23 @@ def read(path: str) -> np.ma.MaskedArray:
             resampling=Resampling.average,
             masked=True,
         ).astype("float64")
+
+
+def read_omega() -> np.ma.MaskedArray:
+    """Rows by HTTP range request. Line L (1-based) is centred at latitude (3600.5 - L) / 40,
+    sample S at longitude (S - 7200.5) / 40 (the label's projection offsets)."""
+    first = int(math.floor(3600.5 - LAT[1] * OMEGA_PPD))
+    last = int(math.ceil(3600.5 - LAT[0] * OMEGA_PPD))
+    s0 = int(math.floor(7200.5 + LON[0] * OMEGA_PPD))
+    s1 = int(math.ceil(7200.5 + LON[1] * OMEGA_PPD))
+    row = OMEGA_SAMPLES * 2
+    request = urllib.request.Request(OMEGA[1], headers={"Range": f"bytes={(first - 1) * row}-{last * row - 1}"})
+    with urllib.request.urlopen(request, timeout=300) as response:
+        raw = np.frombuffer(response.read(), dtype="<i2").reshape(last - first + 1, OMEGA_SAMPLES)
+    dn = raw[:, s0 - 1 : s1]
+    values = np.ma.masked_equal(dn, -32768).astype("float64") * OMEGA_SCALE + OMEGA_OFFSET
+    print(f"OMEGA: rows {first}-{last}, samples {s0}-{s1}, albedo {values.min():.3f}-{values.max():.3f}")
+    return values
 
 
 def stretch(data: np.ma.MaskedArray) -> np.ndarray:
@@ -84,6 +112,9 @@ def main(out: str) -> None:
         rgb = np.stack([stretch(b) for b in data]) if data.shape[0] == 3 else np.repeat(stretch(data[0])[None], 3, 0)
         panels.append((label, rgb.transpose(1, 2, 0)))
         print(f"{label}: {data.shape[0]} band(s), {data.count()} valid values")
+    omega = stretch(read_omega())
+    omega = np.asarray(Image.fromarray(omega).resize(PANEL, Image.NEAREST))
+    panels.append((OMEGA[0], np.repeat(omega[..., None], 3, 2)))
     shade = relief(read(DEM[1]))
     panels.append((DEM[0], np.repeat(shade[..., None], 3, 2)))
 

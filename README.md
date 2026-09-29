@@ -601,7 +601,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 | SS-10b | As a learner, I want detail below the measurements, labelled as an approximation | Shipped, local mode only |
 | SS-10c | As a learner, I want the whole Moon at full measured detail without anyone paying for hosting | Shipped: `npm run local` |
 | SS-11 | As a learner, I want to descend to a few kilometres and hover, so that I feel the scale of the terrain | Partly: tilt and ground-following; camera-relative rendering open |
-| SS-11b | As a learner, I want to orbit in a cinematic mode, low enough to see terrain and never blurry | Shipped: gestures first, then orbit. Since SS-15 it starts over Albategnius heading north and glides in |
+| SS-11b | As a learner, I want to orbit in a cinematic mode, low enough to see terrain and never blurry | Shipped: gestures first, then orbit. Since SS-11f it starts from wherever you are looking, over the point below you, heading towards the top of the screen, and glides in |
 | SS-11c | As a learner, I want no marks breaking the view where one mission missed a spot | Shipped: gaps filled from LOLA |
 | SS-12 | As a learner, I want it to run smoothly on my own machine, so that I can actually use it: first public release | Open. Needs frame-rate numbers from the owner's iPhone, now with labels (61 sprites) and Earth's map in the scene |
 | SS-13 | As a learner, I want to pick a world from a home page, each world on its own page with a way back | Shipped. The true-scale map with real distances stays the goal for the home page |
@@ -619,6 +619,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 | SS-13e | As a learner, I want the Moon's night side lit by earthshine | Shipped 2026-09-27: earthshine from Earth's measured disc brightness, with a labelled "Earthshine: boosted" that brightens it only where the Sun is down (docs/stories/SS-13e.md) |
 | SS-11d | As the developer, I want the allocation gate to cover the Orbit button's glide | `npm run alloc` measures a flight started with `?orbit=`, which has no glide. The glide runs for up to 6 s on every Orbit press |
 | SS-11e | As a learner in orbit, I want Earth to stay in view when it rises | Shipped 2026-09-28: the camera tilts up while Earth rises ahead, and settles back to the terrain (docs/stories/SS-11e.md) |
+| SS-11f | As a learner, I want to start orbiting from anywhere, so I can choose what I fly over and watch Earth rise from any angle | Shipped 2026-09-29: Orbit starts over the point below you, flying towards the top of the screen (docs/stories/SS-11f.md). Replaces SS-15's fixed start over Albategnius |
 | SS-12 | (above) | Frame rate on the owner's iPhone is the one number the cloud can never produce |
 
 ### Next: the worlds, one round of the recipe each

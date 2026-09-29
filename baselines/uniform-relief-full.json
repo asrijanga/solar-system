@@ -16,14 +16,20 @@
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": {
-        "uniform": 0.96
+        "uniform": 0.0832
       },
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
+      "earthshine": "physical",
       "relief": true,
       "reliefFlipped": false
     },
@@ -31,8 +37,8 @@
       {
         "kind": "photometry",
         "name": "relief vanishes at full phase",
-        "model": "lommel-seeliger",
-        "albedo": 0.96,
+        "model": "hapke",
+        "albedo": 0.0832,
         "tolerance": 2,
         "minFraction": 0.95,
         "limbInsetPx": 8
@@ -40,7 +46,7 @@
     ],
     "negativeControl": false,
     "id": "uniform-relief-full",
-    "description": "The uniform Moon with LOLA relief at full phase. Lommel–Seeliger with sun and view almost aligned barely depends on the surface normal, so the relief must nearly vanish: the smooth-sphere prediction still holds within 2 levels on 95% of the disc.",
+    "description": "The uniform Moon with LOLA relief at full phase. Hapke with sun and view almost aligned barely depends on the surface normal, so the relief must nearly vanish: the smooth-sphere prediction still holds within 2 levels on 95% of the disc.",
     "scene": "moon"
   },
   "environment": {
@@ -69,14 +75,14 @@
     "ok": true,
     "results": [
       {
-        "name": "relief vanishes at full phase: 391452 disc pixels, worst 12 levels",
+        "name": "relief vanishes at full phase: 391452 disc pixels, worst 19 levels",
         "pass": true,
-        "fraction": 0.9907191686337022
+        "fraction": 0.9999208076596875
       }
     ]
   },
   "git": {
-    "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

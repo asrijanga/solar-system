@@ -37,10 +37,13 @@ export interface MoonSetup {
   readonly labels: boolean;
   /** Turn from the vantage to look at Earth's centre instead of the Moon's (SS-13c). */
   readonly lookAtEarth: boolean;
-  /** The Clementine map, or a uniform Lommel–Seeliger ϖ for photometry checks. */
+  /**
+   * The Clementine map, or for photometry checks a uniform I/F at Clementine's standard
+   * geometry, scattered with the median tile's Hapke parameters (docs/stories/SS-8b.md).
+   */
   readonly albedo: 'map' | { readonly uniform: number };
   /** 'lambert' only in a negative control; 'albedo' is unlit, for checking the map itself. */
-  readonly shading: 'lommel-seeliger' | 'lambert' | 'albedo';
+  readonly shading: 'hapke' | 'lambert' | 'albedo';
   /** Negative control only: the map sampled at −longitude. */
   readonly mirrored: boolean;
   /** Explicit gradients at the ±180° wrap. Off only in a negative control. */
@@ -65,14 +68,14 @@ export type MoonCheck =
   | {
       /**
        * Every pixel of the disc, more than `limbInsetPx` inside the limb, within `tolerance`
-       * 8-bit levels of core/photometry.ts's Lommel–Seeliger value for a uniform ϖ. Proves the
-       * TSL shading mirrors the unit-tested function, the sun direction, the terminator 90°
-       * from the sub-solar point, the 1/r² and the exposure.
+       * 8-bit levels of core/hapke.ts's value for a uniform Moon with the median tile's
+       * parameters. Proves the TSL shading mirrors the unit-tested function, the sun direction,
+       * the terminator 90° from the sub-solar point, the 1/r² and the exposure.
        */
       readonly kind: 'photometry';
       readonly name: string;
-      /** 'even': ϖ/8 everywhere, the zero-phase value, with no dependence on the sun. */
-      readonly model: 'lommel-seeliger' | 'even';
+      /** 'even': lit from behind the viewer everywhere, i = e and g = 0, with no dependence on the sun. */
+      readonly model: 'hapke' | 'even';
       readonly albedo: number;
       readonly tolerance: number;
       readonly minFraction: number;
@@ -290,7 +293,7 @@ const MOON_SETUP: MoonSetup = {
   labels: false,
   lookAtEarth: false,
   albedo: 'map',
-  shading: 'lommel-seeliger',
+  shading: 'hapke',
   mirrored: false,
   seamFix: true,
   stars: 'physical',
@@ -301,10 +304,10 @@ const MOON_SETUP: MoonSetup = {
 };
 
 /**
- * ϖ = 8p for p = 0.12, the value that gives a uniform Moon the real Moon's geometric albedo
- * (core/photometry.ts).
+ * I/F at Clementine's standard geometry (i = 30°, e = 0°, g = 30°): about the median 1° tile's,
+ * 0.083182 (public/data/moon/hapke.json medianAtStandard).
  */
-const UNIFORM_ALBEDO = 0.96;
+const UNIFORM_ALBEDO = 0.0832;
 
 /**
  * IAU Gazetteer features (test/fixtures/iau-gazetteer-moon.json). Radii and the qualitative
@@ -359,7 +362,7 @@ const GAZETTEER_CHECKS: readonly MoonCheck[] = (
 
 const photometry = (
   name: string,
-  model: 'lommel-seeliger' | 'even' = 'lommel-seeliger',
+  model: 'hapke' | 'even' = 'hapke',
   minFraction = 0.99,
   limbInsetPx = 2,
 ): MoonCheck => ({
@@ -502,26 +505,26 @@ export const viewpoints: readonly Viewpoint[] = [
     ...SPACE,
     id: 'uniform-ls-full',
     description:
-      'A uniform Moon (ϖ = 0.96, geometric albedo 0.12) at the full-Moon geometry. Every pixel must match Lommel–Seeliger from core/photometry.ts: a flat disc to the limb.',
+      'A uniform Moon (the median tile\u2019s reflectance and Hapke parameters) at the full-Moon geometry. Every pixel must match Hapke from core/hapke.ts: nearly flat to the limb, with the opposition surge.',
     scene: 'moon',
     moon: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO } },
-    moonChecks: [photometry('Lommel–Seeliger per pixel')],
+    moonChecks: [photometry('Hapke per pixel')],
   },
   {
     ...SPACE,
     id: 'uniform-lambert-full',
     description:
-      'Negative control: the uniform Moon shaded by Lambert, equal to Lommel–Seeliger at the disc centre. The photometry check must fail, proving it can tell the two apart.',
+      'Negative control: the uniform Moon shaded by Lambert, equal to Hapke at the disc centre at zero phase. The photometry check must fail, proving it can tell the two apart.',
     scene: 'moon',
     moon: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO }, shading: 'lambert' },
-    moonChecks: [photometry('Lommel–Seeliger per pixel')],
+    moonChecks: [photometry('Hapke per pixel')],
     negativeControl: true,
   },
   {
     ...SPACE,
     id: 'uniform-ls-quarter',
     description:
-      'The uniform Moon at first quarter. Every pixel must match Lommel–Seeliger, which puts the terminator exactly 90° from the sub-solar point.',
+      'The uniform Moon at first quarter. Every pixel must match Hapke, which puts the terminator exactly 90° from the sub-solar point and darkens the limb as the real Moon does at this phase.',
     scene: 'moon',
     moon: {
       ...MOON_SETUP,
@@ -529,13 +532,13 @@ export const viewpoints: readonly Viewpoint[] = [
       epoch: 'first-quarter-2026-01',
       albedo: { uniform: UNIFORM_ALBEDO },
     },
-    moonChecks: [photometry('Lommel–Seeliger per pixel')],
+    moonChecks: [photometry('Hapke per pixel')],
   },
   {
     ...SPACE,
     id: 'uniform-even-far',
     description:
-      'The uniform Moon from over the far side at first quarter, where the sun has set, with the labelled even lighting on. Every pixel must be ϖ/8, the zero-phase value: the far side is fully visible.',
+      'The uniform Moon from over the far side at first quarter, where the sun has set, with the labelled even lighting on. Every pixel must be its zero-phase Hapke value, lit from behind the viewer: the far side is fully visible.',
     scene: 'moon',
     moon: {
       ...MOON_SETUP,
@@ -580,10 +583,10 @@ export const viewpoints: readonly Viewpoint[] = [
     ...SPACE,
     id: 'uniform-relief-full',
     description:
-      'The uniform Moon with LOLA relief at full phase. Lommel–Seeliger with sun and view almost aligned barely depends on the surface normal, so the relief must nearly vanish: the smooth-sphere prediction still holds within 2 levels on 95% of the disc.',
+      'The uniform Moon with LOLA relief at full phase. Hapke with sun and view almost aligned barely depends on the surface normal, so the relief must nearly vanish: the smooth-sphere prediction still holds within 2 levels on 95% of the disc.',
     scene: 'moon',
     moon: { ...MOON_SETUP, albedo: { uniform: UNIFORM_ALBEDO } },
-    moonChecks: [photometry('relief vanishes at full phase', 'lommel-seeliger', 0.95, 8)],
+    moonChecks: [photometry('relief vanishes at full phase', 'hapke', 0.95, 8)],
   },
   {
     ...SPACE,

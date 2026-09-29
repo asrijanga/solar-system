@@ -12,13 +12,14 @@ The owner's rule of 2026-09-25: gather every available dataset first, then recre
 
 | Dataset | Status | What was established |
 | --- | --- | --- |
-| Clementine UVVIS 750 nm mosaic v2.1, 118 m (USGS) | used | Low-phase, so shading is mostly absent except near the poles. 0.886% never imaged, mostly polar. Relative albedo only, calibrated to geometric albedo 0.12 (SS-5, SS-6) |
+| Clementine UVVIS 750 nm mosaic v2.1, 118 m (USGS) | used | Low-phase, so shading is mostly absent except near the poles. 0.886% never imaged, mostly polar. Reflectance at i = 30°, e = 0°, g = 30° (VOLINFO.HTM section 8), relative only. Absolute scale from the WAC Hapke maps, fitted per 1° tile: r 0.959, relative RMS 9.2% (SS-8b; SS-6 used geometric albedo 0.12) |
 | LOLA LDAM polar normal albedo, 1 km, 50° to the poles (Lemelin et al. 2016, PDS) | used poleward of 65–75° | 1064 nm, laser-lit, so no shading. Fitted to Clementine at 50–60° (r 0.73 / 0.77). Faint track stripes (SS-6b) |
 | LOLA LDAM_10 global normal albedo, 3 km, 10 ppd (Lemelin et al. 2016, PDS `lola_gdr/cylindrical`) | used for Clementine's remaining gaps (0.06% of the map) | 1064 nm, laser-lit, the LOLA team's gridded map with complete coverage. Fitted to Clementine within 60°: r 0.92, RMS 4.6 grey levels. Each gap is matched locally to its surroundings (SS-11c). Not the USGS track mosaic below |
 | LRO WAC global morphology mosaic, 100 m (USGS) | rejected | Shading baked in: `DATA_SET_ID` is `WAC_morphology_globe` (SS-5) |
 | Kaguya TC ortho mosaic, 64 ppd (USGS) | rejected | Shading baked in, lit from one side (SS-5) |
 | LOLA 1064 nm albedo, 10 ppd (USGS mosaic) | rejected | Individual ground tracks with calibration stripes; correlation with Clementine about 0 (SS-6) |
-| LROC WAC Hapke-normalised mosaic | to evaluate | The best candidate albedo map. The LROC archive listing could not be read from the cloud environment (SS-5) |
+| LROC WAC Hapke photometric parameter maps, 1° (Sato et al. 2014, PDS `LROLRC_2001/DATA/SDP/WAC_HAPKEPARAMMAP`) | used, 566 nm | w, b, c, Bs0, hs per 1° tile, 70°N–70°S; θ̄ fixed at 23.657°. How every place scatters light with angle, and the absolute reflectance scale. The PDS4 label's image offset (1440) is wrong; the attached PDS3 header's (5760) is right (SS-8b) |
+| LROC WAC Hapke-normalised mosaic | to evaluate | The best candidate albedo map (SS-5b). Its product is now reachable from the cloud at `pds.mcp.nasa.gov`, the same volume as the parameter maps |
 | Kaguya Multiband Imager (MI) reflectance | to evaluate | |
 | LRO NAC images | to evaluate | Metre scale, local only; for close-up detail (SS-10 onwards) |
 

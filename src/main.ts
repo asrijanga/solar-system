@@ -54,7 +54,7 @@ import { createRenderer, isWebGPUBackend, WebGL2FallbackError } from './gpu/rend
 import { createDepthTestScene } from './scenes/depthTest';
 import { createEarth, loadEarthFace } from './scenes/earth';
 import { createLabels, loadLabelFont, type Labels, type Landmark } from './scenes/labels';
-import { createMoonMesh, createMoonTerrain, loadMoonTextures } from './scenes/moon';
+import { createMoonMesh, createMoonTerrain, loadHapke, loadMoonTextures } from './scenes/moon';
 import {
   createStarMesh,
   loadStarField,
@@ -317,10 +317,11 @@ async function createStage(
     case 'moon': {
       const setup = viewpoint.moon;
       if (setup === null) throw new Error(`${viewpoint.id} is a Moon scene without a Moon setup`);
-      const [ephemeris, field, textures, layer, landmarkFile] = await Promise.all([
+      const [ephemeris, field, textures, hapke, layer, landmarkFile] = await Promise.all([
         loadJson<MoonEphemeris>('data/moon/ephemeris.json'),
         loadStarField(),
         setup.albedo === 'map' ? loadMoonTextures(maxAnisotropy) : null,
+        loadHapke(),
         setup.relief ? loadTerrainLayer() : null,
         loadJson<{ landmarks: Landmark[] }>('data/moon/landmarks.json'),
         loadLabelFont(siteUrl),
@@ -340,6 +341,7 @@ async function createStage(
         epoch,
         radiusKm,
         albedo: textures ?? { uniform: setup.albedo === 'map' ? 0 : setup.albedo.uniform },
+        hapke,
         shading: setup.shading,
         mirrored: setup.mirrored,
         seamFix: setup.seamFix,
@@ -1041,6 +1043,7 @@ const ABOUT = [
   'Lighting: even shows every point at full-Moon brightness, as if lit from behind you everywhere at once. Not physical, but it shows the whole surface.',
   'Stars: physical is a real exposure. Next to the sunlit Moon, stars are far too faint to show, as in every Apollo photograph. Boosted makes them 100,000 times brighter.',
   'Surface brightness comes from two NASA missions. Clementine (1994) photographed most of the Moon. Near the poles the Sun is always low, so its pictures there show shadows, and it never saw crater floors sunlight never reaches. Poleward of 70° the map is instead LOLA (Lunar Reconnaissance Orbiter), which measured brightness with its own laser, blended with Clementine between 65° and 75°. The few small places Clementine missed elsewhere (0.06% of the map) are filled from LOLA\u2019s global laser map, which is coarser (3 km), matched to Clementine around each one.',
+  'How brightness changes with the Sun\u2019s angle comes from LRO\u2019s Wide Angle Camera, which watched every square degree of the Moon from 70\u00b0N to 70\u00b0S under many angles of light (Sato and others, 2014). So the Moon brightens sharply towards full, as the real one does, and the quarter Moon is about a tenth as bright as the full Moon, not half. Nearer the poles than 70\u00b0 the Moon\u2019s typical behaviour is used.',
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Orbit: glides from your view to the crater Albategnius and heads due north along its meridian, over the central highlands and the Apennines, across the north pole, down the far side and back, with Earth rising ahead over the south pole. Pinch or scroll first to choose the height; it never goes below the height the terrain stays sharp from.',
   'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Each label rises and sets with its landmark, dims on the night side, and small features wait until you are close enough for them to matter.',

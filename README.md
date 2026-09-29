@@ -594,7 +594,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 | --- | --- | --- |
 | SS-7 | As the developer, I want the app on a private link only I can open, so that shipping is routine before anything is public | Partly pulled forward: public on GitHub Pages since SS-1. A private preview is still open |
 | SS-8 | As a learner, I want the Moon to have real relief, so that craters and mountains read as three-dimensional | Shipped |
-| SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge, so that the Moon brightens at full phase the way the real one does | Open |
+| SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge, so that the Moon brightens at full phase the way the real one does | Shipped 2026-09-28: LRO's measured Hapke parameters per 1° tile; the whole Moon follows its observed phase curve within 0.2 mag (docs/stories/SS-8b.md) |
 | SS-9 | As a learner, I want a visible vertical exaggeration control, so that I understand how flat worlds really are | Open |
 | SS-10 | As a learner, I want to zoom in and have detail sharpen, so that I can study one crater closely | Shipped: streamed terrain, 670 m everywhere on the website |
 | SS-10b | As a learner, I want detail below the measurements, labelled as an approximation | Shipped, local mode only |
@@ -613,7 +613,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 | ID | Story | Why now |
 | --- | --- | --- |
 | SS-5b | As a learner, I want the Moon rebuilt from its whole inventory (`docs/data/moon.md`), not product by product | The Moon was built before the "gather first" rule. Its inventory lists sources still to evaluate: the LROC WAC Hapke-normalised mosaic, Kaguya MI and the LOLA polar DEMs |
-| SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge | Still open. The full Moon's brightness is the most visible photometric error left |
+| SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge | Shipped 2026-09-28 (docs/stories/SS-8b.md). It also gave the albedo map an absolute scale measured by LRO, replacing the single fact-sheet number |
 | SS-13d | As a learner, I want Earth's real face at the full-Moon instant too | Earth is a thin crescent then, about half of it seen only by Meteosat. It waits on the owner creating a free EUMETSAT account, with its keys in the environment's secrets |
 | SS-13e | As a learner, I want the Moon's night side lit by earthshine | Shipped 2026-09-27: earthshine from Earth's measured disc brightness, with a labelled "Earthshine: boosted" that brightens it only where the Sun is down (docs/stories/SS-13e.md) |
 | SS-11d | As the developer, I want the allocation gate to cover the Orbit button's glide | `npm run alloc` measures a flight started with `?orbit=`, which has no glide. The glide runs for up to 6 s on every Orbit press |

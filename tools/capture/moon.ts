@@ -2,11 +2,14 @@
 //
 // The camera is rebuilt from the viewpoint's Moon setup and ephemeris.json, in J2000, with
 // no scene axes and no three.js. A ray through each pixel centre meets the true sphere, and
-// the hit gives that pixel's longitude, latitude, μ0 and μ. The shading formula is the one
-// the app's TSL must mirror: core/photometry.ts, which is unit-tested on its own.
+// the hit gives that pixel's longitude, latitude, μ0, μ and phase angle. The shading formula is
+// the one the app's TSL must mirror: core/hapke.ts, which is unit-tested on its own.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { PNG } from 'pngjs';
 import type { MoonCheck, MoonSetup } from '../../src/capture/viewpoints.ts';
-import { displayValue, linearToSrgb, lommelSeeliger } from '../../src/core/photometry.ts';
+import { hapke, type HapkeParameters } from '../../src/core/hapke.ts';
+import { displayValue, linearToSrgb } from '../../src/core/photometry.ts';
 import type { CheckResult } from './checks.ts';
 
 type V3 = [number, number, number];
@@ -45,6 +48,8 @@ export interface MoonPixels {
   readonly lonDeg: Float64Array;
   readonly mu0: Float64Array;
   readonly mu: Float64Array;
+  /** Cosine of the phase angle: between the directions to the Sun and to the camera. */
+  readonly cosG: Float64Array;
   readonly radiusKm: number;
   readonly sunDistanceKm: number;
 }
@@ -111,6 +116,7 @@ export function castMoonRays(
     lonDeg: new Float64Array(n),
     mu0: new Float64Array(n),
     mu: new Float64Array(n),
+    cosG: new Float64Array(n),
     radiusKm: radius,
     sunDistanceKm: epoch.sunDistanceKm,
   };
@@ -137,6 +143,7 @@ export function castMoonRays(
       out.lonDeg[i] = (Math.atan2(body[1], body[0]) * 180) / Math.PI;
       out.mu0[i] = dot(nrm, sun);
       out.mu[i] = -dot(nrm, d);
+      out.cosG[i] = -dot(sun, d);
     }
   }
   return out;
@@ -168,17 +175,32 @@ const SEAM_CONTROL_OFFSETS = [-10, -6, 6, 10] as const;
 
 const channel = (png: PNG, i: number, c: number): number => png.data[i * 4 + c] ?? 0;
 
-/** The 8-bit value core/photometry.ts predicts for a uniform Lommel–Seeliger Moon. */
+/** The uniform Moon's scattering: the median tile (public/data/moon/hapke.json). */
+const HAPKE_MANIFEST = JSON.parse(
+  readFileSync(
+    join(import.meta.dirname, '..', '..', 'public', 'data', 'moon', 'hapke.json'),
+    'utf8',
+  ),
+) as { readonly median: HapkeParameters; readonly medianAtStandard: number };
+
+/**
+ * The 8-bit value core/hapke.ts predicts for a uniform Moon: `albedo` is its I/F at
+ * Clementine's standard geometry, scattered with the median tile's parameters.
+ */
 export function predictedLevel(
   pixels: MoonPixels,
   i: number,
   albedo: number,
-  model: 'lommel-seeliger' | 'even' = 'lommel-seeliger',
+  model: 'hapke' | 'even' = 'hapke',
 ): number {
+  const p = HAPKE_MANIFEST.median;
+  const ratio = albedo / HAPKE_MANIFEST.medianAtStandard;
+  const mu = pixels.mu[i] ?? 0;
   const radianceFactor =
-    model === 'even'
-      ? lommelSeeliger(albedo, 1, 1) // zero phase: ϖ/8
-      : lommelSeeliger(albedo, pixels.mu0[i] ?? 0, pixels.mu[i] ?? 0);
+    ratio *
+    (model === 'even'
+      ? hapke(mu, mu, 1, p) // lit from behind the viewer: i = e, g = 0
+      : hapke(pixels.mu0[i] ?? 0, mu, pixels.cosG[i] ?? 1, p));
   return Math.round(linearToSrgb(displayValue(radianceFactor, pixels.sunDistanceKm)) * 255);
 }
 

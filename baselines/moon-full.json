@@ -16,12 +16,18 @@
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": "map",
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
+      "earthshine": "physical",
       "relief": true,
       "reliefFlipped": false
     },
@@ -115,34 +121,34 @@
     "ok": true,
     "results": [
       {
-        "name": "Tycho brighter (113 px): ratio 1.088",
+        "name": "Tycho brighter (113 px): ratio 1.080",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Copernicus brighter (154 px): ratio 1.253",
+        "name": "Copernicus brighter (154 px): ratio 1.239",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Aristarchus brighter (13 px): ratio 1.450",
+        "name": "Aristarchus brighter (13 px): ratio 1.451",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Mare Crisium darker (1135 px): ratio 0.757",
+        "name": "Mare Crisium darker (1135 px): ratio 0.741",
         "pass": true,
         "fraction": 1
       },
       {
-        "name": "Statio Tranquillitatis darker (76 px): ratio 0.693",
+        "name": "Statio Tranquillitatis darker (76 px): ratio 0.735",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

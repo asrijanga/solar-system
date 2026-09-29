@@ -16,19 +16,29 @@
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": {
-        "uniform": 0.96
+        "uniform": 0.0832
       },
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
-      "stars": "physical"
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false
     },
     "moonChecks": [
       {
         "kind": "photometry",
-        "name": "Lommel–Seeliger per pixel",
-        "albedo": 0.96,
+        "name": "Hapke per pixel",
+        "model": "hapke",
+        "albedo": 0.0832,
         "tolerance": 2,
         "minFraction": 0.99,
         "limbInsetPx": 2
@@ -36,7 +46,7 @@
     ],
     "negativeControl": false,
     "id": "uniform-ls-full",
-    "description": "A uniform Moon (ϖ = 0.96, geometric albedo 0.12) at the full-Moon geometry. Every pixel must match Lommel–Seeliger from core/photometry.ts: a flat disc to the limb.",
+    "description": "A uniform Moon (the median tile’s reflectance and Hapke parameters) at the full-Moon geometry. Every pixel must match Hapke from core/hapke.ts: nearly flat to the limb, with the opposition surge.",
     "scene": "moon"
   },
   "environment": {
@@ -65,14 +75,14 @@
     "ok": true,
     "results": [
       {
-        "name": "Lommel–Seeliger per pixel: 408636 disc pixels, worst 1 levels",
+        "name": "Hapke per pixel: 408636 disc pixels, worst 1 levels",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "d4f830a138b0ae8ddc9223b149a5ac6bc1d92cfe",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

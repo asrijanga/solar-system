@@ -2,6 +2,7 @@ import { decodeChannels } from './decode';
 import {
   ClampToEdgeWrapping,
   DataTexture,
+  HalfFloatType,
   LinearFilter,
   LinearMipmapLinearFilter,
   Matrix3,
@@ -12,6 +13,8 @@ import {
   NoColorSpace,
   RedFormat,
   RepeatWrapping,
+  RGBAFormat,
+  RGFormat,
   SphereGeometry,
   UnsignedByteType,
   Vector3,
@@ -54,7 +57,9 @@ import {
 import { TilesRenderer } from '3d-tiles-renderer';
 import { QuantizedMeshPlugin } from '3d-tiles-renderer/plugins';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
+import type { HapkeParameters } from '../core/hapke';
 import { EXPOSURE, AU_KM, SUNLIT_FADE } from '../core/photometry';
+import { hapkeNode, type HapkeNodes } from './hapkeNode';
 import { siteUrl } from '../site';
 
 /** The manifest's relevant fields (public/data/moon/albedo.json). */
@@ -80,6 +85,63 @@ export interface MoonTextures {
 }
 
 const base = siteUrl('data/moon/');
+
+/** The manifest's relevant fields (public/data/moon/hapke.json, tools/data/hapke.ts). */
+interface HapkeManifest {
+  readonly texture: { readonly file: string; readonly width: number; readonly height: number };
+  readonly median: HapkeParameters;
+  readonly medianAtStandard: number;
+}
+
+/**
+ * The Moon's Hapke parameters per 1° tile (docs/stories/SS-8b.md). `parameters` holds
+ * (w, b, c, Bs0) and `extra` (hs, I/F at Clementine's standard geometry), half floats, linearly
+ * filtered, column 0 centred at 0.5°E and row 0 at 89.5°N. The median tile stands in where a
+ * Moon of uniform albedo is drawn.
+ */
+export interface HapkeData {
+  readonly parameters: DataTexture;
+  readonly extra: DataTexture;
+  readonly median: HapkeParameters;
+  readonly medianAtStandard: number;
+}
+
+function halfTexture(
+  data: Uint16Array,
+  width: number,
+  height: number,
+  format: typeof RGBAFormat | typeof RGFormat,
+): DataTexture {
+  const tex = new DataTexture(data, width, height, format, HalfFloatType);
+  tex.colorSpace = NoColorSpace;
+  tex.wrapS = RepeatWrapping; // longitude wraps
+  tex.wrapT = ClampToEdgeWrapping;
+  tex.magFilter = LinearFilter;
+  tex.minFilter = LinearFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+export async function loadHapke(): Promise<HapkeData> {
+  const response = await fetch(`${base}hapke.json`);
+  if (!response.ok) throw new Error(`hapke.json failed to load: HTTP ${response.status}`);
+  const manifest = (await response.json()) as HapkeManifest;
+  const { width, height, file } = manifest.texture;
+  const bin = await fetch(`${base}${file}`);
+  if (!bin.ok) throw new Error(`${file} failed to load: HTTP ${bin.status}`);
+  const buffer = await bin.arrayBuffer();
+  const texels = width * height;
+  if (buffer.byteLength !== texels * 6 * 2) {
+    throw new Error(`${file} is ${buffer.byteLength} bytes, expected ${texels * 12}`);
+  }
+  return {
+    parameters: halfTexture(new Uint16Array(buffer, 0, texels * 4), width, height, RGBAFormat),
+    extra: halfTexture(new Uint16Array(buffer, texels * 8, texels * 2), width, height, RGFormat),
+    median: manifest.median,
+    medianAtStandard: manifest.medianAtStandard,
+  };
+}
 
 async function decodeGrey(url: string, width: number, height: number): Promise<Uint8Array> {
   const [grey] = await decodeChannels(url, width, height, [0]);
@@ -140,16 +202,23 @@ function packGaps(maskBytes: Uint8Array, width: number, height: number): DataTex
   return gaps;
 }
 
-export type MoonShading = 'lommel-seeliger' | 'lambert' | 'albedo';
+export type MoonShading = 'hapke' | 'lambert' | 'albedo';
 
 export interface MoonOptions {
   readonly epoch: MoonEpoch;
   readonly radiusKm: number;
-  /** The mapped albedo, or a uniform Lommel–Seeliger ϖ for photometry checks. */
-  readonly albedo: MoonTextures | { readonly uniform: number };
   /**
-   * 'lommel-seeliger' is the Moon. 'lambert' exists only for a negative control. 'albedo'
-   * is unlit: every point as it would look at zero phase, for checking the map itself.
+   * The mapped albedo, or for photometry checks a uniform one: I/F at Clementine's standard
+   * geometry (core/hapke.ts CLEMENTINE_STANDARD_DEG), scattered with the median tile's
+   * parameters.
+   */
+  readonly albedo: MoonTextures | { readonly uniform: number };
+  /** How the surface scatters light with angle, per tile (docs/stories/SS-8b.md). */
+  readonly hapke: HapkeData;
+  /**
+   * 'hapke' is the Moon. 'lambert' exists only for a negative control. 'albedo' is unlit:
+   * every point as it would look at zero phase, seen from straight above, for checking the map
+   * itself.
    */
   readonly shading: MoonShading;
   /** Negative control only: sample the map at −longitude, a mirrored Moon. */
@@ -277,11 +346,25 @@ function createMoonMaterial(
     const gradX = vec2(mix(dxShifted, dx.x, step(abs(dx.x), abs(dxShifted))), dx.y);
     const gradY = vec2(mix(dyShifted, dy.x, step(abs(dy.x), abs(dyShifted))), dy.y);
 
+    // I/F at Clementine's standard geometry, and the tile's Hapke parameters with its own I/F at
+    // that geometry: the map's value scales Hapke's angular behaviour (docs/stories/SS-8b.md).
     let albedo;
     let gap = null;
+    let hapke: HapkeNodes;
+    let standard;
     if ('uniform' in options.albedo) {
       albedo = float(options.albedo.uniform);
+      const m = options.hapke.median;
+      hapke = { w: float(m.w), b: float(m.b), c: float(m.c), bs0: float(m.bs0), hs: float(m.hs) };
+      standard = float(options.hapke.medianAtStandard);
     } else {
+      // Tile centres sit on whole-and-a-half degrees from 0°E; u = longitude / 360°. Level 0,
+      // no mipmaps, so no derivative is taken.
+      const tileUv = vec2(fract(signedLon.div(2 * Math.PI)), v);
+      const q = texture(options.hapke.parameters, tileUv, 0).toVar('moonHapke');
+      const x = texture(options.hapke.extra, tileUv, 0).toVar('moonHapkeExtra');
+      hapke = { w: q.r, b: q.g, c: q.b, bs0: q.a, hs: x.r };
+      standard = x.g;
       const maps = options.albedo;
       const map = texture(maps.albedo, uv);
       const sample = (options.seamFix === false ? map : map.grad(gradX, gradY)).toVar(
@@ -348,37 +431,43 @@ function createMoonMaterial(
         );
       }
     }
+    const view = normalize(cameraPosition.sub(positionWorld));
     const mu0 = dot(normal, sun);
-    const mu = dot(normal, normalize(cameraPosition.sub(positionWorld)));
+    const mu = dot(normal, view);
+    // I/F = (map's I/F at the standard geometry) × Hapke here / Hapke there, per tile.
+    const ratio = albedo.div(standard);
+    // Hapke is zero where the light is below the horizon or the surface faces away
+    // (core/hapke.ts); step keeps that without branching.
+    const lit = (cosLight: typeof mu0, cosG: typeof mu0) =>
+      ratio
+        .mul(hapkeNode(cosLight, mu, cosG, hapke))
+        .mul(step(1e-6, cosLight))
+        .mul(step(1e-6, mu));
+    // Zero phase, seen from straight above: the map's own brightness.
+    const zeroPhaseNormal = ratio.mul(hapkeNode(float(1), float(1), float(1), hapke));
     let radianceFactor;
     switch (options.shading) {
-      case 'lommel-seeliger': {
-        let sunlit = albedo
-          .div(4)
-          .mul(max(mu0, 0))
-          .div(max(max(mu0, 0).add(max(mu, 0)), 1e-6));
+      case 'hapke': {
+        let sunlit = lit(mu0, dot(sun, view));
         if (sunVisible !== null) sunlit = sunlit.mul(sunVisible);
         const even = options.evenLight ?? 0;
+        // Even lighting: lit from behind the viewer everywhere at once, so i = e and g = 0.
         radianceFactor =
-          typeof even === 'number' && even === 0 ? sunlit : mix(sunlit, albedo.div(8), even);
+          typeof even === 'number' && even === 0 ? sunlit : mix(sunlit, lit(mu, float(1)), even);
         break;
       }
       case 'lambert':
-        // Negative control: equal to Lommel–Seeliger at the disc centre at zero phase.
-        radianceFactor = albedo.div(8).mul(max(mu0, 0));
+        // Negative control: equal to Hapke at the disc centre at zero phase.
+        radianceFactor = zeroPhaseNormal.mul(max(mu0, 0));
         break;
       case 'albedo':
-        radianceFactor = albedo.div(8);
+        radianceFactor = zeroPhaseNormal;
         break;
     }
     let earthlit = null;
-    if (options.shading === 'lommel-seeliger' && earthDirection !== null && earthFactor !== null) {
+    if (options.shading === 'hapke' && earthDirection !== null && earthFactor !== null) {
       // Earthshine: the Moon scatters Earth's light as it scatters the Sun's, coloured by Earth.
-      const muE = max(dot(normal, earthDirection), 0);
-      const fromEarth = albedo
-        .div(4)
-        .mul(muE)
-        .div(max(muE.add(max(mu, 0)), 1e-6));
+      const fromEarth = lit(dot(normal, earthDirection), dot(earthDirection, view));
       earthlit = earthFactor.mul(earthVisible === null ? fromEarth : fromEarth.mul(earthVisible));
     }
     // With the labelled boost, earthshine is drawn brighter only where the Sun is down: its

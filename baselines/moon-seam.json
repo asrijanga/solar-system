@@ -18,12 +18,18 @@
       },
       "distanceKm": 6949.6,
       "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": "map",
       "shading": "albedo",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
+      "earthshine": "physical",
       "relief": true,
       "reliefFlipped": false
     },
@@ -65,14 +71,14 @@
     "ok": true,
     "results": [
       {
-        "name": "no line at ±180°: 677 crossed rows, step at the meridian 2.03 vs 2.05 beside it (ratio 0.99)",
+        "name": "no line at ±180°: 677 crossed rows, step at the meridian 2.16 vs 2.19 beside it (ratio 0.98)",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "21cb0fea1dc1b3165cf150774969168ea176a69b",
-    "dirty": false
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
+    "dirty": true
   }
 }

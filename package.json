@@ -33,7 +33,8 @@
     "pipeline:earth": "uv run --project pipeline python pipeline/earth.py",
     "pipeline:moon": "uv run --project pipeline python pipeline/moon.py",
     "local": "vite build && node tools/local/server.ts",
-    "pipeline:roughness": "node tools/data/roughness.ts"
+    "pipeline:roughness": "node tools/data/roughness.ts",
+    "pipeline:hapke": "node tools/data/hapke.ts"
   },
   "dependencies": {
     "3d-tiles-renderer": "0.5.3",

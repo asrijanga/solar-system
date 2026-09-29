@@ -1,17 +1,19 @@
 // Ties the Moon viewpoints to their sources: Gazetteer coordinates to the fixture, the
-// uniform albedo to the geometric albedo, and the calibration to the manifest.
+// uniform albedo to the median tile, and the calibration to the manifest.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { findViewpoint, viewpoints } from '../src/capture/viewpoints';
-import { lommelSeeligerAlbedoFor, MOON_GEOMETRIC_ALBEDO } from '../src/core/photometry';
 
 const root = join(import.meta.dirname, '..');
 const gazetteer = JSON.parse(
   readFileSync(join(root, 'test/fixtures/iau-gazetteer-moon.json'), 'utf8'),
 ) as { features: { name: string; lonDeg: number; latDeg: number }[] };
 const albedo = JSON.parse(readFileSync(join(root, 'public/data/moon/albedo.json'), 'utf8')) as {
-  calibration: { geometricAlbedo: number; albedoScale: number; discMeanTextureValue: number };
+  calibration: { albedoScale: number; fit: { albedoScale: number; r: number; tiles: number } };
+};
+const hapke = JSON.parse(readFileSync(join(root, 'public/data/moon/hapke.json'), 'utf8')) as {
+  medianAtStandard: number;
 };
 
 describe('Moon viewpoint checks', () => {
@@ -29,15 +31,13 @@ describe('Moon viewpoint checks', () => {
     }
   });
 
-  it('give the uniform Moon the real Moon’s geometric albedo', () => {
+  it('give the uniform Moon the median tile’s reflectance', () => {
     for (const v of viewpoints) {
       for (const c of v.moonChecks) {
-        if (c.kind === 'photometry') {
-          expect(c.albedo).toBeCloseTo(lommelSeeligerAlbedoFor(MOON_GEOMETRIC_ALBEDO), 12);
-        }
+        if (c.kind === 'photometry') expect(c.albedo).toBeCloseTo(hapke.medianAtStandard, 3);
       }
       if (v.moon !== null && v.moon.albedo !== 'map') {
-        expect(v.moon.albedo.uniform).toBeCloseTo(0.96, 12);
+        expect(v.moon.albedo.uniform).toBeCloseTo(hapke.medianAtStandard, 3);
       }
     }
   });
@@ -54,12 +54,8 @@ describe('Moon viewpoint checks', () => {
 });
 
 describe('albedo calibration', () => {
-  it('is to the fact sheet’s geometric albedo', () => {
-    expect(albedo.calibration.geometricAlbedo).toBe(MOON_GEOMETRIC_ALBEDO);
-  });
-
-  it('makes the disc-mean ϖ at zero phase exactly 8p', () => {
-    const { albedoScale, discMeanTextureValue } = albedo.calibration;
-    expect(albedoScale * discMeanTextureValue).toBeCloseTo(8 * MOON_GEOMETRIC_ALBEDO, 5);
+  it('is the recorded cross-calibration against LRO, over every measured tile', () => {
+    expect(albedo.calibration.albedoScale).toBe(albedo.calibration.fit.albedoScale);
+    expect(albedo.calibration.fit.tiles).toBe(360 * 140);
   });
 });

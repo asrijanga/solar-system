@@ -1,0 +1,48 @@
+{
+  "note": "The Moon’s Hapke photometric parameters per 1° tile (docs/stories/SS-8b.md). Built by tools/data/hapke.ts.",
+  "product": {
+    "name": "WAC_HAPKEPARAMMAP_566NM, LRO-L-LROC-5-RDR (LROLRC_2001), v1.1",
+    "url": "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/lro-l-lroc-5-rdr/LROLRC_2001/DATA/SDP/WAC_HAPKEPARAMMAP/WAC_HAPKEPARAMMAP_566NM.IMG",
+    "label": "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/lro-l-lroc-5-rdr/LROLRC_2001/DATA/SDP/WAC_HAPKEPARAMMAP/WAC_HAPKEPARAMMAP_566NM.xml",
+    "md5": "6d96176817e2b2b7e00d201d721669b5",
+    "sha256": "2868152f9c63b6887f68fa05bf671f425c335fe440988ebbc1bf7ed76ec71831",
+    "citation": "Sato, H., Robinson, M.S., Hapke, B., Denevi, B.W., Boyd, A.K. (2014) Resolved Hapke parameter maps of the Moon. JGR Planets 119, 1775-1805. doi:10.1002/2013JE004580",
+    "wavelengthNm": 566,
+    "bandwidthNm": 20
+  },
+  "conventions": "equirectangular, planetocentric, east-positive, R = 1737.4 km, 1 px/deg, source 0-360E by 70N-70S with line 1 sample 1 centred at 69.5N 0.5E (PDS3 header LINE_PROJECTION_OFFSET 69.5, SAMPLE_PROJECTION_OFFSET -0.5)",
+  "imageOffset": "byte 5760, from the attached PDS3 header (RECORD_BYTES 1440, LABEL_RECORDS 4, ^IMAGE 5) and the file size; the PDS4 label says 1440, which misaligns every band",
+  "model": "Hapke (2012) as fitted by Sato et al. (2014): I/F = (w/4) mu0e/(mu0e+mue) [p(g) B_SH(g) + H(mu0e) H(mue) - 1] S, double Henyey-Greenstein p (b, c), B_SH = 1 + Bs0/(1 + tan(g/2)/hs), H in Hapke (2002) form, roughness theta per Hapke (1984), K = 1, no coherent backscatter (src/core/hapke.ts)",
+  "fixed": {
+    "bc0": 0,
+    "hc": 1,
+    "thetaDeg": 23.6566,
+    "phi": 0
+  },
+  "fixedNote": "The README says phi is fixed at 1.0; the archived band holds 0.0. K is 1 under either reading.",
+  "texture": {
+    "file": "hapke.bin",
+    "width": 360,
+    "height": 180,
+    "layout": "half floats, little-endian: RGBA (w, b, c, Bs0) for all texels, then RG (hs, I/F at Clementine’s standard geometry i = 30, e = 0, g = 30); row 0 at 89.5N, column 0 at 0.5E"
+  },
+  "poles": {
+    "rows": "rows 0-19 (90N-70N) and 160-179 (70S-90S)",
+    "fill": "median of each parameter over all 50,400 measured tiles; linear filtering blends it with the last measured row over 1 degree",
+    "why": "the product ends at 70 degrees; the albedo there is still measured (LOLA, docs/stories/SS-6b.md), only how it scatters light with angle takes the Moon’s typical values"
+  },
+  "median": {
+    "w": 0.33778,
+    "b": 0.233157,
+    "c": 0.369601,
+    "bs0": 1.715581,
+    "hs": 0.059936
+  },
+  "medianAtStandard": 0.083182,
+  "standardRange": [
+    0.03338,
+    0.173478
+  ],
+  "tilesWithZeroSurgeWidth": 227,
+  "zeroSurgeWidthNote": "hs = 0 means the fitted surge is narrower than the data resolve: no surge outside zero phase. Kept as measured; the model floors hs at 1e-6 to stay finite."
+}

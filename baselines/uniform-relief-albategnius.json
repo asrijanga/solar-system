@@ -18,14 +18,20 @@
       },
       "distanceKm": 2258.6200000000003,
       "fovDeg": 20,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
       "albedo": {
-        "uniform": 0.96
+        "uniform": 0.0832
       },
-      "shading": "lommel-seeliger",
+      "shading": "hapke",
       "mirrored": false,
       "seamFix": true,
       "stars": "physical",
       "lighting": "sun",
+      "earthshine": "physical",
       "relief": true,
       "reliefFlipped": false
     },
@@ -74,14 +80,14 @@
     "ok": true,
     "results": [
       {
-        "name": "Albategnius sunward wall brighter: west wall 73.3 vs 55.8 (58073 / 58104 px)",
+        "name": "Albategnius sunward wall brighter: west wall 43.1 vs 30.7 (58073 / 58104 px)",
         "pass": true,
         "fraction": 1
       }
     ]
   },
   "git": {
-    "sha": "d5b065965c2985c34ce907e1d31ac0134b910bfb",
+    "sha": "30d1667f65740587224889597b529f824e9aae71",
     "dirty": true
   }
 }

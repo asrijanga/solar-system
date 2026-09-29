@@ -109,6 +109,18 @@ Magnitudes are relative to geometric albedo 0.12 at zero phase.
 
 Before this story, Lommel–Seeliger was about 0.75 mag (a factor of 2) too bright at 90°.
 
+**The opposition surge against Clementine** (`src/core/hapke.test.ts`, added 2026-09-29 at the owner's request). On the phone, the surge shows as a bright glow round the point opposite the Sun, and the owner asked whether it is as strong as the real one. Clementine photographed the Moon at exactly zero phase, independently of LRO. With the median tile, looking straight down and the Sun g from the view:
+
+| Brightening | Model | Measured | Check |
+| --- | --- | --- | --- |
+| 4° → 0° | ×1.28 | Yokota et al. 1999: "some 20-30%"; Buratti, Hillier and Wang 1996: "more than 40%" | between 1.20 and 1.40, the published span |
+| 7° → 1° | ×1.33 | Yokota et al. 1999: "~1.27x" | within ±0.10, chosen after seeing 1.33; for the owner's approval |
+| 30° → 7° | ×1.63 | Yokota et al. 1999: highlands ~1.5x, maria ~1.7x | between 1.5 and 1.7 |
+
+References: Buratti, B. J., Hillier, J. K., Wang, M. (1996), The lunar opposition surge: observations by Clementine, Icarus 124, 490–499. Yokota, Y., Iijima, Y., Honda, R., Okada, T., Mizutani, H. (1999), Photometric properties of the Moon: phase curves at small phase angles (0–10°) by Clementine images, Advances in Space Research 23(11), 1841–1844.
+
+Why it looks strong in the app: the camera starts 4 Moon radii from the centre, so phase angle varies by about 15° across the disc and the whole surge (×1.8 from 15° to 0°) is in view at once. From Earth every point is at nearly the same phase, so the full Moon brightens uniformly. The app applies no tone curve, where photographs usually compress highlights. Not measured by either mission, and not checked: the surge's shape below 1°.
+
 **Captures:**
 - The photometry captures (`uniform-ls-full`, `uniform-ls-quarter`, `uniform-even-far` and `uniform-relief-full`; ids kept from SS-6) check the shader against `core/hapke.ts` pixel by pixel, within 2 levels, as before; their tolerance is unchanged.
 - The negative controls still fail as they must.

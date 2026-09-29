@@ -27,7 +27,7 @@ jobs:
       - run: npm ci
       # The Moon's terrain tiles (SS-10, SS-11b) are built from pinned, checksummed LOLA products
       # whenever the build changes and are never committed: 670 MB gzip-compressed, too large for
-      # git. The 2.4 GB of sources are cached; tools/data/download.ts re-verifies each file's
+      # git. The 5.2 GB of sources are cached; tools/data/download.ts re-verifies each file's
       # SHA-256 either way.
       - uses: actions/cache@v4
         with:
@@ -35,6 +35,7 @@ jobs:
             pipeline/.cache/ldem_64_float.img
             pipeline/.cache/ldem512_rows_2560_8704.img
             pipeline/.cache/kaguya_tc_dtm_S09E003S12E006SC.img
+            pipeline/.cache/sldem2015_128_60s_60n_000_360_float.img
           key: lola-terrain-${{ hashFiles('tools/terrain/build.ts', 'tools/data/download.ts') }}
           restore-keys: lola-terrain-
       # The built tiles too: they depend only on the build code and the pinned sources above.

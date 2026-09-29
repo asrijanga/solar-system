@@ -1,6 +1,6 @@
 # SS-8b · Hapke scattering, from LRO's measurements
 
-Status: **built, awaiting the owner's approval of one check** · 2026-09-28
+Status: **done** · merged 2026-09-29 (PR #37)
 
 As a learner, I want the Moon to scatter light the way its regolith really does, so that it brightens sharply towards full and the quarter Moon is as dim as the real one.
 
@@ -12,6 +12,12 @@ As a learner, I want the Moon to scatter light the way its regolith really does,
 ## What was wrong
 
 SS-6 shaded the Moon with Lommel–Seeliger, one effective albedo per point, calibrated so the disc at zero phase had the fact sheet's geometric albedo 0.12. That model has no opposition surge and scatters too much light at large phase angles. SS-6 recorded the consequence: the quarter Moon came out about twice as bright as the real one.
+
+- 2026-09-29, after the approval points were set out: "I can only load this on my phone and observe so we might need to merge this, tell me exact steps i should do or add a button so i can click and validate what we built." Merged on that basis, and a labelled **Scattering: Hapke / old** button added so the result can be judged on the phone.
+
+## The comparison button
+
+**Scattering: old** draws the model used before this story, Lommel–Seeliger with SS-6's calibration (ϖ = 7.92177 per texture unit, `albedo.json` at 30d1667), in place of Hapke's sunlit term. It is off by default and in every capture. While it is on, a note says it is the old model, shown only to compare. Even lighting and earthshine stay Hapke.
 
 ## The data
 

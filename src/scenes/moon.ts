@@ -252,7 +252,20 @@ export interface MoonOptions {
    * applied only where the Sun is down. A uniform, so it can change.
    */
   readonly earthshineBoost?: UniformNode<'float', number>;
+  /**
+   * 0 for Hapke. 1 for the model before SS-8b, Lommel–Seeliger with SS-6's calibration, drawn
+   * only so it can be compared on screen and labelled as such (docs/stories/SS-8b.md). A uniform,
+   * so it can change.
+   */
+  readonly oldScattering?: UniformNode<'float', number>;
 }
+
+/**
+ * SS-6's Lommel–Seeliger calibration, ϖ = 7.92177 per texture unit (public/data/moon/albedo.json
+ * before SS-8b, at commit 30d1667), as a multiple of this calibration's I/F at Clementine's
+ * standard geometry per texture unit: ϖ = OLD_ALBEDO_SCALE / albedoScale × R30.
+ */
+const OLD_ALBEDO_SCALE = 7.92177;
 
 /** IAU 2015 Resolution B3 nominal solar radius, km. */
 const SUN_RADIUS_KM = 695_700;
@@ -449,6 +462,20 @@ function createMoonMaterial(
     switch (options.shading) {
       case 'hapke': {
         let sunlit = lit(mu0, dot(sun, view));
+        if (options.oldScattering !== undefined) {
+          // The pre-SS-8b model, for the labelled comparison only.
+          // A uniform Moon had ϖ = 0.96 (geometric albedo 0.12) under SS-6.
+          const scaleToOld =
+            'uniform' in options.albedo
+              ? 0.96 / options.albedo.uniform
+              : OLD_ALBEDO_SCALE / options.albedo.manifest.calibration.albedoScale;
+          const varpi = albedo.mul(scaleToOld);
+          const old = varpi
+            .div(4)
+            .mul(max(mu0, 0))
+            .div(max(max(mu0, 0).add(max(mu, 0)), 1e-6));
+          sunlit = mix(sunlit, old, options.oldScattering);
+        }
         if (sunVisible !== null) sunlit = sunlit.mul(sunVisible);
         const even = options.evenLight ?? 0;
         // Even lighting: lit from behind the viewer everywhere at once, so i = e and g = 0.

@@ -230,6 +230,8 @@ interface Stage {
   readonly evenLight: UniformNode<'float', number> | null;
   /** 1, or the labelled earthshine boost, applied where the Sun is down (docs/stories/SS-13e.md). */
   readonly earthshineBoost: UniformNode<'float', number> | null;
+  /** 1 while the labelled pre-SS-8b scattering is shown for comparison. */
+  readonly oldScattering: UniformNode<'float', number> | null;
   /** Landmark labels (docs/stories/SS-15.md), and the landmarks with the body-to-scene rotation. */
   readonly labels: Labels | null;
   readonly landmarks: readonly Landmark[];
@@ -293,6 +295,7 @@ async function createStage(
     approximated: false,
     evenLight: null,
     earthshineBoost: null,
+    oldScattering: null,
     labels: null,
     landmarks: [],
     bodyToScene: null,
@@ -332,6 +335,8 @@ async function createStage(
       const earthshineBoost = uniform(
         setup.earthshine === 'boosted' ? 2 ** EARTHSHINE_BOOST_STOPS : 1,
       );
+      // Off in every capture: the pre-SS-8b model exists only for the labelled comparison.
+      const oldScattering = uniform(0);
       // Earth's face as the satellites measured it at this epoch, where built (SS-13c), and the
       // earthshine it puts on the Moon (SS-13e).
       const face = await loadEarthFace(epoch.id, siteUrl, maxAnisotropy);
@@ -348,6 +353,7 @@ async function createStage(
         evenLight,
         reliefFlipped: setup.reliefFlipped,
         earthshineBoost,
+        oldScattering,
         earthshine:
           face === null
             ? null
@@ -398,6 +404,7 @@ async function createStage(
         starExposure,
         evenLight,
         earthshineBoost,
+        oldScattering,
         labels,
         landmarks: landmarkFile.landmarks,
         bodyToScene,
@@ -726,6 +733,9 @@ async function start(): Promise<void> {
         onEvenLight: (even) => {
           if (evenLight !== null) evenLight.value = even ? 1 : 0;
         },
+        onOldScattering: (old) => {
+          if (stage.oldScattering !== null) stage.oldScattering.value = old ? 1 : 0;
+        },
       },
     );
     onOrbitHeight = () => {
@@ -1034,6 +1044,8 @@ interface MoonControlHandlers {
   /** Landmark labels on or off (docs/stories/SS-15.md). */
   readonly onLabels: (on: boolean) => void;
   readonly onEvenLight: (even: boolean) => void;
+  /** The labelled pre-SS-8b scattering, for comparison (docs/stories/SS-8b.md). */
+  readonly onOldScattering: (old: boolean) => void;
   readonly onEarthshineBoost: (on: boolean) => void;
 }
 
@@ -1089,6 +1101,12 @@ function createMoonControls(
     notes,
     handlers.onEarthshineBoost,
   );
+  const scattering = createToggle(
+    { off: 'Scattering: Hapke', on: 'Scattering: old' },
+    'Old scattering is the model used before 29 September 2026 (Lommel\u2013Seeliger), shown only to compare: it has no brightening towards full Moon and is about twice too bright at quarter phase.',
+    notes,
+    handlers.onOldScattering,
+  );
   const stars = createToggle(
     { off: 'Stars: physical', on: 'Stars: boosted' },
     `Stars ×${STAR_BOOST.toLocaleString('en')} (+${STAR_BOOST_MAGNITUDES} mag) brighter than a real exposure shows them.`,
@@ -1097,7 +1115,7 @@ function createMoonControls(
   );
   const row = document.createElement('div');
   row.className = 'row';
-  row.append(link, lighting, earthshine, stars);
+  row.append(link, lighting, earthshine, scattering, stars);
 
   // Orbit mode: a random real orbit, flown automatically; time can be sped up, labelled.
   const orbitLine = document.createElement('p');

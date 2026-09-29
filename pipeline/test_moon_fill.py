@@ -1,4 +1,4 @@
-"""Unit tests for the gap fill used before lossy encoding. No files needed."""
+"""Unit tests for the pull-push spreading and the albedo encoding. No files needed."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import unittest
 
 import numpy as np
 
-from moon import albedo_for_encoding, pull_push_fill
+from moon import MAX_IOF, decode_iof, encode_iof, pull_push_fill
 
 
 class PullPushFill(unittest.TestCase):
@@ -26,9 +26,15 @@ class PullPushFill(unittest.TestCase):
         self.assertGreaterEqual(filled.min(), 50.0)
         self.assertLessEqual(filled.max(), 150.0)
 
-    def test_encoding_input_never_uses_zero(self) -> None:
-        master = np.array([[0, 10], [20, 0]], dtype=np.uint8)
-        self.assertGreater(albedo_for_encoding(master).min(), 0)
+    def test_encoding_never_uses_zero_and_round_trips(self) -> None:
+        iof = np.array([0.0, 0.001, 0.034, 0.1, MAX_IOF, 0.9])
+        byte = encode_iof(iof)
+        self.assertGreater(int(byte.min()), 0)
+        self.assertEqual(int(byte[-1]), 255)  # clipped at MAX_IOF
+        # The square-root curve: about 2% of I/F per step at the Moon's median, 0.034.
+        step = decode_iof(np.array([byte[2] + 1])) / decode_iof(np.array([byte[2]])) - 1
+        self.assertLess(float(step[0]), 0.025)
+        self.assertLess(abs(float(decode_iof(byte[2:3])[0]) / 0.034 - 1), 0.02)
 
     def test_is_deterministic(self) -> None:
         values = np.arange(64, dtype=np.float64).reshape(8, 8)

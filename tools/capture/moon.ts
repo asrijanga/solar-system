@@ -185,7 +185,7 @@ const HAPKE_MANIFEST = JSON.parse(
 
 /**
  * The 8-bit value core/hapke.ts predicts for a uniform Moon: `albedo` is its I/F at
- * Clementine's standard geometry, scattered with the median tile's parameters.
+ * the map's standard geometry (i = g = 60°, e = 0°), scattered with the median tile's parameters.
  */
 export function predictedLevel(
   pixels: MoonPixels,

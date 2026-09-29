@@ -10,7 +10,7 @@ const gazetteer = JSON.parse(
   readFileSync(join(root, 'test/fixtures/iau-gazetteer-moon.json'), 'utf8'),
 ) as { features: { name: string; lonDeg: number; latDeg: number }[] };
 const albedo = JSON.parse(readFileSync(join(root, 'public/data/moon/albedo.json'), 'utf8')) as {
-  calibration: { albedoScale: number; fit: { albedoScale: number; r: number; tiles: number } };
+  calibration: { consistency: { tiles: number; slopeThroughZero: number; r: number } };
 };
 const hapke = JSON.parse(readFileSync(join(root, 'public/data/moon/hapke.json'), 'utf8')) as {
   medianAtStandard: number;
@@ -53,9 +53,8 @@ describe('Moon viewpoint checks', () => {
   });
 });
 
-describe('albedo calibration', () => {
-  it('is the recorded cross-calibration against LRO, over every measured tile', () => {
-    expect(albedo.calibration.albedoScale).toBe(albedo.calibration.fit.albedoScale);
-    expect(albedo.calibration.fit.tiles).toBe(360 * 140);
+describe('albedo map against the Hapke parameter maps', () => {
+  it('is recorded over every measured tile', () => {
+    expect(albedo.calibration.consistency.tiles).toBe(360 * 140);
   });
 });

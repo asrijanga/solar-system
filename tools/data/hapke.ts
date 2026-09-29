@@ -22,8 +22,9 @@
 //
 // Output: 360 × 180 texels, row 0 at 89.5°N, column 0 at 0.5°E, texel centres on the source's
 // tile centres. Two textures of half floats, back to back: RGBA = (w, b, c, Bs0), then
-// RG = (hs, I/F at Clementine's standard geometry). The 20 rows at each pole the product does
-// not cover hold the median of every tile's parameters, and hapke.json says so.
+// RG = (hs, I/F at the map's standard geometry, i = 60, e = 0, g = 60). The 20 rows at each
+// pole the product does not cover hold the median of every tile's parameters, and hapke.json
+// says so.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -31,7 +32,7 @@ import { fetchPinned } from './download.ts';
 import { floatToHalf } from '../../src/core/half.ts';
 import {
   HAPKE_ROUGHNESS_DEG,
-  hapkeAtClementineStandard,
+  hapkeAtStandard,
   type HapkeParameters,
 } from '../../src/core/hapke.ts';
 
@@ -147,15 +148,15 @@ async function main(): Promise<void> {
       const p: HapkeParameters = measured
         ? { w: w[k] ?? 0, b: b[k] ?? 0, c: c[k] ?? 0, bs0: bs0[k] ?? 0, hs: hs[k] ?? 0 }
         : medianParameters;
-      const r30 = hapkeAtClementineStandard(p);
-      if (measured) standard[k] = r30;
+      const atStandard = hapkeAtStandard(p);
+      if (measured) standard[k] = atStandard;
       const t = row * SAMPLES + col;
       rgba[t * 4] = floatToHalf(p.w);
       rgba[t * 4 + 1] = floatToHalf(p.b);
       rgba[t * 4 + 2] = floatToHalf(p.c);
       rgba[t * 4 + 3] = floatToHalf(p.bs0);
       rg[t * 2] = floatToHalf(p.hs);
-      rg[t * 2 + 1] = floatToHalf(r30);
+      rg[t * 2 + 1] = floatToHalf(atStandard);
     }
   }
   const bytes = new Uint8Array(rgba.byteLength + rg.byteLength);
@@ -192,7 +193,7 @@ async function main(): Promise<void> {
       width: SAMPLES,
       height: ROWS,
       layout:
-        'half floats, little-endian: RGBA (w, b, c, Bs0) for all texels, then RG (hs, I/F at Clementine’s standard geometry i = 30, e = 0, g = 30); row 0 at 89.5N, column 0 at 0.5E',
+        'half floats, little-endian: RGBA (w, b, c, Bs0) for all texels, then RG (hs, I/F at the map’s standard geometry i = 60, e = 0, g = 60, core/hapke.ts MAP_STANDARD_DEG); row 0 at 89.5N, column 0 at 0.5E',
     },
     poles: {
       rows: 'rows 0-19 (90N-70N) and 160-179 (70S-90S)',
@@ -200,7 +201,7 @@ async function main(): Promise<void> {
       why: 'the product ends at 70 degrees; the albedo there is still measured (LOLA, docs/stories/SS-6b.md), only how it scatters light with angle takes the Moon’s typical values',
     },
     median: Object.fromEntries(Object.entries(medianParameters).map(([k, v]) => [k, round(v)])),
-    medianAtStandard: round(hapkeAtClementineStandard(medianParameters)),
+    medianAtStandard: round(hapkeAtStandard(medianParameters)),
     standardRange: [round(Math.min(...standard)), round(Math.max(...standard))],
     tilesWithZeroSurgeWidth: zeroWidth,
     zeroSurgeWidthNote:

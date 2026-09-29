@@ -52,10 +52,10 @@ class Sampling(unittest.TestCase):
         self.assertAlmostEqual(v[1], (image[10, 20] + image[11, 20]) / 2)
 
     def test_blend_weight_and_provenance(self) -> None:
-        w = smoothstep(65, 75, np.array([60.0, 65.0, 70.0, 75.0, 89.0]))
+        w = smoothstep(62, 70, np.array([55.0, 62.0, 66.0, 70.0, 89.0]))
         self.assertEqual(list(w), [0.0, 0.0, 0.5, 1.0, 1.0])
-        self.assertEqual(provenance(-50), "clementine")
-        self.assertEqual(provenance(70), "blend")
+        self.assertEqual(provenance(-50), "wac")
+        self.assertEqual(provenance(66), "blend")
         self.assertEqual(provenance(-80), "lola")
 
 

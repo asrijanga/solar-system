@@ -1,9 +1,10 @@
-"""The Moon's polar albedo from LOLA, combined with Clementine (docs/stories/SS-6b.md).
+"""The Moon's polar albedo from LOLA, combined with the base map (docs/stories/SS-6b.md, SS-5b.md).
 
-Owner decision, 2026-09-25: replace Clementine poleward of about 70 degrees with LOLA's
-laser albedo. Near the poles the Sun is always low, so Clementine's 750 nm mosaic records
-shading as much as albedo, and never saw the crater floors the Sun never reaches. LOLA lights
-the surface with its own laser, so it measures albedo with no shading, everywhere.
+Owner decision, 2026-09-25: LOLA's laser albedo near the poles. There the Sun is always low, so
+camera mosaics record shading as much as albedo, and never saw the crater floors the Sun never
+reaches. LOLA lights the surface with its own laser, so it measures albedo with no shading,
+everywhere. Since SS-5b the base map is LRO WAC's Hapke-normalised mosaic (wac.py), which ends
+at 70 degrees; before, it was Clementine.
 
 Source: LOLA LDAM polar albedo maps, Lemelin et al. (2016), PDS data set
 LRO-L-LOLA-4-GDR-V1.0, products LDAM_50S_1000M_FLOAT and LDAM_50N_1000M_FLOAT. From their
@@ -17,18 +18,17 @@ Orientation. The data set's DSMAP_POLAR.CAT says in prose: "In the north, Longit
 straight down from the center and Longitude 90 East extends to the right. In the south,
 Longitude 0 extends straight up from the center, and Longitude 90 East extends to the
 right." Its inverse formulas disagree with that prose for the south pole. The prose is used:
-against Clementine at 50-60 degrees it correlates at r = 0.73 (south) and 0.77 (north),
-and the formula's orientation does not (docs/stories/SS-6b.md). pipeline/test_lola_poles.py
+against Clementine at 50-60 degrees it correlated at r = 0.73 (south) and 0.77 (north), and
+the formula's orientation does not (docs/stories/SS-6b.md). pipeline/test_lola_poles.py
 asserts the orientation and the sub-pixel origin.
 
-Combination (README, "Combine every available source"):
-- Calibration: Clementine value = gain * LOLA albedo + offset, least squares, fitted per pole
-  over 50-60 degrees where both are valid. There the Sun is high enough for Clementine to be
-  albedo-like, and the fit's r and RMS residual are recorded.
-- Blend: weight w rises smoothly (smoothstep) from 0 at |latitude| 65 to 1 at 75. Output =
-  (1 - w) * Clementine + w * calibrated LOLA. Where Clementine never imaged a point and w > 0,
-  the calibrated LOLA value is used as is: it is a measurement.
-- Equatorward of 65 degrees nothing changes. Clementine's gaps there are filled next, from LOLA's
+Combination (README, "Combine every available source"), in the base map's units (I/F):
+- Calibration: base = gain * LOLA albedo + offset, least squares, fitted per pole over 50-60
+  degrees where both are valid. The fit's r and RMS residual are recorded.
+- Blend: weight w rises smoothly (smoothstep) from 0 at |latitude| 62 to 1 at 70, where the
+  WAC mosaic ends. Output = (1 - w) * base + w * calibrated LOLA. Where the base never measured
+  a point and w > 0, the calibrated LOLA value is used as is: it is a measurement.
+- Equatorward of 62 degrees nothing changes. The base's gaps there are filled next, from LOLA's
   global albedo map (lola_global.py).
 """
 
@@ -51,7 +51,7 @@ SCALE_M = 1000.0
 RADIUS_M = 1737400.0
 
 FIT_BAND = (50.0, 60.0)  # |latitude|, degrees
-BLEND_BAND = (65.0, 75.0)
+BLEND_BAND = (62.0, 70.0)
 
 
 def load(pole: str) -> np.ndarray:
@@ -110,14 +110,13 @@ def grid(height: int, width: int, rows: np.ndarray) -> tuple[np.ndarray, np.ndar
     return np.repeat(lat[:, None], width, axis=1), np.repeat(lon[None, :], len(rows), axis=0)
 
 
-def combine(master: np.ndarray) -> tuple[np.ndarray, dict]:
-    """Clementine master (uint8, 0 = never imaged) with LOLA at the poles.
+def combine(base: np.ndarray) -> tuple[np.ndarray, dict]:
+    """The base map (float I/F, NaN = never measured) with LOLA at the poles.
 
-    Returns the combined uint8 image (0 = still missing) and a record of the fits.
+    Returns the combined map (NaN = still missing) and a record of the fits.
     """
-    height, width = master.shape
-    out = master.astype(np.float64)
-    valid = master > 0
+    height, width = base.shape
+    out = base.copy()
     record: dict = {}
     for pole in ("south", "north"):
         lola = load(pole)
@@ -126,14 +125,14 @@ def combine(master: np.ndarray) -> tuple[np.ndarray, dict]:
         rows = np.nonzero(sign * lat_all >= FIT_BAND[0])[0]
         lat, lon = grid(height, width, rows)
         l_vals = sample_pole(lola, pole, lat, lon)
-        c_vals = out[rows]
-        c_valid = valid[rows]
+        b_vals = out[rows]
+        b_valid = np.isfinite(b_vals)
 
         # Calibration where both measure albedo.
         abs_lat = np.abs(lat)
-        fit = (abs_lat >= FIT_BAND[0]) & (abs_lat < FIT_BAND[1]) & c_valid & np.isfinite(l_vals)
+        fit = (abs_lat >= FIT_BAND[0]) & (abs_lat < FIT_BAND[1]) & b_valid & np.isfinite(l_vals)
         x = l_vals[fit]
-        y = c_vals[fit]
+        y = b_vals[fit]
         gain, offset = np.polyfit(x, y, 1)
         residual = y - (gain * x + offset)
         r = float(np.corrcoef(x, y)[0, 1])
@@ -141,46 +140,43 @@ def combine(master: np.ndarray) -> tuple[np.ndarray, dict]:
         calibrated = gain * l_vals + offset
         w = smoothstep(BLEND_BAND[0], BLEND_BAND[1], abs_lat)
         w = np.where(np.isfinite(l_vals), w, 0.0)
-        blended = np.where(c_valid, (1 - w) * c_vals + w * np.nan_to_num(calibrated), np.nan_to_num(calibrated))
+        blended = np.where(b_valid, (1 - w) * np.nan_to_num(b_vals) + w * np.nan_to_num(calibrated), calibrated)
         use = w > 0
-        filled_gaps = int(np.sum(use & ~c_valid))
-        c_vals = np.where(use, blended, c_vals)
-        out[rows] = c_vals
-        valid[rows] = c_valid | use
+        filled_gaps = int(np.sum(use & ~b_valid))
+        out[rows] = np.where(use, blended, b_vals)
 
         record[pole] = {
             "product": PRODUCTS[pole][0].upper().replace(".IMG", ""),
             "url": BASE + PRODUCTS[pole][0],
             "sha256": PRODUCTS[pole][1],
             "fit": {
-                "model": "clementine = gain * lola_albedo + offset",
+                "model": "base I/F = gain * lola_albedo + offset",
                 "band": f"|latitude| {FIT_BAND[0]:g} to {FIT_BAND[1]:g} deg, both valid",
                 "pixels": int(fit.sum()),
-                "gain": round(float(gain), 4),
-                "offset": round(float(offset), 4),
+                "gain": round(float(gain), 6),
+                "offset": round(float(offset), 6),
                 "r": round(r, 4),
-                "rmsResidual": round(float(np.sqrt(np.mean(residual**2))), 3),
+                "rmsResidual": round(float(np.sqrt(np.mean(residual**2))), 6),
             },
-            "clementineGapsFilled": filled_gaps,
+            "baseGapsFilled": filled_gaps,
         }
 
-    combined = np.where(valid, np.clip(np.rint(out), 1, 255), 0).astype(np.uint8)
     record["blend"] = (
         f"smoothstep weight from 0 at |latitude| {BLEND_BAND[0]:g} to 1 at {BLEND_BAND[1]:g} deg; "
-        "LOLA alone poleward, Clementine alone equatorward"
+        "LOLA alone poleward, the WAC mosaic alone equatorward"
     )
     record["orientation"] = (
         "DSMAP_POLAR.CAT prose (90 E to the right at both poles; south lon 0 up, north lon 0 down); "
         "its south-pole inverse formula disagrees and was not used"
     )
-    return combined, record
+    return out, record
 
 
 def provenance(lat_deg: float) -> str:
     """Which source a latitude's albedo comes from."""
     a = abs(lat_deg)
     if a < BLEND_BAND[0]:
-        return "clementine"
+        return "wac"
     if a >= BLEND_BAND[1]:
         return "lola"
     return "blend"

@@ -1,48 +1,52 @@
 {
   "product": {
-    "name": "Clementine UVVIS 750 nm Global Mosaic 118 m v2.1 (USGS Astrogeology)",
-    "url": "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2.1.tif",
-    "md5": "8f2709140f810b64b3d2703a53ab4074",
-    "sha256": "51b2367ecbcc939c03a92297ecff7e35c592b17c12141e4ff152dd7e30459120",
-    "label": "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2_pds3.lbl",
-    "chosen": "owner, 2026-09-24, over LRO WAC morphology mosaic (baked shading)"
+    "name": "LRO WAC Hapke-normalised mosaic (WAC_HAPKE), PDS LRO-L-LROC-5-RDR, LROLRC_2001, DATA/MDR/WAC_HAPKE",
+    "url": "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/lro-l-lroc-5-rdr/LROLRC_2001/DATA/MDR/WAC_HAPKE/",
+    "files": "pipeline/wac_sources.json: 8 tiles per band, MD5 from each label, SHA-256 pinned",
+    "normalisation": "I/F normalised to phase = incidence = 60 deg, emission = 0 deg by the Hapke function with the Sato et al. (2014) parameter maps",
+    "bands": {
+      "brightness": "566 nm",
+      "colour": "415, 643 and 689 nm, as ratios to 566 nm"
+    },
+    "chosen": "owner, 2026-09-29: replace Clementine between 70 N and 70 S, and show the measured colour (docs/stories/SS-5b.md)",
+    "wacMissingPixels": 7454720,
+    "wacMissingWithin70Deg": 0
   },
   "poles": {
     "source": "LOLA LDAM polar normal albedo, Lemelin et al. (2016), PDS LRO-L-LOLA-4-GDR-V1.0",
-    "chosen": "owner, 2026-09-25: replace Clementine poleward of ~70 deg (docs/stories/SS-6b.md)",
+    "chosen": "owner, 2026-09-25: LOLA near the poles (docs/stories/SS-6b.md); blend band moved to 62-70 deg where the WAC mosaic ends (SS-5b)",
     "conventions": "polar stereographic, R = 1737.4 km, 1000 m/px, planetocentric, east-positive, MEAN EARTH/POLAR AXIS OF DE421, 1064 nm normal albedo",
-    "clementineMissingPixels": 297275,
     "south": {
       "product": "LDAM_50S_1000M_FLOAT",
       "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/float_img/ldam_50s_1000m_float.img",
       "sha256": "cd35ca62d322d48b2b809041e9baa086242842c25a50f8bff70936929910079a",
       "fit": {
-        "model": "clementine = gain * lola_albedo + offset",
+        "model": "base I/F = gain * lola_albedo + offset",
         "band": "|latitude| 50 to 60 deg, both valid",
-        "pixels": 1858492,
-        "gain": 200.4352,
-        "offset": -16.0646,
-        "r": 0.7259,
-        "rmsResidual": 7.22
+        "pixels": 1859584,
+        "gain": 0.17562,
+        "offset": -0.012112,
+        "r": 0.8948,
+        "rmsResidual": 0.003331
       },
-      "clementineGapsFilled": 250168
+      "baseGapsFilled": 3727360
     },
     "north": {
       "product": "LDAM_50N_1000M_FLOAT",
       "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/float_img/ldam_50n_1000m_float.img",
       "sha256": "f795fd56e19718e31885fb79f7d9cd197302df91741a4f39e3aa13f053a73273",
       "fit": {
-        "model": "clementine = gain * lola_albedo + offset",
+        "model": "base I/F = gain * lola_albedo + offset",
         "band": "|latitude| 50 to 60 deg, both valid",
-        "pixels": 1859580,
-        "gain": 182.2109,
-        "offset": -11.1177,
-        "r": 0.7655,
-        "rmsResidual": 7.021
+        "pixels": 1859584,
+        "gain": 0.155539,
+        "offset": -0.006614,
+        "r": 0.896,
+        "rmsResidual": 0.003533
       },
-      "clementineGapsFilled": 27190
+      "baseGapsFilled": 3727360
     },
-    "blend": "smoothstep weight from 0 at |latitude| 65 to 1 at 75 deg; LOLA alone poleward, Clementine alone equatorward",
+    "blend": "smoothstep weight from 0 at |latitude| 62 to 1 at 70 deg; LOLA alone poleward, the WAC mosaic alone equatorward",
     "orientation": "DSMAP_POLAR.CAT prose (90 E to the right at both poles; south lon 0 up, north lon 0 down); its south-pole inverse formula disagrees and was not used"
   },
   "gapFill": {
@@ -53,110 +57,139 @@
     "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/cylindrical/float_img/ldam_10_float.img",
     "sha256": "6a14cac07b26e3d2c8576823e20c7f4aa47afb0b65ba55df11cf67e64c7b3761",
     "fit": {
-      "model": "clementine = gain * lola_albedo + offset",
-      "band": "|latitude| < 60 deg, Clementine valid",
-      "pixels": 22347594,
-      "gain": 207.8684,
-      "offset": -19.8055,
-      "r": 0.9234,
-      "rmsResidual": 4.649
+      "model": "base I/F = gain * lola_albedo + offset",
+      "band": "|latitude| < 60 deg, base measured",
+      "pixels": 22364160,
+      "gain": 0.166699,
+      "offset": -0.009945,
+      "r": 0.9408,
+      "rmsResidual": 0.003229
     },
     "localMatch": {
-      "method": "Clementine minus calibrated LOLA, spread into each gap by pull-push",
-      "medianAbsCorrection": 1.962,
-      "p99AbsCorrection": 13.156
+      "method": "base minus calibrated LOLA, spread into each gap by pull-push",
+      "medianAbsCorrection": 0.0,
+      "p99AbsCorrection": 0.0
     },
-    "pixelsFilled": 19917
+    "pixelsFilled": 0
   },
   "conventions": {
     "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
-    "latitude": "planetocentric (identical to planetographic on a sphere)",
+    "latitude": "planetocentric (the WAC headers say planetographic, identical on a sphere)",
     "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
     "rows": "row 0 = +90 deg latitude",
     "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
-    "values": "relative albedo 1-255 on Clementine's scale, linear; LOLA mapped onto it by the fits under poles",
-    "gaps": "texture.mask, when present, is authoritative: white = never measured, and albedo values there are compression filler. Absent when every pixel was measured"
+    "values": "566 nm I/F at i = g = 60 deg, e = 0, stored as byte = 255 sqrt(I/F / 0.25); LOLA mapped onto it by the fits under poles and gapFill"
   },
   "texture": {
     "file": "albedo.webp",
     "width": 8192,
     "height": 4096,
+    "encoding": {
+      "curve": "sqrt",
+      "maxIOverF": 0.25
+    },
+    "clippedPixels": 0,
+    "negativePixelsClampedToZero": 0,
     "kmPerPixelAtEquator": 1.333,
     "missingPixels": 0,
     "missingFraction": 0.0,
-    "sha256": "d0f06a3b2dda166bfebac7812f7fcc949aaddff83890a464b69536cd8aedca77",
+    "sha256": "43332bd57ae3a040a9c665fb5c8ee15763cec4f6416a46f169905e832b71cf00",
     "mask": null,
     "maskSha256": null,
     "gpuBytesR8WithMips": 44739242
   },
+  "colour": {
+    "file": "albedo-colour.png",
+    "width": 2048,
+    "height": 1024,
+    "channels": "red = I/F(643 nm) / I/F(566 nm), green = I/F(415 nm) / I/F(566 nm), blue = I/F(689 nm) / I/F(566 nm), each byte linear over its range",
+    "ranges": {
+      "643/566": [
+        0.97,
+        1.32
+      ],
+      "415/566": [
+        0.61,
+        0.83
+      ],
+      "689/566": [
+        0.94,
+        1.39
+      ]
+    },
+    "display": "core/moonColour.ts: the reflectance spectrum linear between 415, 566, 643 and 689 nm and flat beyond, lit by a 5772 K blackbody, CIE 1931 to linear sRGB, white-balanced to sunlight",
+    "unmeasured": "poleward of 70 deg and in the mosaic's gaps: the Moon's median ratios, blended in from 62 to 70 deg",
+    "medianRatios": {
+      "643/566": 1.147419,
+      "415/566": 0.690843,
+      "689/566": 1.237867
+    },
+    "measuredCells": 1634304,
+    "unmeasuredCells": 462848,
+    "unmeasuredEquatorwardOf70": 0,
+    "sha256": "45a9f563b30cc08dedaaa3ebc680bdba7f0d909cc2b5fb76d4b7d219c763792f",
+    "gpuBytesRGBA8WithMips": 11184810
+  },
   "formatChoice": {
-    "rule": "smallest albedo with albedo + mask <= 6291456 bytes and PSNR >= 42.0 dB over imaged pixels and over the Clementine region (|lat| < 65) alone",
-    "maskBytes": 0,
+    "rule": "smallest albedo at most 6291456 bytes with PSNR >= 42.0 dB over all pixels and over the WAC region (|lat| < 62) alone",
     "chosen": "webp-q85",
     "trials": [
       {
         "format": "webp-lossless",
-        "bytes": 11100428,
+        "bytes": 10731766,
         "psnrDb": null,
-        "psnrClementineDb": null,
+        "psnrWacDb": null,
         "maxAbsError": 0
       },
       {
         "format": "webp-q95",
-        "bytes": 3702902,
-        "psnrDb": 46.36,
-        "psnrClementineDb": 45.82,
-        "maxAbsError": 10
+        "bytes": 3359190,
+        "psnrDb": 46.33,
+        "psnrWacDb": 45.51,
+        "maxAbsError": 11
       },
       {
         "format": "webp-q90",
-        "bytes": 2169464,
-        "psnrDb": 44.4,
-        "psnrClementineDb": 43.88,
-        "maxAbsError": 15
+        "bytes": 1823658,
+        "psnrDb": 44.53,
+        "psnrWacDb": 43.63,
+        "maxAbsError": 16
       },
       {
         "format": "webp-q85",
-        "bytes": 1397656,
-        "psnrDb": 42.61,
-        "psnrClementineDb": 42.15,
-        "maxAbsError": 21
+        "bytes": 1143460,
+        "psnrDb": 43.05,
+        "psnrWacDb": 42.15,
+        "maxAbsError": 25
       },
       {
         "format": "webp-q80",
-        "bytes": 1037602,
-        "psnrDb": 41.63,
-        "psnrClementineDb": 41.21,
-        "maxAbsError": 28
+        "bytes": 841522,
+        "psnrDb": 42.22,
+        "psnrWacDb": 41.33,
+        "maxAbsError": 32
       },
       {
         "format": "webp-q70",
-        "bytes": 697004,
-        "psnrDb": 40.48,
-        "psnrClementineDb": 40.11,
-        "maxAbsError": 40
+        "bytes": 566966,
+        "psnrDb": 41.25,
+        "psnrWacDb": 40.35,
+        "maxAbsError": 50
       }
     ]
   },
-  "masterSha256": "8dd70ca47c23a71b5d01d3817d0ce405db867556f6427a2dd4e6e0f02401d788",
+  "masterSha256": "22122925df574db62afcf2a4a38e3638aa32cc62e98aa34fb0a88e62929822f1",
   "calibration": {
-    "model": "Hapke (src/core/hapke.ts): I/F = albedoScale * v * Hapke(i, e, g; tile) / Hapke(30, 0, 30; tile), v the texture value in [0, 1], tile parameters from public/data/moon/hapke.bin",
-    "reference": "LRO WAC 566 nm Hapke parameter maps, Sato et al. (2014), doi:10.1002/2013JE004580: each tile's absolute I/F at Clementine's standard geometry i = 30, e = 0, g = 30",
-    "method": "least squares through zero of the WAC I/F at the standard geometry against the mean texture value, per 1-degree tile, 70N to 70S, tiles with never-imaged pixels left out",
-    "fit": {
+    "model": "I/F = map I/F at i = g = 60, e = 0, times Hapke(i, e, g; tile) / Hapke(60, 0, 60; tile), tile parameters from public/data/moon/hapke.bin; no scale fitted",
+    "consistency": {
+      "what": "per 1-degree tile, 70 N to 70 S: mean map I/F against the I/F the tile's Hapke parameters give at the standard geometry",
       "tiles": 50400,
-      "albedoScale": 0.522878,
-      "r": 0.9586,
-      "rmsResidual": 0.007498,
-      "relativeRmsResidual": 0.0916,
-      "withOffsetNotUsed": {
-        "slope": 0.415455,
-        "offset": 0.017946
-      }
+      "slopeThroughZero": 0.9635,
+      "r": 0.9878,
+      "relativeRmsResidual": 0.0383
     },
-    "albedoScale": 0.522878,
-    "discMeanTextureValue": 0.121185,
+    "discMeanIOverF": 0.031162,
     "script": "pipeline/calibrate.py",
-    "decodedMean": 41.3731
+    "decodedMean": 99.6876
   }
 }

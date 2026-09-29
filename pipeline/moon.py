@@ -1,33 +1,33 @@
-"""The Moon's albedo texture, from the Clementine UVVIS 750 nm global mosaic.
+"""The Moon's albedo and colour textures, from LRO WAC's Hapke-normalised mosaic.
 
     npm run pipeline:moon
 
-Product chosen by the owner on 2026-09-24 (docs/stories/SS-5.md) over the LRO WAC
-"morphology" mosaic, whose shading is baked in.
-
-Source conventions, from the product's PDS3 label (Lunar_Clementine_UVVIS_750nm_Global_
-Mosaic_118m_v2_pds3.lbl): equirectangular, planetocentric latitude, POSITIVE_LONGITUDE_
-DIRECTION = EAST, CENTER_LONGITUDE = 0, sphere of radius 1737.4 km, 8-bit, nodata 0. The
-label gives no scale from pixel value to reflectance: values are relative albedo only.
+Owner decisions, 2026-09-29 (docs/stories/SS-5b.md): the WAC Hapke-normalised mosaic replaces
+Clementine between 70 N and 70 S, and the Moon is shown in its measured colour. The mosaic
+(wac.py) is I/F at the standard geometry i = g = 60 deg, e = 0, normalised with the same Hapke
+parameter maps the renderer uses (core/hapke.ts), so the app inverts exactly what LRO applied.
 
 Other sources complete it (README, "Combine every available source"): LOLA's laser albedo at
-the poles (lola_poles.py), then LOLA's global laser albedo wherever neither measured
-(lola_global.py, owner decision 2026-09-26). Since then no pixel is unmeasured.
+the poles (lola_poles.py), blended in from 62 to 70 deg where the mosaic ends, then LOLA's
+global laser albedo wherever neither measured (lola_global.py). Both are fitted to the mosaic.
 
-Outputs in public/data/moon/, both 8192 x 4096, column 0 = longitude -180 deg (west edge),
-row 0 = latitude +90 deg (north edge):
-- albedo-mask.png, only while some pixel is unmeasured: lossless 1-bit, white where no source
-  measured the surface. It is then the only authority on gaps.
-- albedo.webp: relative albedo, one channel stored as grey, lossy. Every source pixel is
-  area-averaged in (GDAL "average" with fractional coverage), never decimated. Values are
-  linear in the source's pixel values: no sRGB curve, because the source is itself 8-bit and
-  a transfer curve cannot add precision it does not have. Inside any gaps the values are a
-  smooth pull-push fill so the codec does not spend bits on hard edges; they are filler, and
-  the mask says never to show them.
-The split exists because a lossy codec cannot carry an exact no-data value: encoded as 0 in
-a single WebP, 50,000 to 130,000 pixels flipped between gap and data (docs/stories/SS-5.md).
-The albedo encoding is chosen by measurement: the smallest quality whose albedo plus mask is
-at most 6 MB with PSNR >= 40 dB over imaged pixels only.
+Outputs in public/data/moon/, column 0 = longitude -180 deg (west edge), row 0 = latitude
++90 deg (north edge):
+- albedo.webp, 8192 x 4096, one channel stored as grey, lossy: I/F at the standard geometry at
+  566 nm, the WAC band nearest V. Area-averaged from 76 px/deg, never decimated. Stored as
+  byte = 255 * sqrt(I/F / MAX_IOF): the source is floating point, and a square-root curve puts
+  the 8 bits where the Moon's values are (median I/F 0.034), about 2% of I/F per step in the
+  maria. The renderer squares it back.
+- albedo-colour.png, 2048 x 1024, lossless RGB: the ratios I/F(643 nm), I/F(415 nm) and
+  I/F(689 nm) to I/F(566 nm), in red, green and blue, each linear in the range the manifest
+  gives. The renderer turns them into a display colour (core/moonColour.ts: the spectrum
+  through the bands, lit by sunlight, CIE 1931 to sRGB). Colour is 4 times coarser than
+  brightness (5.3 km at the equator), as in photographs, so the GPU memory stays within the
+  mobile budget. Poleward of 70 deg, and in the mosaic's few gaps, no colour was measured:
+  there the ratios are the Moon's median colour, blended in from 62 to 70 deg like the
+  brightness, and the manifest and the About text say so.
+The albedo encoding is chosen by measurement: the smallest lossy quality at most 6 MB with
+PSNR >= 42 dB over all pixels and over the WAC region alone.
 """
 
 from __future__ import annotations
@@ -39,65 +39,29 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import rasterio
 from PIL import Image
-from rasterio.enums import Resampling
-from rasterio.windows import Window
 
-from download import CACHE, fetch, sha256
+from download import CACHE, sha256
 from lola_global import fill
-from lola_poles import combine
-
-SOURCE_URL = (
-    "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2.1.tif"
-)
-SOURCE_MD5 = "8f2709140f810b64b3d2703a53ab4074"  # published by USGS alongside the file
-SOURCE_SHA256: str | None = "51b2367ecbcc939c03a92297ecff7e35c592b17c12141e4ff152dd7e30459120"  # pinned 2026-09-24 after the publisher MD5 matched
-SOURCE_LABEL = (
-    "https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_UVVIS_750nm_Global_Mosaic_118m_v2_pds3.lbl"
-)
+from lola_poles import BLEND_BAND, combine, smoothstep
+from wac import SOURCES as WAC_SOURCES
+from wac import accumulate
 
 WIDTH, HEIGHT = 8192, 4096
-BAND_ROWS = 128  # output rows per read: 1,440 source rows, about 130 MB
+COLOUR_WIDTH, COLOUR_HEIGHT = 2048, 1024
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "public" / "data" / "moon"
-MASTER = CACHE / "moon-albedo-master.png"  # lossless, not committed
+MASTER = CACHE / "moon-iof-master.npy"  # float I/F before encoding, not committed
 
+# I/F at byte 255. Every value above it is clipped, and the manifest records how many.
+MAX_IOF = 0.25
 MAX_BYTES = 6 * 1024 * 1024
 # Raised from 40 by the owner on 2026-09-25 (docs/stories/SS-6b.md): at 40 the rule chose q70,
-# visibly blocky in smooth maria. Applied to the Clementine region on its own as well, so
-# LOLA's smooth polar rows (about 28% of the grid) cannot lift the average.
+# visibly blocky in smooth maria. Applied to the WAC region on its own as well, so LOLA's
+# smooth polar rows cannot lift the average.
 MIN_PSNR_DB = 42.0
-CLEMENTINE_REGION_DEG = 65.0
-
-
-def downsample(source: Path) -> np.ndarray:
-    """Area-averages the whole mosaic to WIDTH x HEIGHT, band by band. Returns uint8, 0 = no data."""
-    out = np.zeros((HEIGHT, WIDTH), dtype=np.uint8)
-    with rasterio.open(source) as ds:
-        if (ds.width, ds.height) != (92160, 46080) or ds.nodata != 0:
-            raise RuntimeError(f"unexpected source: {ds.width}x{ds.height}, nodata {ds.nodata}")
-        scale = ds.height / HEIGHT  # 11.25 source rows per output row
-        for r0 in range(0, HEIGHT, BAND_ROWS):
-            r1 = min(HEIGHT, r0 + BAND_ROWS)
-            window = Window(0, r0 * scale, ds.width, (r1 - r0) * scale)
-            band = ds.read(
-                1,
-                window=window,
-                out_shape=(r1 - r0, WIDTH),
-                out_dtype="float32",
-                resampling=Resampling.average,
-                masked=True,
-            )
-            values = np.clip(np.rint(band.filled(0)), 0, 255).astype(np.uint8)
-            # A partly imaged output pixel keeps its average; it must never round to the
-            # no-data value, which would invent a gap.
-            values[(~band.mask) & (values == 0)] = 1
-            out[r0:r1] = values
-            print(f"  rows {r1}/{HEIGHT}", end="\r", flush=True)
-    print()
-    return out
+WAC_REGION_DEG = BLEND_BAND[0]
 
 
 def psnr(a: np.ndarray, b: np.ndarray) -> float:
@@ -108,7 +72,7 @@ def psnr(a: np.ndarray, b: np.ndarray) -> float:
 def pull_push_fill(values: np.ndarray, valid: np.ndarray) -> np.ndarray:
     """Fills invalid pixels smoothly from valid neighbours at every scale (pull-push).
 
-    Filler for compression only. Deterministic, and valid pixels are returned unchanged.
+    Deterministic, and valid pixels are returned unchanged.
     """
     if valid.all():
         return values.astype(np.float64)
@@ -127,34 +91,35 @@ def pull_push_fill(values: np.ndarray, valid: np.ndarray) -> np.ndarray:
     return np.where(valid, values, up)
 
 
-def albedo_for_encoding(master: np.ndarray) -> np.ndarray:
-    valid = master > 0
-    return np.clip(np.rint(pull_push_fill(master, valid)), 1, 255).astype(np.uint8)
+def encode_iof(iof: np.ndarray) -> np.ndarray:
+    """byte = 255 sqrt(I/F / MAX_IOF), rounded, at least 1."""
+    return np.clip(np.rint(255 * np.sqrt(np.clip(iof, 0, MAX_IOF) / MAX_IOF)), 1, 255).astype(np.uint8)
+
+
+def decode_iof(byte: np.ndarray) -> np.ndarray:
+    return MAX_IOF * (byte.astype(np.float64) / 255) ** 2
 
 
 def format_trials(master: np.ndarray) -> list[dict]:
-    """Encodes the albedo several ways and measures each over imaged pixels. Nothing is chosen here."""
-    valid = master > 0
+    """Encodes the albedo several ways and measures each. Nothing is chosen here."""
     lat = 90 - (np.arange(master.shape[0]) + 0.5) * 180 / master.shape[0]
-    low = valid & (np.abs(lat) < CLEMENTINE_REGION_DEG)[:, None]
-    filled = Image.fromarray(albedo_for_encoding(master), mode="L")
+    low = np.broadcast_to((np.abs(lat) < WAC_REGION_DEG)[:, None], master.shape)
+    image = Image.fromarray(master, mode="L")
     trials = [("webp", {"lossless": True, "method": 6})]
     trials += [("webp", {"quality": q, "method": 6}) for q in (95, 90, 85, 80, 70)]
     results = []
     for fmt, options in trials:
         buffer = io.BytesIO()
-        filled.save(buffer, format=fmt.upper(), **options)
+        image.save(buffer, format=fmt.upper(), **options)
         decoded = np.array(Image.open(io.BytesIO(buffer.getvalue())).convert("L"))
-        error = np.abs(master[valid].astype(int) - decoded[valid].astype(int))
+        error = np.abs(master.astype(int) - decoded.astype(int))
         results.append(
             {
                 "format": "webp-lossless" if options.get("lossless") else f"webp-q{options['quality']}",
                 "bytes": buffer.tell(),
                 # Lossless is infinite PSNR, which JSON cannot hold: recorded as null.
-                "psnrDb": None if math.isinf(p := psnr(master[valid], decoded[valid])) else round(p, 2),
-                "psnrClementineDb": None
-                if math.isinf(q := psnr(master[low], decoded[low]))
-                else round(q, 2),
+                "psnrDb": None if math.isinf(p := psnr(master, decoded)) else round(p, 2),
+                "psnrWacDb": None if math.isinf(q := psnr(master[low], decoded[low])) else round(q, 2),
                 "maxAbsError": int(error.max()),
                 "_data": buffer.getvalue(),
             }
@@ -162,69 +127,104 @@ def format_trials(master: np.ndarray) -> list[dict]:
     return results
 
 
-def encode_mask(master: np.ndarray) -> bytes:
-    buffer = io.BytesIO()
-    Image.fromarray(master == 0).convert("1").save(buffer, format="PNG", optimize=True)
-    decoded = np.array(Image.open(io.BytesIO(buffer.getvalue())).convert("L")) > 0
-    if not np.array_equal(decoded, master == 0):
-        raise RuntimeError("gap mask did not survive encoding exactly")
-    return buffer.getvalue()
-
-
-def choose(trials: list[dict], mask_bytes: int) -> dict:
+def choose(trials: list[dict]) -> dict:
     eligible = [
         t
         for t in trials
-        if t["bytes"] + mask_bytes <= MAX_BYTES
-        and all(t[k] is None or t[k] >= MIN_PSNR_DB for k in ("psnrDb", "psnrClementineDb"))
+        if t["bytes"] <= MAX_BYTES and all(t[k] is None or t[k] >= MIN_PSNR_DB for k in ("psnrDb", "psnrWacDb"))
     ]
     if not eligible:
         raise RuntimeError("no encoding meets the size and quality rules; see the trials")
     return min(eligible, key=lambda t: t["bytes"])
 
 
-def build() -> dict:
-    source = fetch(SOURCE_URL, SOURCE_SHA256, "clementine-uvvis-750nm-118m-v2.1.tif", md5=SOURCE_MD5)
+def brightness() -> np.ndarray:
+    """566 nm I/F at the standard geometry on the 8192 x 4096 grid, NaN where not measured."""
     if MASTER.exists():
-        master = np.array(Image.open(MASTER))
-    else:
-        master = downsample(source)
-        Image.fromarray(master, mode="L").save(MASTER, optimize=True)
+        return np.load(MASTER)
+    total, count = accumulate("566NM", WIDTH, HEIGHT)
+    iof = np.where(count > 0, total / np.maximum(count, 1), np.nan)
+    np.save(MASTER, iof)
+    return iof
 
-    clementine_missing = int(np.sum(master == 0))
+
+def colour() -> tuple[dict, dict]:
+    """643/566, 415/566 and 689/566 ratios on the colour grid, with the median colour where none
+    was measured, blended in over the brightness's polar band."""
+    sums = {band: accumulate(band, COLOUR_WIDTH, COLOUR_HEIGHT) for band in ("566NM", "643NM", "415NM", "689NM")}
+    measured = np.all([c > 0 for _, c in sums.values()], axis=0)
+    mean = {band: t / np.maximum(c, 1) for band, (t, c) in sums.items()}
+    measured &= mean["566NM"] > 0
+    lat = 90 - (np.arange(COLOUR_HEIGHT) + 0.5) * 180 / COLOUR_HEIGHT
+    w = smoothstep(BLEND_BAND[0], BLEND_BAND[1], np.abs(lat))[:, None]
+    ratios = {}
+    medians = {}
+    for band in ("643NM", "415NM", "689NM"):
+        r = np.where(measured, mean[band] / np.where(measured, mean["566NM"], 1), np.nan)
+        m = float(np.nanmedian(r))
+        ratios[band] = np.where(measured, (1 - w) * np.nan_to_num(r) + w * m, m)
+        medians[f"{band[:3]}/566"] = round(m, 6)
+    record = {
+        "medianRatios": medians,
+        "measuredCells": int(measured.sum()),
+        "unmeasuredCells": int((~measured).sum()),
+        "unmeasuredEquatorwardOf70": int((~measured & (np.abs(lat) < 70)[:, None]).sum()),
+    }
+    return ratios, record
+
+
+def encode_ratio(r: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    return np.clip(np.rint((r - lo) / (hi - lo) * 255), 0, 255).astype(np.uint8)
+
+
+def build() -> dict:
+    base = brightness()
+    wac_missing = int(np.sum(~np.isfinite(base)))
+    lat = 90 - (np.arange(HEIGHT) + 0.5) * 180 / HEIGHT
+    wac_missing_within_70 = int(np.sum(~np.isfinite(base) & (np.abs(lat) < 70)[:, None]))
     # Every available source (README): LOLA's laser albedo at the poles (lola_poles.py), then
     # LOLA's global laser albedo wherever no one else measured (lola_global.py).
-    master, poles = combine(master)
-    master, gap_fill = fill(master, pull_push_fill)
+    iof, poles = combine(base)
+    iof, gap_fill = fill(iof, pull_push_fill)
+    if not np.all(np.isfinite(iof)):
+        raise RuntimeError("a pixel is still unmeasured")
+    clipped = int(np.sum(iof > MAX_IOF))
+    negative = int(np.sum(iof < 0))
+    master = encode_iof(iof)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    mask_out = OUT_DIR / "albedo-mask.png"
-    # A mask is written only while some pixel was never measured.
-    mask_data = encode_mask(master) if np.any(master == 0) else None
     trials = format_trials(master)
-    chosen = choose(trials, 0 if mask_data is None else len(mask_data))
+    chosen = choose(trials)
     out = OUT_DIR / "albedo.webp"
     out.write_bytes(chosen["_data"])
-    if mask_data is None:
-        mask_out.unlink(missing_ok=True)
-    else:
-        mask_out.write_bytes(mask_data)
+    (OUT_DIR / "albedo-mask.png").unlink(missing_ok=True)
 
-    missing = int(np.sum(master == 0))
+    ratios, colour_record = colour()
+    ranges = {
+        f"{band[:3]}/566": [math.floor(float(r.min()) * 100) / 100, math.ceil(float(r.max()) * 100) / 100]
+        for band, r in ratios.items()
+    }
+    rgb = np.zeros((COLOUR_HEIGHT, COLOUR_WIDTH, 3), dtype=np.uint8)
+    for c, band in enumerate(("643NM", "415NM", "689NM")):
+        rgb[:, :, c] = encode_ratio(ratios[band], *ranges[f"{band[:3]}/566"])
+    colour_out = OUT_DIR / "albedo-colour.png"
+    Image.fromarray(rgb, mode="RGB").save(colour_out, optimize=True)
+
     manifest = {
         "product": {
-            "name": "Clementine UVVIS 750 nm Global Mosaic 118 m v2.1 (USGS Astrogeology)",
-            "url": SOURCE_URL,
-            "md5": SOURCE_MD5,
-            "sha256": sha256(source),
-            "label": SOURCE_LABEL,
-            "chosen": "owner, 2026-09-24, over LRO WAC morphology mosaic (baked shading)",
+            "name": "LRO WAC Hapke-normalised mosaic (WAC_HAPKE), PDS LRO-L-LROC-5-RDR, LROLRC_2001, DATA/MDR/WAC_HAPKE",
+            "url": WAC_SOURCES["base"],
+            "files": "pipeline/wac_sources.json: 8 tiles per band, MD5 from each label, SHA-256 pinned",
+            "normalisation": "I/F normalised to phase = incidence = 60 deg, emission = 0 deg by the Hapke function with the Sato et al. (2014) parameter maps",
+            "bands": {"brightness": "566 nm", "colour": "415, 643 and 689 nm, as ratios to 566 nm"},
+            "chosen": "owner, 2026-09-29: replace Clementine between 70 N and 70 S, and show the measured colour (docs/stories/SS-5b.md)",
+            "wacMissingPixels": wac_missing,
+            "wacMissingWithin70Deg": wac_missing_within_70,
         },
         "poles": {
             "source": "LOLA LDAM polar normal albedo, Lemelin et al. (2016), PDS LRO-L-LOLA-4-GDR-V1.0",
-            "chosen": "owner, 2026-09-25: replace Clementine poleward of ~70 deg (docs/stories/SS-6b.md)",
+            "chosen": "owner, 2026-09-25: LOLA near the poles (docs/stories/SS-6b.md); blend band moved to 62-70 deg where the WAC mosaic ends (SS-5b)",
             "conventions": "polar stereographic, R = 1737.4 km, 1000 m/px, planetocentric, east-positive, MEAN EARTH/POLAR AXIS OF DE421, 1064 nm normal albedo",
-            "clementineMissingPixels": clementine_missing,
             **poles,
         },
         "gapFill": {
@@ -235,41 +235,60 @@ def build() -> dict:
         },
         "conventions": {
             "projection": "equirectangular (simple cylindrical), sphere R = 1737.4 km",
-            "latitude": "planetocentric (identical to planetographic on a sphere)",
+            "latitude": "planetocentric (the WAC headers say planetographic, identical on a sphere)",
             "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
             "rows": "row 0 = +90 deg latitude",
             "bodyFixedFrame": "MOON_ME (LRO-era mean Earth/polar axis); see ephemeris.json",
-            "values": "relative albedo 1-255 on Clementine's scale, linear; LOLA mapped onto it by the fits under poles",
-            "gaps": "texture.mask, when present, is authoritative: white = never measured, and albedo values there are compression filler. Absent when every pixel was measured",
+            "values": f"566 nm I/F at i = g = 60 deg, e = 0, stored as byte = 255 sqrt(I/F / {MAX_IOF}); LOLA mapped onto it by the fits under poles and gapFill",
         },
         "texture": {
             "file": out.name,
             "width": WIDTH,
             "height": HEIGHT,
+            "encoding": {"curve": "sqrt", "maxIOverF": MAX_IOF},
+            "clippedPixels": clipped,
+            "negativePixelsClampedToZero": negative,
             "kmPerPixelAtEquator": round(2 * math.pi * 1737.4 / WIDTH, 3),
-            "missingPixels": missing,
-            "missingFraction": round(missing / master.size, 6),
+            "missingPixels": 0,
+            "missingFraction": 0.0,
             "sha256": sha256(out),
-            "mask": None if mask_data is None else mask_out.name,
-            "maskSha256": None if mask_data is None else sha256(mask_out),
+            "mask": None,
+            "maskSha256": None,
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),
         },
+        "colour": {
+            "file": colour_out.name,
+            "width": COLOUR_WIDTH,
+            "height": COLOUR_HEIGHT,
+            "channels": "red = I/F(643 nm) / I/F(566 nm), green = I/F(415 nm) / I/F(566 nm), blue = I/F(689 nm) / I/F(566 nm), each byte linear over its range",
+            "ranges": ranges,
+            "display": "core/moonColour.ts: the reflectance spectrum linear between 415, 566, 643 and 689 nm and flat beyond, lit by a 5772 K blackbody, CIE 1931 to linear sRGB, white-balanced to sunlight",
+            "unmeasured": "poleward of 70 deg and in the mosaic's gaps: the Moon's median ratios, blended in from 62 to 70 deg",
+            **colour_record,
+            "sha256": sha256(colour_out),
+            "gpuBytesRGBA8WithMips": int(COLOUR_WIDTH * COLOUR_HEIGHT * 4 * 4 / 3),
+        },
         "formatChoice": {
-            "rule": f"smallest albedo with albedo + mask <= {MAX_BYTES} bytes and PSNR >= {MIN_PSNR_DB} dB over imaged pixels and over the Clementine region (|lat| < {CLEMENTINE_REGION_DEG:g}) alone",
-            "maskBytes": 0 if mask_data is None else len(mask_data),
+            "rule": f"smallest albedo at most {MAX_BYTES} bytes with PSNR >= {MIN_PSNR_DB} dB over all pixels and over the WAC region (|lat| < {WAC_REGION_DEG:g}) alone",
             "chosen": chosen["format"],
             "trials": [{k: v for k, v in t.items() if k != "_data"} for t in trials],
         },
         "masterSha256": sha256(MASTER),
     }
-    (OUT_DIR / "albedo.json").write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
+    old = OUT_DIR / "albedo.json"
+    if old.exists():
+        # The calibration section is pipeline/calibrate.py's; keep it until that re-runs.
+        previous = json.loads(old.read_text())
+        if "calibration" in previous:
+            manifest["calibration"] = previous["calibration"]
+    old.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
     return manifest
 
 
 if __name__ == "__main__":
     m = build()
-    print(f"chose {m['formatChoice']['chosen']}; missing {m['texture']['missingFraction']:.4%} of pixels")
+    print(f"chose {m['formatChoice']['chosen']}; clipped {m['texture']['clippedPixels']} pixels")
     for t in m["formatChoice"]["trials"]:
         print(f"  {t['format']:18} {t['bytes'] / 1e6:6.2f} MB  PSNR {'lossless' if t['psnrDb'] is None else t['psnrDb']:>6} dB  max err {t['maxAbsError']:>3}")
-    print(f"  mask {m['formatChoice']['maskBytes'] / 1e6:.3f} MB")
+    print(json.dumps(m["colour"], indent=1))
     sys.exit(0)

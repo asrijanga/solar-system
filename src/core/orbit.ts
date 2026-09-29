@@ -188,6 +188,31 @@ export function orbitHeading(
   return { radiusKm, u, v, theta0: 0, omega };
 }
 
+/**
+ * The orbit the Orbit button starts from your view (owner, 2026-09-29, docs/stories/SS-11f.md):
+ * over the point directly below the camera (`position`, from the Moon's centre), at `heightKm`,
+ * flying towards the top of the screen. That direction along the ground is the surface part of
+ * the camera's `forward` plus its `screenUp`: looking straight down, `forward` has no surface
+ * part and `screenUp` gives it; looking at the horizon, `screenUp` points away from the ground and
+ * `forward` gives it; in between both point the same way. Returns null only if the view gives no
+ * direction along the ground at all, which a camera with independent forward and up never does.
+ */
+export function orbitAlongView(
+  position: Vec3,
+  forward: Vec3,
+  screenUp: Vec3,
+  moonRadiusKm: number,
+  gmKm3PerS2: number,
+  heightKm: number,
+): Orbit | null {
+  const up = unit(position);
+  const sum: Vec3 = [forward[0] + screenUp[0], forward[1] + screenUp[1], forward[2] + screenUp[2]];
+  const along = dot(sum, up);
+  const heading: Vec3 = [sum[0] - along * up[0], sum[1] - along * up[1], sum[2] - along * up[2]];
+  if (Math.hypot(heading[0], heading[1], heading[2]) < 1e-9) return null;
+  return orbitHeading(up, heading, moonRadiusKm, gmKm3PerS2, heightKm);
+}
+
 /** The body-fixed unit vectors up and due north at a planetocentric latitude and longitude. */
 export function upAndNorth(lonDeg: number, latDeg: number): { up: Vec3; north: Vec3 } {
   const lon = (lonDeg * Math.PI) / 180;

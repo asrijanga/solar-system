@@ -4,6 +4,7 @@ import {
   groundDistance,
   horizonDip,
   orbitFrom,
+  orbitAlongView,
   orbitHeading,
   randomOrbit,
   seededRandom,
@@ -111,5 +112,56 @@ describe('an orbit from a known spot', () => {
     // Still short of the pole, so still on the same meridian.
     expect(lon).toBeCloseTo(3.77, 9);
     expect(o.omega * o.radiusKm).toBeCloseTo(circularSpeedKmS(GM, R + 620), 12);
+  });
+});
+
+describe('an orbit from your view (Orbit button)', () => {
+  const start = (o: ReturnType<typeof orbitAlongView>, t: number): number[] =>
+    [0, 1, 2].map((i) => Math.cos(t) * (o?.u[i] ?? 0) + Math.sin(t) * (o?.v[i] ?? 0));
+
+  it('looking straight down with north at the top: starts below you and heads north', () => {
+    const { up, north } = upAndNorth(40, 20);
+    const position: Vec3 = [up[0] * 5000, up[1] * 5000, up[2] * 5000];
+    const forward: Vec3 = [-up[0], -up[1], -up[2]];
+    const o = orbitAlongView(position, forward, north, R, GM, 300);
+    expect(o).not.toBeNull();
+    expect(o?.u[0]).toBeCloseTo(up[0], 12);
+    expect(o?.u[1]).toBeCloseTo(up[1], 12);
+    expect(o?.u[2]).toBeCloseTo(up[2], 12);
+    expect(o?.v[0]).toBeCloseTo(north[0], 12);
+    expect(o?.v[2]).toBeCloseTo(north[2], 12);
+    expect(o?.radiusKm).toBeCloseTo(R + 300, 9);
+    expect((o?.omega ?? 0) * (o?.radiusKm ?? 0)).toBeCloseTo(circularSpeedKmS(GM, R + 300), 12);
+    // A little way on, it is further north than it started.
+    const p = start(o, 0.05);
+    expect(Math.asin(p[2] ?? 0)).toBeGreaterThan((20 * Math.PI) / 180);
+  });
+
+  it('looking at the horizon to the east: heads east, wherever the screen top points', () => {
+    const { up } = upAndNorth(-100, -35);
+    const east: Vec3 = [-Math.sin((-100 * Math.PI) / 180), Math.cos((-100 * Math.PI) / 180), 0];
+    const position: Vec3 = [up[0] * (R + 50), up[1] * (R + 50), up[2] * (R + 50)];
+    const o = orbitAlongView(position, east, up, R, GM, 50);
+    expect(o?.v[0]).toBeCloseTo(east[0], 12);
+    expect(o?.v[1]).toBeCloseTo(east[1], 12);
+    expect(o?.v[2]).toBeCloseTo(0, 12);
+  });
+
+  it('pitched down at an angle: still heads where the view points along the ground', () => {
+    const { up, north } = upAndNorth(0, 0);
+    const pitch = (30 * Math.PI) / 180;
+    const mix = (a: number, b: number): Vec3 => [
+      a * north[0] + b * up[0],
+      a * north[1] + b * up[1],
+      a * north[2] + b * up[2],
+    ];
+    const forward = mix(Math.cos(pitch), -Math.sin(pitch));
+    const screenUp = mix(Math.sin(pitch), Math.cos(pitch));
+    const o = orbitAlongView([R + 100, 0, 0], forward, screenUp, R, GM, 100);
+    expect(o?.v[2]).toBeCloseTo(1, 12);
+  });
+
+  it('refuses a view that gives no direction along the ground', () => {
+    expect(orbitAlongView([R + 100, 0, 0], [-1, 0, 0], [1, 0, 0], R, GM, 100)).toBeNull();
   });
 });

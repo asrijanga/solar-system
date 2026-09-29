@@ -30,6 +30,7 @@ import {
   type MoonEphemeris,
 } from './core/moon';
 import {
+  orbitAlongView,
   orbitHeading,
   randomOrbit,
   seededRandom,
@@ -596,13 +597,24 @@ async function start(): Promise<void> {
     flight = created;
     return created;
   };
-  // The Orbit button starts over a known landmark heading north (ORBIT_START_LANDMARK), at the
-  // height the gestures left the camera (never below the lowest sharp one), and glides there.
+  // The Orbit button starts from your view (owner, 2026-09-29, docs/stories/SS-11f.md): over the
+  // point below the camera, flying towards the top of the screen, at the height the gestures left
+  // the camera (never below the lowest sharp one), and glides there.
   const startFromView = (): OrbitFlight | null => {
     const minHeight = sharpOrbitHeightKm(stage, camera, canvas.height);
-    if (minHeight === null || stage.radiusKm === null) return null;
+    if (minHeight === null || stage.radiusKm === null || stage.orbitInputs === null) return null;
     const height = Math.max(camera.position.length() - stage.radiusKm, minHeight);
-    const orbit = orbitOverLandmark(stage, ORBIT_START_LANDMARK, height);
+    camera.updateMatrixWorld();
+    const forward = camera.getWorldDirection(new Vector3());
+    const screenUp = new Vector3(0, 1, 0).transformDirection(camera.matrixWorld);
+    const orbit = orbitAlongView(
+      [camera.position.x, camera.position.y, camera.position.z],
+      [forward.x, forward.y, forward.z],
+      [screenUp.x, screenUp.y, screenUp.z],
+      stage.radiusKm,
+      stage.orbitInputs.gmKm3PerS2,
+      height,
+    );
     // It glides there from the current view rather than jumping.
     return orbit === null
       ? null
@@ -992,7 +1004,6 @@ function nodeClockSeconds(renderer: unknown): number | null {
 }
 
 /** Where the Orbit button starts (docs/stories/SS-15.md). */
-const ORBIT_START_LANDMARK = 'Albategnius';
 
 /**
  * A circular orbit from over a landmark (public/data/moon/landmarks.json), heading due north
@@ -1045,7 +1056,7 @@ const ABOUT = [
   'Surface brightness and colour come from the Lunar Reconnaissance Orbiter (LRO). Its Wide Angle Camera photographed the Moon about 124,000 times from 2010 to 2013, from 70\u00b0N to 70\u00b0S; each point is the median of years of pictures, corrected to one lighting angle, so no shadows are baked in. Colour is measured too: red, green and blue are its 643, 566 and 415 nm bands, which is why the maria look faintly brown or blue. Near the poles the Sun is always low, so there the map is LOLA, LRO\u2019s laser, which measured brightness with its own light, blended in between 62\u00b0 and 70\u00b0. No colour was measured there: the poles take the Moon\u2019s average colour. The few small places the camera missed are filled from LOLA\u2019s global laser map, matched to the camera around each one.',
   'How brightness changes with the Sun\u2019s angle comes from LRO\u2019s Wide Angle Camera, which watched every square degree of the Moon from 70\u00b0N to 70\u00b0S under many angles of light (Sato and others, 2014). So the Moon brightens sharply towards full, as the real one does, and the quarter Moon is about a tenth as bright as the full Moon, not half. Nearer the poles than 70\u00b0 the Moon\u2019s typical behaviour is used.',
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
-  'Orbit: glides from your view to the crater Albategnius and heads due north along its meridian, over the central highlands and the Apennines, across the north pole, down the far side and back, with Earth rising ahead over the south pole. Pinch or scroll first to choose the height; it never goes below the height the terrain stays sharp from.',
+  'Orbit: flies from wherever you are looking. Turn the Moon to any spot and pinch or scroll to choose the height first; Orbit starts over the point below you and flies towards the top of your screen, at the real circular speed for that height, and never below the height the terrain stays sharp from. Start over the far side flying towards the near side to watch Earth rise ahead.',
   'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Each label rises and sets with its landmark, dims on the night side, and small features wait until you are close enough for them to matter.',
   'Earth: where it really is at this date, at its measured size, turned as it really was. On 26 January 2026 at 05:00 UTC it is Earth as the Himawari-9 (JMA) and GOES-18 (NOAA) weather satellites measured it at that moment: the real clouds, oceans, land and blue air, in colour, cross-calibrated and blended. They saw it from other directions than the Moon does, so cloud tops are approximate and the glint of the Sun on the sea that the Moon would see is missing. On 3 January (full Moon) it is still a plain sphere of its measured brightness (geometric albedo 0.434, NASA): that date needs Meteosat data.',
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',

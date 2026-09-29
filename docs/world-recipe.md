@@ -16,7 +16,7 @@ These requests shaped the Moon and apply to every world:
 - **"We will let user know it's an approximation."** Detail below the measurements is optional, local-only and labelled on screen (SS-10b).
 - **One page per world, with a way back** (SS-13).
 - **CI must not hold merges up** (2026-09-26). Screenshots run on every PR. The allocation checks run only when the frame code changes.
-- **"Fix the best spot first or a known spot and start the orbit there."** Orbit mode starts over a named landmark, not at random (SS-15).
+- **"Users can start orbit anywhere they want and pinch to zoom in. That way they can see the earth rise etc or be in a totally different angle."** (2026-09-29, SS-11f.) Orbit mode starts from the viewer's own view. This replaced "Fix the best spot first or a known spot and start the orbit there" (SS-15), which started every orbit over one named landmark.
 - **"Smoothly take the viewer to the starting point instead of it being jerky."** Nothing on screen jumps: the camera glides onto the orbit (SS-15).
 - **"Labels on the popular landmarks … slowly fading in and out (maybe reacting to sunlight) … legible from the orbiting path."** Names come and go with the horizon and the daylight, and stay readable from orbit (SS-15).
 - **"We need to emulate real earth details at this distance."** Then: **"Satellites at that moment"**, **"Yes, colour."** A neighbour in the sky shows what was really there at that instant, measured (SS-13c).
@@ -131,7 +131,7 @@ A page at `/<world>/` (SS-13):
 - **Way back:** an "← Solar System" link.
 - **About text:** where each dataset came from.
 - **Orbit mode** (SS-11b):
-  - Gestures set the height, then Orbit starts from there, over a named landmark chosen for what the orbit passes, heading along a stated direction (the Moon: Albategnius, due north).
+  - Gestures choose the place and the height, then Orbit starts from there: over the point below the camera, flying towards the top of the screen (SS-11f). A unit test proves the start is below the camera and the heading is the view's, looking straight down, at the horizon and in between.
   - The camera glides onto the orbit from wherever it was: a great-circle turn round the world (never through it), distance changing geometrically, attitude by the shortest rotation, eased in and out. A unit test proves the glide starts at the old view, moves in small steps, stays outside the world, and ends exactly on the orbit.
   - Pinch changes the height in flight, and the real circular speed follows it.
   - The orbit never goes below the lowest height the website's terrain stays sharp from: at most 3 device pixels per measured sample.

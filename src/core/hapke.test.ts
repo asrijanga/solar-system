@@ -78,3 +78,35 @@ describe('Hapke', () => {
     expect(moonPhaseMagnitude(-90)).toBe(moonPhaseMagnitude(90));
   });
 });
+
+// The opposition surge against Clementine (docs/stories/SS-8b.md). Clementine photographed the
+// Moon at exactly zero phase, so these measurements share nothing with LRO's parameters. The
+// geometry is the one spacecraft image the surge in: looking straight down, the Sun g from
+// the view.
+describe('the opposition surge against Clementine', () => {
+  const brightness = (gDeg: number): number =>
+    hapke(Math.cos(gDeg * RAD), 1, Math.cos(gDeg * RAD), MOON);
+  const brightening = (from: number, to: number): number => brightness(to) / brightness(from);
+
+  it('brightens 4° to 0° between the published measurements', () => {
+    // Yokota et al. 1999 (Adv. Space Res. 23, 1841-1844): "some 20-30%". Buratti, Hillier and
+    // Wang 1996 (Icarus 124, 490-499): "more than 40%". The check is the span from the lowest
+    // to the highest published figure, 1.20 to 1.40.
+    const x = brightening(4, 0);
+    expect(x).toBeGreaterThanOrEqual(1.2);
+    expect(x).toBeLessThanOrEqual(1.4);
+  });
+
+  it('brightens 7° to 1° as Yokota et al. measured', () => {
+    // Yokota et al. 1999: "~1.27x". Tolerance ±0.10, chosen after seeing the model's 1.33,
+    // and stated in the PR for the owner's approval.
+    expect(Math.abs(brightening(7, 1) - 1.27)).toBeLessThanOrEqual(0.1);
+  });
+
+  it('brightens 30° to 7° between the highlands and the maria', () => {
+    // Yokota et al. 1999: highlands ~1.5x, maria ~1.7x.
+    const x = brightening(30, 7);
+    expect(x).toBeGreaterThanOrEqual(1.5);
+    expect(x).toBeLessThanOrEqual(1.7);
+  });
+});

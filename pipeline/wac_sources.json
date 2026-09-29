@@ -1,166 +1,166 @@
 {
- "note": "LROC WAC Hapke-normalised mosaic tiles (PDS LRO-L-LROC-5-RDR, LROLRC_2001, DATA/MDR/WAC_HAPKE), docs/stories/SS-5b.md. MD5 from each PDS4 label; SHA-256 pinned 2026-09-29 after the MD5 matched.",
- "base": "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/lro-l-lroc-5-rdr/LROLRC_2001/DATA/MDR/WAC_HAPKE/",
- "files": {
-  "WAC_HAPKE_566NM_E350N0450": {
-   "md5": "c6b621ea97b4316290715d3f02ca7c04",
-   "sha256": "84517fb17f897edfa2c587ad5eccbf9cd2a5181882ae244a2aae2c23aac225bd",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_566NM_E350N1350": {
-   "md5": "c64bcd6c22a89505e5a9ff9adaf03a2d",
-   "sha256": "751cd015f0724641c68b9cc630b53dad33d9226841471423440e97f8e13f1b59",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_566NM_E350N2250": {
-   "md5": "8ba6db62063ec43c1c2b237c46ac3307",
-   "sha256": "b8b1cf48e37b56c352e90866593d58428a0f1fe5fc8add981ab4e80f073dc28f",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_566NM_E350N3150": {
-   "md5": "1a087fc1afbc0fa1e8d703207aacfbb2",
-   "sha256": "4a676801e8ee8c6ab8ba96e6c3e286db29ea6988b7bcfa16e7a903522db1b60a",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_566NM_E350S0450": {
-   "md5": "1f76aa31003e8596a7b686cf1f4b738d",
-   "sha256": "524dec9b183d10b7a7c78965bab3194baf12e7372f79fb4cbecb182dccd518ee",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_566NM_E350S1350": {
-   "md5": "f6e26bbd1ea8d10c777b2aa22c75cc67",
-   "sha256": "e63b91e7d7575a59a928b64de9da9b7d6aab21a0bffb483e84d97611975967c5",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_566NM_E350S2250": {
-   "md5": "3148afa14ef7c37ac7f4237fddf9ca72",
-   "sha256": "5dc018cd3e59a55584910780e6a9a81ce83b163b38f99656cfa361c875a4cdda",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_566NM_E350S3150": {
-   "md5": "c62b09c07ff86426ce7f5da75faa545b",
-   "sha256": "0aabaf2dfa0d84b2d73330b4e073fc8145294bc4cfe41b2faa6c20c676782d97",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_643NM_E350N0450": {
-   "md5": "955c76d0c9b0a837abec00ff4ee2d716",
-   "sha256": "1612ded2849aa784be4b1d7d8b46d6778e342a7838f5f59cd55373ac7347f2ec",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_643NM_E350N1350": {
-   "md5": "e2835edc6d17b5612ed60198a61c6c84",
-   "sha256": "1be241a613ed2141bd7a7b62d3b050a9e7d20b4e15aaae92fb665558bcf23601",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_643NM_E350N2250": {
-   "md5": "4f90e546f14746e0bd8a3c2165a576d7",
-   "sha256": "8aa0b7b69501e606e3fd4968d99787443fd629bf7a2682b0854a8caecb759a1e",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_643NM_E350N3150": {
-   "md5": "025f7a1cc145047eeede87be9ce09f1a",
-   "sha256": "a92b6253b062b4c7b2a8da6eb0c8bb844b6d97c1bc5a518177970046c8e8b20a",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_643NM_E350S0450": {
-   "md5": "0cfbf9b51c745ddee69ac222e21cc4c5",
-   "sha256": "967eb2a5fcbc7c550b1e411f7cb843c1d8c29f53d1f069353ec18fadaa05ef60",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_643NM_E350S1350": {
-   "md5": "2c65171a9b00567194a93d207e74adf3",
-   "sha256": "dc5c6b86f3a4dc6c6e3eb6e4766371b75aa97482980766377d7a3abb6775ad4c",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_643NM_E350S2250": {
-   "md5": "22fcf13fcbce6cf2d73f53cabfa1b645",
-   "sha256": "27f487579d0543daa630961b1922125d03fed685871d5088c1d4b4a15c5b8578",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_643NM_E350S3150": {
-   "md5": "3d240c61362d80b0734e1a49d4562e51",
-   "sha256": "4aeea79efcb6402b012abf07e41cbba9ca8c2e9af83535de67d1b3345f22918c",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_415NM_E350N0450": {
-   "md5": "080ae0f3a87f8843abedac1b770bfc3b",
-   "sha256": "ade024198db5f988f8fa3f072246a546d4c992326323ba950cc0c7c555a292ce",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_415NM_E350N1350": {
-   "md5": "04769a84a5dbea0747ff75133a410aa1",
-   "sha256": "b83cad5549f7e0e34cc48e6eda7c05e85c9db2d9ed3cfdabb791ad4dfd3cc160",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_415NM_E350N2250": {
-   "md5": "3ffd44776a59ff751fee589124d35c0b",
-   "sha256": "84116993dc3f92edf2d8d1070371caea4558aa23178e85c28906b3163ae7e57a",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_415NM_E350N3150": {
-   "md5": "303092b42b9d8b365c64ce046ad31a28",
-   "sha256": "407855d1b528409187ace2f0c7feb04d68da721ea67cc227249ca46ada21c364",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_415NM_E350S0450": {
-   "md5": "6a3792c1fb56561b88919a92adaa3d42",
-   "sha256": "9ee6fc25d15be88e8bea417d9e6974c3d04a0e4d692cd1c17efc195d04e88fc4",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_415NM_E350S1350": {
-   "md5": "00a500c26689d9a967a1a8a2c0f73665",
-   "sha256": "033980d1f681563eb39106f148626c99ef1090a4445796271be8ba5c7349f471",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_415NM_E350S2250": {
-   "md5": "88bee2ade29d73dbed089ae895409a66",
-   "sha256": "336ab165abad52e15ad8e8d26c279be095271b9f1a408e99dbde3164d80f9467",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_415NM_E350S3150": {
-   "md5": "6c5cfe9947b801a9ffa4dd5da657f444",
-   "sha256": "78bbc3fdacd5f855d7004c66799f4f5a8db5a227a9c3af5e6cccd8094898e766",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_689NM_E350N0450": {
-   "md5": "efe2c45fd15e524b64144682c10c7824",
-   "sha256": "86d2105ab2794cee5363bc7e69e2551e234ba3b81698e8c7bff1ee2fafb3e101",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_689NM_E350N1350": {
-   "md5": "e1ed33295cdd4112dd57a4cd1fba9633",
-   "sha256": "dd072d4cbe162da60e3efca25d5cb7d7cf33f9c0d490640f0f7ccf0390066dec",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_689NM_E350N2250": {
-   "md5": "64ac7b4b4cb7b6196b3800f4b7e04c04",
-   "sha256": "6305ce22ad4f8eb9b257a520ff9660b8e69b7f98024f2eab263d29b8709af3a5",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_689NM_E350N3150": {
-   "md5": "c91d5b30e052b365924f5b7b2f8563c2",
-   "sha256": "b13ea18691cbdd2f3fa89ce7647eab7af1135ff97f63f92ed0274b615c961439",
-   "bytes": 145609920
-  },
-  "WAC_HAPKE_689NM_E350S0450": {
-   "md5": "ff6f2e31d5e01974d08007198baa6246",
-   "sha256": "e64b0de91da8767b664aad4590f54268c6b6224e688364c7704a831e4e7a2e7c",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_689NM_E350S1350": {
-   "md5": "2478bd75800c8be80441e1c87ca1d31c",
-   "sha256": "abe8f40226b8acf23fe1396c75e48844970ba0f565d8dcfb3d17b26409e8897f",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_689NM_E350S2250": {
-   "md5": "cd2fbbb66b3b3d166173ee1d841b15e7",
-   "sha256": "8fb0ad03241d492b8b636a65488212aca8b21987a95d894616bff0881f2dbe8b",
-   "bytes": 145582560
-  },
-  "WAC_HAPKE_689NM_E350S3150": {
-   "md5": "16eba55cb39b458db66ed33abdb8a263",
-   "sha256": "811645f19be5fbe31e0c2cb0b26a65a57d2440b8c28fb4a1744de65c12138cfa",
-   "bytes": 145582560
+  "note": "LROC WAC Hapke-normalised mosaic tiles (PDS LRO-L-LROC-5-RDR, LROLRC_2001, DATA/MDR/WAC_HAPKE), docs/stories/SS-5b.md. MD5 from each PDS4 label; SHA-256 pinned 2026-09-29 after the MD5 matched.",
+  "base": "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/lro-l-lroc-5-rdr/LROLRC_2001/DATA/MDR/WAC_HAPKE/",
+  "files": {
+    "WAC_HAPKE_566NM_E350N0450": {
+      "md5": "c6b621ea97b4316290715d3f02ca7c04",
+      "sha256": "84517fb17f897edfa2c587ad5eccbf9cd2a5181882ae244a2aae2c23aac225bd",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_566NM_E350N1350": {
+      "md5": "c64bcd6c22a89505e5a9ff9adaf03a2d",
+      "sha256": "751cd015f0724641c68b9cc630b53dad33d9226841471423440e97f8e13f1b59",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_566NM_E350N2250": {
+      "md5": "8ba6db62063ec43c1c2b237c46ac3307",
+      "sha256": "b8b1cf48e37b56c352e90866593d58428a0f1fe5fc8add981ab4e80f073dc28f",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_566NM_E350N3150": {
+      "md5": "1a087fc1afbc0fa1e8d703207aacfbb2",
+      "sha256": "4a676801e8ee8c6ab8ba96e6c3e286db29ea6988b7bcfa16e7a903522db1b60a",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_566NM_E350S0450": {
+      "md5": "1f76aa31003e8596a7b686cf1f4b738d",
+      "sha256": "524dec9b183d10b7a7c78965bab3194baf12e7372f79fb4cbecb182dccd518ee",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_566NM_E350S1350": {
+      "md5": "f6e26bbd1ea8d10c777b2aa22c75cc67",
+      "sha256": "e63b91e7d7575a59a928b64de9da9b7d6aab21a0bffb483e84d97611975967c5",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_566NM_E350S2250": {
+      "md5": "3148afa14ef7c37ac7f4237fddf9ca72",
+      "sha256": "5dc018cd3e59a55584910780e6a9a81ce83b163b38f99656cfa361c875a4cdda",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_566NM_E350S3150": {
+      "md5": "c62b09c07ff86426ce7f5da75faa545b",
+      "sha256": "0aabaf2dfa0d84b2d73330b4e073fc8145294bc4cfe41b2faa6c20c676782d97",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_643NM_E350N0450": {
+      "md5": "955c76d0c9b0a837abec00ff4ee2d716",
+      "sha256": "1612ded2849aa784be4b1d7d8b46d6778e342a7838f5f59cd55373ac7347f2ec",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_643NM_E350N1350": {
+      "md5": "e2835edc6d17b5612ed60198a61c6c84",
+      "sha256": "1be241a613ed2141bd7a7b62d3b050a9e7d20b4e15aaae92fb665558bcf23601",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_643NM_E350N2250": {
+      "md5": "4f90e546f14746e0bd8a3c2165a576d7",
+      "sha256": "8aa0b7b69501e606e3fd4968d99787443fd629bf7a2682b0854a8caecb759a1e",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_643NM_E350N3150": {
+      "md5": "025f7a1cc145047eeede87be9ce09f1a",
+      "sha256": "a92b6253b062b4c7b2a8da6eb0c8bb844b6d97c1bc5a518177970046c8e8b20a",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_643NM_E350S0450": {
+      "md5": "0cfbf9b51c745ddee69ac222e21cc4c5",
+      "sha256": "967eb2a5fcbc7c550b1e411f7cb843c1d8c29f53d1f069353ec18fadaa05ef60",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_643NM_E350S1350": {
+      "md5": "2c65171a9b00567194a93d207e74adf3",
+      "sha256": "dc5c6b86f3a4dc6c6e3eb6e4766371b75aa97482980766377d7a3abb6775ad4c",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_643NM_E350S2250": {
+      "md5": "22fcf13fcbce6cf2d73f53cabfa1b645",
+      "sha256": "27f487579d0543daa630961b1922125d03fed685871d5088c1d4b4a15c5b8578",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_643NM_E350S3150": {
+      "md5": "3d240c61362d80b0734e1a49d4562e51",
+      "sha256": "4aeea79efcb6402b012abf07e41cbba9ca8c2e9af83535de67d1b3345f22918c",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_415NM_E350N0450": {
+      "md5": "080ae0f3a87f8843abedac1b770bfc3b",
+      "sha256": "ade024198db5f988f8fa3f072246a546d4c992326323ba950cc0c7c555a292ce",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_415NM_E350N1350": {
+      "md5": "04769a84a5dbea0747ff75133a410aa1",
+      "sha256": "b83cad5549f7e0e34cc48e6eda7c05e85c9db2d9ed3cfdabb791ad4dfd3cc160",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_415NM_E350N2250": {
+      "md5": "3ffd44776a59ff751fee589124d35c0b",
+      "sha256": "84116993dc3f92edf2d8d1070371caea4558aa23178e85c28906b3163ae7e57a",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_415NM_E350N3150": {
+      "md5": "303092b42b9d8b365c64ce046ad31a28",
+      "sha256": "407855d1b528409187ace2f0c7feb04d68da721ea67cc227249ca46ada21c364",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_415NM_E350S0450": {
+      "md5": "6a3792c1fb56561b88919a92adaa3d42",
+      "sha256": "9ee6fc25d15be88e8bea417d9e6974c3d04a0e4d692cd1c17efc195d04e88fc4",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_415NM_E350S1350": {
+      "md5": "00a500c26689d9a967a1a8a2c0f73665",
+      "sha256": "033980d1f681563eb39106f148626c99ef1090a4445796271be8ba5c7349f471",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_415NM_E350S2250": {
+      "md5": "88bee2ade29d73dbed089ae895409a66",
+      "sha256": "336ab165abad52e15ad8e8d26c279be095271b9f1a408e99dbde3164d80f9467",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_415NM_E350S3150": {
+      "md5": "6c5cfe9947b801a9ffa4dd5da657f444",
+      "sha256": "78bbc3fdacd5f855d7004c66799f4f5a8db5a227a9c3af5e6cccd8094898e766",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_689NM_E350N0450": {
+      "md5": "efe2c45fd15e524b64144682c10c7824",
+      "sha256": "86d2105ab2794cee5363bc7e69e2551e234ba3b81698e8c7bff1ee2fafb3e101",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_689NM_E350N1350": {
+      "md5": "e1ed33295cdd4112dd57a4cd1fba9633",
+      "sha256": "dd072d4cbe162da60e3efca25d5cb7d7cf33f9c0d490640f0f7ccf0390066dec",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_689NM_E350N2250": {
+      "md5": "64ac7b4b4cb7b6196b3800f4b7e04c04",
+      "sha256": "6305ce22ad4f8eb9b257a520ff9660b8e69b7f98024f2eab263d29b8709af3a5",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_689NM_E350N3150": {
+      "md5": "c91d5b30e052b365924f5b7b2f8563c2",
+      "sha256": "b13ea18691cbdd2f3fa89ce7647eab7af1135ff97f63f92ed0274b615c961439",
+      "bytes": 145609920
+    },
+    "WAC_HAPKE_689NM_E350S0450": {
+      "md5": "ff6f2e31d5e01974d08007198baa6246",
+      "sha256": "e64b0de91da8767b664aad4590f54268c6b6224e688364c7704a831e4e7a2e7c",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_689NM_E350S1350": {
+      "md5": "2478bd75800c8be80441e1c87ca1d31c",
+      "sha256": "abe8f40226b8acf23fe1396c75e48844970ba0f565d8dcfb3d17b26409e8897f",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_689NM_E350S2250": {
+      "md5": "cd2fbbb66b3b3d166173ee1d841b15e7",
+      "sha256": "8fb0ad03241d492b8b636a65488212aca8b21987a95d894616bff0881f2dbe8b",
+      "bytes": 145582560
+    },
+    "WAC_HAPKE_689NM_E350S3150": {
+      "md5": "16eba55cb39b458db66ed33abdb8a263",
+      "sha256": "811645f19be5fbe31e0c2cb0b26a65a57d2440b8c28fb4a1744de65c12138cfa",
+      "bytes": 145582560
+    }
   }
- }
 }

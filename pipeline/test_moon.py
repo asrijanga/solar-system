@@ -19,7 +19,12 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = json.loads((ROOT / "public/data/moon/albedo.json").read_text())
 TEXTURE_PATH = ROOT / "public/data/moon" / MANIFEST["texture"]["file"]
-TEXTURE = np.array(Image.open(TEXTURE_PATH).convert("L")).astype(np.float64)
+BYTES = np.array(Image.open(TEXTURE_PATH).convert("L")).astype(np.float64)
+# The texture stores byte = 255 sqrt(I/F / maxIOverF) (moon.py); every comparison here is in I/F,
+# so contrasts mean what they say.
+_ENCODING = MANIFEST["texture"]["encoding"]
+assert _ENCODING["curve"] == "sqrt"
+TEXTURE = _ENCODING["maxIOverF"] * (BYTES / 255.0) ** 2
 MASK = MANIFEST["texture"]["mask"]
 MASK_PATH = None if MASK is None else ROOT / "public/data/moon" / MASK
 GAP = (
@@ -82,26 +87,27 @@ class Integrity(unittest.TestCase):
         self.assertEqual(GAP.shape, TEXTURE.shape)
 
     def test_every_pixel_is_measured(self) -> None:
-        """Owner decision 2026-09-26 (docs/stories/SS-11c.md): Clementine's gaps are filled from
-        LOLA's global laser albedo, a measurement. Until then this test required the gaps to
-        survive, shown as missing."""
+        """Owner decision 2026-09-26 (docs/stories/SS-11c.md): the base map's gaps are filled from
+        LOLA's laser albedo, a measurement. Until then this test required the gaps to survive,
+        shown as missing."""
         self.assertIsNone(MASK)
         self.assertEqual(MANIFEST["texture"]["missingPixels"], 0)
-        # Every pixel Clementine lacked was measured by LOLA: at the poles, or in the global map.
+        # Every pixel the WAC mosaic lacked was measured by LOLA: at the poles, or in the global map.
         poles = MANIFEST["poles"]
-        polar = poles["south"]["clementineGapsFilled"] + poles["north"]["clementineGapsFilled"]
-        self.assertEqual(poles["clementineMissingPixels"], polar + MANIFEST["gapFill"]["pixelsFilled"])
+        polar = poles["south"]["baseGapsFilled"] + poles["north"]["baseGapsFilled"]
+        self.assertEqual(MANIFEST["product"]["wacMissingPixels"], polar + MANIFEST["gapFill"]["pixelsFilled"])
 
     def test_the_poles_have_no_gaps_since_lola_covers_them(self) -> None:
-        """Clementine never imaged 13% of the area south of -80 deg; LOLA measured all of it."""
+        """The WAC mosaic ends at 70 deg; LOLA measured everything poleward."""
         lat = 90 - (np.arange(H) + 0.5) * 180 / H
         self.assertEqual(int(GAP[np.abs(lat) >= 65].sum()), 0)
-        self.assertLess(MANIFEST["texture"]["missingPixels"], MANIFEST["poles"]["clementineMissingPixels"])
+        self.assertLess(MANIFEST["texture"]["missingPixels"], MANIFEST["product"]["wacMissingPixels"])
 
     def test_the_blend_leaves_no_step_between_sources(self) -> None:
-        """Row means change smoothly across the 65-75 deg blend, at both poles."""
+        """Row means change smoothly across the 62-70 deg blend, at both poles. In stored grey
+        levels, as written for SS-6b: the + 1.0 below is one level."""
         lat = 90 - (np.arange(H) + 0.5) * 180 / H
-        row_mean = np.array([TEXTURE[r][~GAP[r]].mean() if (~GAP[r]).any() else np.nan for r in range(H)])
+        row_mean = np.array([BYTES[r][~GAP[r]].mean() if (~GAP[r]).any() else np.nan for r in range(H)])
         for band in ((60, 80), (-80, -60)):
             rows = np.nonzero((lat > min(band)) & (lat < max(band)))[0]
             steps = np.abs(np.diff(row_mean[rows]))

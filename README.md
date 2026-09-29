@@ -612,7 +612,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 
 | ID | Story | Why now |
 | --- | --- | --- |
-| SS-5b | As a learner, I want the Moon rebuilt from its whole inventory (`docs/data/moon.md`), not product by product | The Moon was built before the "gather first" rule. Its inventory lists sources still to evaluate: the LROC WAC Hapke-normalised mosaic, Kaguya MI and the LOLA polar DEMs |
+| SS-5b | As a learner, I want the Moon rebuilt from its whole inventory (`docs/data/moon.md`), not product by product | Albedo and colour shipped 2026-09-29: LRO WAC's Hapke-normalised mosaic replaces Clementine, in measured colour (docs/stories/SS-5b.md). Still to act on: Kaguya MI, and the LOLA polar DEMs for elevation |
 | SS-8b | As a learner, I want Hapke regolith scattering with the opposition surge | Shipped 2026-09-28 (docs/stories/SS-8b.md). It also gave the albedo map an absolute scale measured by LRO, replacing the single fact-sheet number |
 | SS-13d | As a learner, I want Earth's real face at the full-Moon instant too | Earth is a thin crescent then, about half of it seen only by Meteosat. It waits on the owner creating a free EUMETSAT account, with its keys in the environment's secrets |
 | SS-13e | As a learner, I want the Moon's night side lit by earthshine | Shipped 2026-09-27: earthshine from Earth's measured disc brightness, with a labelled "Earthshine: boosted" that brightens it only where the Sun is down (docs/stories/SS-13e.md) |

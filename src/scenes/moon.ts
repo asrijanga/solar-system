@@ -56,6 +56,12 @@ import {
 } from 'three/tsl';
 import { TilesRenderer } from '3d-tiles-renderer';
 import { QuantizedMeshPlugin } from '3d-tiles-renderer/plugins';
+import {
+  FAILED_TILE_RETRIES,
+  FAILED_TILE_RETRY_MS,
+  GunzipPlugin,
+  retryFailedTiles,
+} from './tileFetch';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
 import type { HapkeParameters } from '../core/hapke';
 import { colourWeights } from '../core/moonColour';
@@ -594,25 +600,6 @@ const TERRAIN_ERROR_TARGET = 1;
 const terrainBase = siteUrl('terrain/');
 
 /**
- * Inflates tiles stored gzip-compressed (tools/terrain/build.ts), recognised by the gzip header
- * 1f 8b; anything else, such as layer.json or the local server's uncompressed tiles, passes
- * through unchanged. GitHub Pages also gzips them in transit, which fetch undoes by itself.
- */
-class GunzipPlugin {
-  fetchData(url: string, options: RequestInit): Promise<Response> {
-    return fetch(url, options).then(async (response) => {
-      if (!response.ok) return response;
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      const body =
-        bytes[0] === 0x1f && bytes[1] === 0x8b
-          ? new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
-          : bytes;
-      return new Response(body, { status: response.status });
-    });
-  }
-}
-
-/**
  * The Moon as streamed polygons: LOLA quantized-mesh tiles (tools/terrain/build.ts),
  * every vertex on a measured height, refined as the camera comes closer. The caller sets
  * the camera and resolution and calls `update()` once per frame before drawing.
@@ -624,6 +611,20 @@ export function createMoonTerrain(options: MoonOptions, base = terrainBase): Til
   tiles.registerPlugin(new GunzipPlugin());
   tiles.registerPlugin(new QuantizedMeshPlugin({ useRecommendedSettings: false }));
   tiles.errorTarget = TERRAIN_ERROR_TARGET;
+
+  // A tile that still failed is tried again later rather than left as a hole: the renderer
+  // treats failed tiles as finished and draws nothing there (docs/stories/SS-10e.md).
+  let laterRetries = 0;
+  let retryPending = false;
+  tiles.addEventListener('load-error', () => {
+    if (retryPending || laterRetries >= FAILED_TILE_RETRIES) return;
+    retryPending = true;
+    laterRetries++;
+    setTimeout(() => {
+      retryPending = false;
+      retryFailedTiles(tiles);
+    }, FAILED_TILE_RETRY_MS);
+  });
 
   const material = createMoonMaterial(options, 'terrain');
   tiles.addEventListener('load-model', ({ scene }: { scene: Object3D }) => {

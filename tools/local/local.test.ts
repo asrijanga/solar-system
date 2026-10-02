@@ -185,6 +185,19 @@ describe('tile encoding', () => {
     }
   });
 
+  it("places the tile on the body's sphere: the Moon's by default, Mars's when given", async () => {
+    const flat = async (lat: Float64Array): Promise<Float64Array> => lat.map(() => 0);
+    for (const [radius, bytes] of [
+      [1_737_400, await encodeTile(9, 516, 219, flat)],
+      [3_396_000, await encodeTile(9, 516, 219, flat, 65, 3_396_000)],
+    ] as const) {
+      // The header starts with the tile's centre in body-fixed metres.
+      const view = new DataView(bytes.buffer, bytes.byteOffset, 24);
+      const centre = [0, 8, 16].map((at) => view.getFloat64(at, true));
+      expect(Math.hypot(...centre)).toBeCloseTo(radius, 3);
+    }
+  });
+
   it('refuses a tile with an unmeasured height instead of inventing one', async () => {
     await expect(
       encodeTile(9, 516, 219, async (lat) => lat.map((_, i) => (i === 7 ? Number.NaN : 0))),

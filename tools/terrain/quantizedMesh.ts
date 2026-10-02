@@ -66,10 +66,10 @@ function gridOrder(grid: number): GridOrder {
   return result;
 }
 
-function ecef(lat: number, lon: number, h: number): [number, number, number] {
+function ecef(lat: number, lon: number, h: number, radiusM: number): [number, number, number] {
   const la = (lat * Math.PI) / 180;
   const lo = (lon * Math.PI) / 180;
-  const r = R_M + h;
+  const r = radiusM + h;
   return [r * Math.cos(la) * Math.cos(lo), r * Math.cos(la) * Math.sin(lo), r * Math.sin(la)];
 }
 
@@ -109,6 +109,8 @@ export async function encodeTile(
   y: number,
   heights: HeightSource,
   grid = 65,
+  /** The sphere heights are measured from: the Moon's by default, 3396 km for Mars. */
+  radiusM = R_M,
 ): Promise<Uint8Array> {
   const [west, south, east, north] = tileBounds(z, x, y);
   const n = grid * grid;
@@ -120,8 +122,8 @@ export async function encodeTile(
       lon[r * grid + c] = west + (c / (grid - 1)) * (east - west);
     }
   }
-  const stepM = (((north - south) * Math.PI) / 180 / (grid - 1)) * R_M;
-  const dLat = ((stepM / R_M) * 180) / Math.PI;
+  const stepM = (((north - south) * Math.PI) / 180 / (grid - 1)) * radiusM;
+  const dLat = ((stepM / radiusM) * 180) / Math.PI;
   const wrap = (v: number): number => ((((v + 180) % 360) + 360) % 360) - 180;
   const qLat = new Float64Array(5 * n);
   const qLon = new Float64Array(5 * n);
@@ -168,7 +170,7 @@ export async function encodeTile(
     u[k] = rint((c / (grid - 1)) * MAX);
     v[k] = rint((r / (grid - 1)) * MAX);
     hq[k] = rint((((h[i] ?? 0) - hMin) / span) * MAX);
-    const p = ecef(lat[i] ?? 0, lon[i] ?? 0, h[i] ?? 0);
+    const p = ecef(lat[i] ?? 0, lon[i] ?? 0, h[i] ?? 0, radiusM);
     positions.push(p);
     for (let a = 0; a < 3; a++) {
       lo[a] = Math.min(lo[a] ?? 0, p[a] ?? 0);
@@ -184,7 +186,7 @@ export async function encodeTile(
   for (const p of positions) {
     radius = Math.max(radius, Math.hypot(p[0] - centre[0], p[1] - centre[1], p[2] - centre[2]));
   }
-  const mid = ecef((south + north) / 2, (west + east) / 2, (hMin + hMax) / 2);
+  const mid = ecef((south + north) / 2, (west + east) / 2, (hMin + hMax) / 2, radiusM);
 
   const normals = new Uint8Array(2 * n);
   order.forEach((i, k) => {

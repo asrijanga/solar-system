@@ -1,0 +1,19 @@
+{
+ "source": "MGS-M-MOLA-5-MEGDR-L3-V1.0, mgsl_300x/meg064 (PDS Geosciences)",
+ "base": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg064/",
+ "pinned": "SHA-256 at first retrieval, 2026-10-02; the volume publishes no checksum beside these files",
+ "files": {
+  "megc00n000gb.img": "e46b82764d184b86c24033c63823787814d1b0accf398d4382804d53a875918f",
+  "megc00n180gb.img": "87b50295c76f930c71419c1ba6a0bc5a5e5bda53db8bb764bc2226680a24c088",
+  "megc90n000gb.img": "b30bf5913d4716f1c3d89b7fe55a1885b6511ab0b90d9e67e354c3934892c49b",
+  "megc90n180gb.img": "9f452b6aaac7c15d2c7d5ba940e33cce864e2e45f9685ef0db2333768bfd4817",
+  "megr00n000gb.img": "e7efab659ceecb5cfe6a03dd4c9ff910dc814004ec0cff2bbe81d03df00f3c71",
+  "megr00n180gb.img": "47869677db4215c4e97b056f2177fe5d7a28018ba3f3abe60f550edeb9d0058b",
+  "megr90n000gb.img": "a23d70033211335092ba6c02f51d24e74207323009aadacf04fcd4a84b02497b",
+  "megr90n180gb.img": "ba8c17534342b2bf84eee8754652aa896ce98416b839a81cc1ecc296ab7ad927",
+  "megt00n000gb.img": "59313efe92045324503e54f130ddc29096668523ae8dd0e6d64553cc8144c193",
+  "megt00n180gb.img": "6cec4b2a319dc3f1d699a73cef303e097bcd9cd490ff85c412c725e1d81ae4a3",
+  "megt90n000gb.img": "95b492b0670e0f572736820c13c3907a5294a04aa21cbbddd30e038bbd46f1b6",
+  "megt90n180gb.img": "72c9ea46b2e2485718cddfc0041fec76d9024020d93d6ddf985ac727988d7e9a"
+ }
+}

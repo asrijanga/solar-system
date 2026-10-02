@@ -1,0 +1,79 @@
+# Mars's terrain site (docs/stories/SS-14.md, W4): the data repository's own GitHub Pages, with
+# its own 1 GB, serving the quantized-mesh tiles the app streams. Copied into the data
+# repository as .github/workflows/pages.yml from tools/terrain/mars-data/ of the app repository.
+#
+# The tiles are built from the app repository at the commit named in SOURCE, so a deploy is
+# reproducible and changes only when SOURCE does. No secret crosses repositories: the app
+# repository is public.
+name: Build and deploy Mars terrain
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: data
+      - id: source
+        run: echo "ref=$(tr -d '[:space:]' < data/SOURCE)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          repository: asrijanga/solar-system
+          ref: ${{ steps.source.outputs.ref }}
+          path: app
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: app/.nvmrc
+      - run: python -m pip install uv==0.8.17
+      - run: npm ci
+        working-directory: app
+      # The composite (pipeline/mars_terrain.py) streams 1,370 HRSC strips, about 35 GB, one at a
+      # time; it depends only on its script and the pinned source lists, so it is cached.
+      - id: composite
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/pipeline/.cache/mars-terrain-64.img
+            app/pipeline/.cache/mars-terrain-64-areoid.img
+          key: mars-composite-${{ hashFiles('app/pipeline/mars_terrain.py', 'app/pipeline/hrsc_dtm_sources.json', 'app/pipeline/mola64_sources.json') }}
+      - if: steps.composite.outputs.cache-hit != 'true'
+        run: npm run pipeline:mars:terrain
+        working-directory: app
+      # A rebuilt composite must reproduce the committed manifest and provenance exactly.
+      - if: steps.composite.outputs.cache-hit != 'true'
+        run: git diff --exit-code -- public/data/mars/terrain.json public/data/mars/terrain-source.png pipeline/hrsc_dtm_sources.json
+        working-directory: app
+      - run: npm run pipeline:mars:tiles -- "$GITHUB_WORKSPACE/site/terrain"
+        working-directory: app
+      - run: |
+          cp data/README.md site/
+          cp app/public/data/mars/terrain.json app/public/data/mars/terrain-source.png site/terrain/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

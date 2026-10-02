@@ -7,5 +7,6 @@ dependencies = [
     "h5py>=3.16.0",
     "pillow>=12.3.0",
     "rasterio>=1.4.4",
+    "scipy>=1.17.1",
     "spiceypy>=8.2.0",
 ]

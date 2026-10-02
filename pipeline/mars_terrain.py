@@ -119,12 +119,11 @@ def label_bounds(path: Path) -> tuple[float, float, float, float]:
             "MAXIMUM_LATITUDE",
         )
     }
-    west, east = (
-        value["WESTERNMOST_LONGITUDE"] % 360,
-        value["EASTERNMOST_LONGITUDE"] % 360,
+    # A strip with the pole in it spans 0 to 360: the whole turn, not none of it.
+    west = value["WESTERNMOST_LONGITUDE"] % 360
+    east = west + (
+        (value["EASTERNMOST_LONGITUDE"] - value["WESTERNMOST_LONGITUDE"]) % 360 or 360
     )
-    if east < west:
-        east += 360
     return west, east, value["MINIMUM_LATITUDE"], value["MAXIMUM_LATITUDE"]
 
 
@@ -200,22 +199,36 @@ def process(name: str, entry: dict, topo: np.ndarray, counts: np.ndarray) -> dic
     return fit
 
 
+def load_strip(name: str, fit: dict) -> tuple[int, int, np.ndarray]:
+    """A warped strip cropped to its measured bins: (first row, first column, heights + offset)."""
+    h = np.load(WARPED / (name + ".npz"))["h"]
+    rows = np.flatnonzero(np.isfinite(h).any(axis=1))
+    cols = np.flatnonzero(np.isfinite(h).any(axis=0))
+    h = h[rows[0] : rows[-1] + 1, cols[0] : cols[-1] + 1]
+    return (
+        fit["row"] + int(rows[0]),
+        fit["col"] + int(cols[0]),
+        h + np.float32(fit["offsetM"]),
+    )
+
+
 def combine(names: list[str], fits: dict, height: int) -> tuple[np.ndarray, dict]:
-    """The median of the registered strips in every bin they cover (NaN where none does)."""
+    """The median of the registered strips in every bin they cover (NaN where none does). Strips
+    are read band by band, so only the ones crossing a band are in memory at once."""
     out = np.full((height, WIDTH), np.nan, dtype=np.float32)
     spreads = []
-    strips = []
+    extent = {}
     for name in names:
-        z = np.load(WARPED / (name + ".npz"))
-        f = fits[name]
-        strips.append((f["row"], f["col"], z["h"] + np.float32(f["offsetM"])))
+        r0, c0, h = load_strip(name, fits[name])
+        extent[name] = (r0, r0 + h.shape[0])
     for b0 in range(0, height, BAND_ROWS):
         b1 = min(height, b0 + BAND_ROWS)
         idx, val = [], []
-        for r0, c0, h in strips:
-            lo, hi = max(r0, b0), min(r0 + h.shape[0], b1)
-            if lo >= hi:
+        for name in names:
+            if extent[name][1] <= b0 or extent[name][0] >= b1:
                 continue
+            r0, c0, h = load_strip(name, fits[name])
+            lo, hi = max(r0, b0), min(r0 + h.shape[0], b1)
             part = h[lo - r0 : hi - r0]
             rr, cc = np.nonzero(np.isfinite(part))
             idx.append((rr + lo - b0) * WIDTH + (cc + c0) % WIDTH)
@@ -378,17 +391,21 @@ def build() -> dict:
 
     hrsc, overlap = combine(used, fits, HEIGHT)
     weight = blend_weight(hrsc)
-    composite = np.where(
-        weight > 0, weight * np.nan_to_num(hrsc) + (1 - weight) * topo, topo
+    composite = topo.astype(np.float32)
+    inside = weight > 0
+    composite[inside] = (
+        weight[inside] * hrsc[inside] + (1 - weight[inside]) * composite[inside]
     )
-    radius = mola("megr").astype(np.int32) + 3396000
-    areoid = radius - topo.astype(np.int32)
+    del hrsc, inside
 
     # Column 0 at -180 deg, like every other Mars product here.
     roll = lambda a: np.roll(a, -WIDTH // 2, axis=1)  # noqa: E731
     out = roll(np.rint(composite)).astype("<i2")
+    del composite
     out.tofile(CACHE / "mars-terrain-64.img")
+    areoid = mola("megr").astype(np.int32) + 3396000 - topo
     roll(areoid).astype("<i4").tofile(CACHE / "mars-terrain-64-areoid.img")
+    del areoid
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     source_png = OUT_DIR / "terrain-source.png"
     shares = provenance_png(roll(weight), roll(counts), source_png)

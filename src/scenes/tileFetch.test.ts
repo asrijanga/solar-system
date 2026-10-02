@@ -48,16 +48,21 @@ describe('terrain tile fetch', () => {
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(Uint8Array.from([9]));
   });
 
-  it('retries a transfer cut short, which fails to inflate', async () => {
-    const whole = gzipSync(Uint8Array.from({ length: 4096 }, (_, i) => i % 251));
+  it('retries a damaged transfer, which fails to inflate', async () => {
+    // A gzip header over damaged bytes: every engine rejects it at once. (A transfer merely cut
+    // short is not used here: Node 22.23's DecompressionStream waits on it rather than erroring.)
+    const tile = Uint8Array.from({ length: 4096 }, (_, i) => i % 251);
+    const whole = gzipSync(tile);
+    const damaged = Uint8Array.from(whole);
+    damaged.fill(0xff, 10, 40);
     const fetch = vi
       .fn()
-      .mockResolvedValueOnce(new Response(whole.subarray(0, whole.length / 2)))
+      .mockResolvedValueOnce(new Response(damaged))
       .mockResolvedValue(new Response(whole));
     vi.stubGlobal('fetch', fetch);
     const response = await run(new GunzipPlugin());
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect((await response.arrayBuffer()).byteLength).toBe(4096);
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(tile);
   });
 
   it('does not retry a tile that does not exist', async () => {

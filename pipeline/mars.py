@@ -1,41 +1,41 @@
-"""Mars's albedo texture, a long-term average, from Mars Express OMEGA with TES in its gaps (SS-14 W3).
+"""Mars's surface as seen in visible light, a long-term average, from the Mars Express HRSC
+high-altitude global colour mosaic (SS-14 W3).
 
     npm run pipeline:mars
 
-Python for the array maths on 100 million samples (CLAUDE.md, Stack).
+Python for GDAL's reprojection and the array maths (CLAUDE.md, Stack).
 
-Owner decisions, 2026-09-29 (docs/stories/SS-14.md): Mars is shown as a long-term average, not
-the dust and clouds of one date, and its brightness is built from OMEGA, checked by TES, after
-the side-by-side comparison (docs/stories/ss14-albedo-candidates.png).
+Owner decisions (docs/stories/SS-14.md):
+- 2026-09-29: a long-term average, not one date's dust and clouds.
+- 2026-10-02, after the colour comparison (docs/stories/ss14-colour-candidates.png): "HRSC for
+  both". HRSC gives the brightness and the colour; OMEGA and TES, which made the first map
+  (SS-14 W3 part 1), become independent checks.
 
-Sources (docs/data/mars.md), both pinned by SHA-256 at first retrieval on 2026-09-29, their sizes
-checked against their labels (neither publisher gives a checksum next to the file):
-- OMEGA 1.08 um Lambert albedo R1080 (Ody et al. 2012; ESA PSA MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0,
-  ALBEDO_R1080_EQU_MAP). Label: I/F / cos(i) at 1.08 um "assuming a lambertian surface", each
-  sample the average over January 2004 to August 2010; 7200 x 14400 LSB 16-bit, value =
-  OFFSET + SCALING_FACTOR * DN, missing -32768; SIMPLE CYLINDRICAL, 40 px/deg, planetocentric,
-  east-positive, line 1 centred at 89.9875 N and sample 1 at 179.9875 W (projection offsets
-  3600.5 and 7200.5).
-- TES bolometric albedo (Christensen; PDS MGS-M-TES-SPECIAL-V1, global_albedo_8ppd). Label: "the
-  TES-derived bolometric albedo"; 1440 x 2880 PC_REAL; SIMPLE CYLINDRICAL, 8 px/deg,
-  planetocentric, east-positive, projection offsets 720.5 and 1440.5. Each TES cell holds exactly
-  5 x 5 OMEGA cells.
+Source (pipeline/hrsc_sources.json; docs/data/mars.md): Michael et al. 2025, Icarus 425, 116350,
+data doi:10.17169/refubium-40624. Four filters used, blue 440, green 530, red 750 and infrared
+970 nm, each as six orthographic faces (centred on the poles and on 0, 90, 180 and 270 E, each
+reaching 55.6 deg from its centre), float32 reflectance on a 3396.0 km sphere, nodata -1e32.
+From the paper: about 90 high-altitude images from 2019 on, with little dust and clouds cut out,
+joined through a global colour model built from "only the relative colour information internal
+to individual images" and each filter calibrated "to a single high quality observation area".
+Images are used "with the illumination as acquired": shading from the source images remains,
+most visibly on steep walls; band ratios cancel most of it.
 
-Where OMEGA has no value (2.9% of the map), a second measurement fills it (README, "Combine every
-available source"): TES, scaled to OMEGA by the ratio of the two over the surrounding 5 x 5 deg
-where both measured. The two are different quantities (1.08 um against bolometric), so the
-scale is local, not global. The fill is checked by predicting OMEGA cells that were measured,
-held out, and recorded in the manifest. Filled pixels keep TES's 7.4 km resolution: nothing
-finer is invented. Which pixels were filled is in albedo-source.png.
+Assembly: each face is warped (area average) onto one global grid, and every pixel takes the
+face whose centre is nearest, where its projection is least stretched. Where faces overlap
+their values are compared and recorded. The face centred on 180 E is warped onto a 0..360 grid
+and rolled, because a warp across the antimeridian returns nothing.
 
-The values stay OMEGA's 1.08 um Lambert albedo. Scaling to visible light, and colour, are the
-next part of W3; the renderer does not use this texture yet.
+Outputs in public/data/mars/, column 0 = longitude -180 deg (west edge), row 0 = latitude +90:
+- albedo.webp, 8192 x 4096, grey: reflectance at 530 nm (the band nearest V), stored as
+  byte = 255 sqrt(R / MAX_REFLECTANCE).
+- albedo-colour.png, 2048 x 1024, lossless RGB: the ratios R(750)/R(530), R(440)/R(530) and
+  R(970)/R(530) in red, green and blue, each linear over the range the manifest gives. Colour is
+  four times coarser than brightness, as for the Moon (SS-5b).
+- albedo.json, the manifest, with the faces' agreement and the checks against OMEGA and TES.
 
-Outputs in public/data/mars/, column 0 = longitude -180 deg (west edge), row 0 = latitude +90 deg:
-- albedo.webp, 8192 x 4096, grey: byte = 255 sqrt(A / MAX_ALBEDO), area-averaged from 40 px/deg.
-- albedo-source.png, 8192 x 4096, lossless: 0 where every source sample was OMEGA, else the
-  share of the pixel filled from TES, 1-255.
-- albedo.json, the manifest.
+Not yet: the overall scale is the mosaic's own, anchored to one area. Checking it against Mars's
+published brightness needs Mars drawn with its photometry (W7).
 """
 
 from __future__ import annotations
@@ -46,106 +46,138 @@ import math
 from pathlib import Path
 
 import numpy as np
+import rasterio
 from PIL import Image
+from rasterio.crs import CRS
+from rasterio.enums import Resampling
+from rasterio.transform import from_bounds
+from rasterio.warp import reproject
 
-from download import CACHE, fetch, sha256
-from moon import MAX_BYTES, MIN_PSNR_DB, psnr, pull_push_fill
+from download import fetch, sha256
+from moon import MAX_BYTES, MIN_PSNR_DB, psnr
 
-OMEGA_URL = "https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/OMEGA/MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0/DATA/ALBEDO/ALBEDO_R1080_EQU_MAP.IMG"
-OMEGA_SHA256 = "3fc99ad4190ba509492e2d2435f561c37f87251a96d037b596526e45c801e9c5"
-OMEGA_SHAPE = (7200, 14400)
-OMEGA_OFFSET = 5.2414565669e-01
-OMEGA_SCALE = 1.4522365285e-05
-OMEGA_MISSING = -32768
+SOURCES = json.loads((Path(__file__).resolve().parent / "hrsc_sources.json").read_text())
+FILTERS = {"blue": ("03-bl", 440), "green": ("02-gr", 530), "red": ("01-re", 750), "infrared": ("04-ir", 970)}
+FACES = {"000": (0.0, 0.0), "090": (90.0, 0.0), "180": (180.0, 0.0), "270": (-90.0, 0.0), "N": (0.0, 90.0), "S": (0.0, -90.0)}
+SPHERE_M = 3396000.0
 
-TES_URL = "https://pds-geosciences.wustl.edu/mgs/mgs-m-tes-special-v1/global_albedo_8ppd.img"
-TES_SHA256 = "47ee17fc9aca6aa9fd5d49e383c1acc366d4cb31cab4635bc823bc27a33283c7"
-TES_SHAPE = (1440, 2880)
-CELL = 5  # OMEGA cells per TES cell, each way
-
-# Albedo at byte 255: the OMEGA label's MAXIMUM, so nothing is clipped.
-MAX_ALBEDO = 1.0
-# The window over which TES is scaled to OMEGA, in TES cells (41 = 5.1 deg).
-RATIO_WINDOW = 41
-# Share of fully measured TES cells held out to check the fill; fixed seed.
-HOLDOUT_FRACTION = 0.01
-HOLDOUT_SEED = 14
+# Reflectance at byte 255. Above every value in the mosaic (the south polar ice reaches 1.07).
+MAX_REFLECTANCE = 1.2
 
 WIDTH, HEIGHT = 8192, 4096
+COLOUR_WIDTH, COLOUR_HEIGHT = 2048, 1024
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "public" / "data" / "mars"
 
-
-def omega() -> np.ndarray:
-    path = fetch(OMEGA_URL, OMEGA_SHA256, "mars-omega-albedo-r1080.img")
-    dn = np.fromfile(path, dtype="<i2").reshape(OMEGA_SHAPE)
-    return np.where(dn == OMEGA_MISSING, np.nan, OMEGA_OFFSET + OMEGA_SCALE * dn.astype(np.float64))
-
-
-def tes() -> np.ndarray:
-    path = fetch(TES_URL, TES_SHA256, "mars-tes-albedo-8ppd.img")
-    return np.fromfile(path, dtype="<f4").reshape(TES_SHAPE).astype(np.float64)
+# The checks: OMEGA and TES, as in SS-14 W3 part 1 (docs/data/mars.md).
+OMEGA_URL = "https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/OMEGA/MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0/DATA/ALBEDO/ALBEDO_R1080_EQU_MAP.IMG"
+OMEGA_SHA256 = "3fc99ad4190ba509492e2d2435f561c37f87251a96d037b596526e45c801e9c5"
+TES_URL = "https://pds-geosciences.wustl.edu/mgs/mgs-m-tes-special-v1/global_albedo_8ppd.img"
+TES_SHA256 = "47ee17fc9aca6aa9fd5d49e383c1acc366d4cb31cab4635bc823bc27a33283c7"
 
 
-def box_mean(values: np.ndarray, size: int) -> np.ndarray:
-    """NaN-aware mean over a size x size box, wrapping in longitude and clamped in latitude."""
-    valid = np.isfinite(values)
-    v = np.where(valid, values, 0.0)
-    w = valid.astype(np.float64)
-    half = size // 2
-
-    def box(a: np.ndarray) -> np.ndarray:
-        a = np.pad(a, ((half, half), (0, 0)), mode="constant")
-        a = np.concatenate([a[:, -half:], a, a[:, :half]], axis=1)
-        c = np.cumsum(np.cumsum(np.pad(a, ((1, 0), (1, 0))), axis=0), axis=1)
-        return c[size:, size:] - c[:-size, size:] - c[size:, :-size] + c[:-size, :-size]
-
-    total, count = box(v), box(w)
-    return np.where(count > 0, total / np.maximum(count, 1), np.nan)
+def face_path(code: str, face: str) -> Path:
+    name = f"{code}-face_{face}.tif"
+    return fetch(SOURCES["base"] + name, SOURCES["files"][name]["sha256"], f"mars-hrsc-{name}")
 
 
-def local_ratio(omega_cells: np.ndarray, full: np.ndarray, t: np.ndarray) -> np.ndarray:
-    """OMEGA / TES over the surrounding window, from TES cells OMEGA measured completely."""
-    ratio = np.where(full, omega_cells / t, np.nan)
-    smooth = box_mean(ratio, RATIO_WINDOW)
-    return pull_push_fill(np.nan_to_num(smooth), np.isfinite(smooth))
+def angular_distance(lon_c: float, lat_c: float, width: int, height: int) -> np.ndarray:
+    lon = np.radians((np.arange(width) + 0.5) / width * 360 - 180)
+    lat = np.radians(90 - (np.arange(height) + 0.5) / height * 180)
+    c, cl = math.radians(lat_c), math.radians(lon_c)
+    cos = np.sin(lat)[:, None] * math.sin(c) + np.cos(lat)[:, None] * math.cos(c) * np.cos(lon[None, :] - cl)
+    return np.arccos(np.clip(cos, -1, 1)).astype(np.float32)
 
 
-def fill_check(omega_cells: np.ndarray, full: np.ndarray, t: np.ndarray) -> dict:
-    """Predicts held-out, measured OMEGA cells from TES and the ratio of their surroundings."""
-    rng = np.random.default_rng(HOLDOUT_SEED)
-    held = full & (rng.random(full.shape) < HOLDOUT_FRACTION)
-    ratio = local_ratio(omega_cells, full & ~held, t)
-    predicted = t * ratio
-    lat = 90 - (np.arange(TES_SHAPE[0]) + 0.5) / 8
-    record = {
-        "method": f"{HOLDOUT_FRACTION:.0%} of the TES cells OMEGA measured completely, chosen with seed {HOLDOUT_SEED}, removed from the ratio and predicted",
+def warp_face(path: Path, face: str, width: int, height: int) -> np.ndarray:
+    crs = CRS.from_proj4(f"+proj=longlat +R={SPHERE_M} +no_defs")
+    west = 0 if face == "180" else -180
+    out = np.full((height, width), np.nan, dtype=np.float32)
+    with rasterio.open(path) as src:
+        reproject(
+            rasterio.band(src, 1),
+            out,
+            dst_transform=from_bounds(west, -90, west + 360, 90, width, height),
+            dst_crs=crs,
+            src_nodata=src.nodata,
+            dst_nodata=np.nan,
+            resampling=Resampling.average,
+        )
+    out[~(out > 0)] = np.nan
+    return np.roll(out, -width // 2, axis=1) if face == "180" else out
+
+
+def sample_face(path: Path, lon: float, lat: float) -> float | None:
+    """The face's own pixel under a point, by its projection (nearest pixel)."""
+    from rasterio.warp import transform as transform_points
+
+    with rasterio.open(path) as src:
+        xs, ys = transform_points(CRS.from_proj4(f"+proj=longlat +R={SPHERE_M} +no_defs"), src.crs, [lon], [lat])
+        row, col = src.index(xs[0], ys[0])
+        if not (0 <= row < src.height and 0 <= col < src.width):
+            return None
+        value = float(src.read(1, window=((row, row + 1), (col, col + 1)))[0, 0])
+    return value if value > 0 else None
+
+
+def mosaic(code: str, width: int, height: int, distances: dict[str, np.ndarray]) -> tuple[np.ndarray, dict]:
+    """One filter on the global grid, each pixel from the face whose centre is nearest."""
+    faces = {f: warp_face(face_path(code, f), f, width, height) for f in FACES}
+    best = np.full((height, width), np.inf, dtype=np.float32)
+    out = np.full((height, width), np.nan, dtype=np.float32)
+    for f, values in faces.items():
+        d = np.where(np.isfinite(values), distances[f], np.inf)
+        take = d < best
+        out[take] = values[take]
+        best[take] = d[take]
+    # The warp leaves the pixel at each pole empty, a singular point of the reprojection though it
+    # is the centre of the polar face: those few are read from the nearest face directly.
+    missing = np.argwhere(~np.isfinite(out))
+    direct = 0
+    for row, col in missing:
+        lat = 90 - (row + 0.5) / height * 180
+        lon = (col + 0.5) / width * 360 - 180
+        face = min(FACES, key=lambda f: float(distances[f][row, col]))
+        value = sample_face(face_path(code, face), lon, lat)
+        if value is not None:
+            out[row, col] = value
+            direct += 1
+    # Where two faces both measured a pixel, how far apart are they?
+    names = list(faces)
+    ratios = []
+    for i, a in enumerate(names):
+        for b in names[i + 1 :]:
+            both = np.isfinite(faces[a]) & np.isfinite(faces[b])
+            if both.sum() > 1000:
+                ratios.append(faces[a][both] / faces[b][both] - 1)
+    r = np.concatenate(ratios)
+    agreement = {
+        "overlappingPixelPairs": int(r.size),
+        "medianAbsoluteRelativeDifference": round(float(np.median(np.abs(r))), 5),
+        "meanRelativeDifference": round(float(r.mean()), 5),
+        "pixelsReadDirectlyFromAFace": direct,
     }
-    for name, zone in (("within60", np.abs(lat) <= 60), ("poleward60", np.abs(lat) > 60)):
-        m = held & zone[:, None]
-        p, a = predicted[m], omega_cells[m]
-        relative = p / a - 1
-        record[name] = {
-            "cells": int(m.sum()),
-            "correlation": round(float(np.corrcoef(p, a)[0, 1]), 4),
-            "meanRelativeError": round(float(relative.mean()), 4),
-            "rmsRelativeError": round(float(np.sqrt(np.mean(relative**2))), 4),
-        }
-    return record
+    return out, agreement
 
 
-def agreement(omega_cells: np.ndarray, full: np.ndarray, t: np.ndarray) -> dict:
-    lat = 90 - (np.arange(TES_SHAPE[0]) + 0.5) / 8
-    out = {}
-    for limit in (60, 90):
-        m = full & (np.abs(lat) <= limit)[:, None]
-        x, y = t[m], omega_cells[m]
-        out[f"withinLatitude{limit}"] = {
-            "cells": int(m.sum()),
-            "correlation": round(float(np.corrcoef(x, y)[0, 1]), 4),
-            "throughZeroSlope": round(float(np.sum(x * y) / np.sum(x * x)), 4),
-        }
-    return out
+def block_mean(a: np.ndarray, k: int) -> np.ndarray:
+    h, w = a.shape
+    return np.nanmean(a.reshape(h // k, k, w // k, k), axis=(1, 3))
+
+
+def omega_8ppd() -> np.ndarray:
+    path = fetch(OMEGA_URL, OMEGA_SHA256, "mars-omega-albedo-r1080.img")
+    dn = np.fromfile(path, dtype="<i2").reshape(7200, 14400)
+    a = np.where(dn == -32768, np.nan, 0.52414565669 + 1.4522365285e-05 * dn.astype(np.float64))
+    cells = a.reshape(1440, 5, 2880, 5)
+    count = np.isfinite(cells).sum(axis=(1, 3))
+    # Only cells OMEGA measured completely, as in part 1's checks.
+    return np.where(count == 25, np.nansum(cells, axis=(1, 3)) / 25, np.nan)
+
+
+def tes_8ppd() -> np.ndarray:
+    path = fetch(TES_URL, TES_SHA256, "mars-tes-albedo-8ppd.img")
+    return np.fromfile(path, dtype="<f4").reshape(1440, 2880).astype(np.float64)
 
 
 def overlaps(n_in: int, n_out: int) -> tuple[np.ndarray, np.ndarray]:
@@ -167,15 +199,31 @@ def overlaps(n_in: int, n_out: int) -> tuple[np.ndarray, np.ndarray]:
 
 
 def area_average(values: np.ndarray, width: int, height: int) -> np.ndarray:
-    """Exact area average of a global equirectangular grid onto a coarser one, rows then columns."""
+    """Exact area average of a global equirectangular grid onto another, rows then columns."""
     ri, rw = overlaps(values.shape[0], height)
     rows = sum(rw[:, k, None] * values[ri[:, k], :] for k in range(ri.shape[1]))
     ci, cw = overlaps(values.shape[1], width)
     return sum(cw[None, :, k] * rows[:, ci[:, k]] for k in range(ci.shape[1]))
 
 
-def encode(a: np.ndarray) -> np.ndarray:
-    return np.clip(np.rint(255 * np.sqrt(np.clip(a, 0, MAX_ALBEDO) / MAX_ALBEDO)), 1, 255).astype(np.uint8)
+def compare(green: np.ndarray, other: np.ndarray, name: str) -> dict:
+    """HRSC's 530 nm reflectance against another instrument's map, on its 8 px/deg grid."""
+    g = area_average(green, 2880, 1440)
+    lat = 90 - (np.arange(1440) + 0.5) / 8
+    out = {"instrument": name}
+    for limit in (60, 90):
+        m = np.isfinite(g) & np.isfinite(other) & (np.abs(lat) <= limit)[:, None]
+        x, y = other[m], g[m]
+        out[f"withinLatitude{limit}"] = {
+            "cells": int(m.sum()),
+            "correlation": round(float(np.corrcoef(x, y)[0, 1]), 4),
+            "hrscOverItThroughZero": round(float(np.sum(x * y) / np.sum(x * x)), 4),
+        }
+    return out
+
+
+def encode(r: np.ndarray) -> np.ndarray:
+    return np.clip(np.rint(255 * np.sqrt(np.clip(r, 0, MAX_REFLECTANCE) / MAX_REFLECTANCE)), 1, 255).astype(np.uint8)
 
 
 def format_trials(master: np.ndarray) -> list[dict]:
@@ -205,87 +253,93 @@ def choose(trials: list[dict]) -> dict:
     return min(eligible, key=lambda t: t["bytes"])
 
 
+def encode_ratio(r: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    return np.clip(np.rint((r - lo) / (hi - lo) * 255), 0, 255).astype(np.uint8)
+
+
 def build() -> dict:
-    a = omega()
-    t = tes()
-    if not np.all(np.isfinite(t)) or t.min() <= 0:
-        raise RuntimeError("TES has missing or non-positive values: the fill would need another source")
-    missing = ~np.isfinite(a)
+    distances = {f: angular_distance(*c, WIDTH, HEIGHT) for f, c in FACES.items()}
+    bands: dict[str, np.ndarray] = {}
+    agreement: dict[str, dict] = {}
+    for name, (code, _) in FILTERS.items():
+        bands[name], agreement[name] = mosaic(code, WIDTH, HEIGHT, distances)
+        print(f"{name}: {np.isfinite(bands[name]).mean():.4%} covered, faces agree to {agreement[name]['medianAbsoluteRelativeDifference']:.2%}", flush=True)
+    green = bands["green"]
+    if not all(np.isfinite(b).all() for b in bands.values()):
+        raise RuntimeError("a pixel is unmeasured in some filter")
 
-    cells = a.reshape(TES_SHAPE[0], CELL, TES_SHAPE[1], CELL)
-    count = np.sum(np.isfinite(cells), axis=(1, 3))
-    full = count == CELL * CELL
-    omega_cells = np.where(count > 0, np.nansum(cells, axis=(1, 3)) / np.maximum(count, 1), np.nan)
-
-    ratio = local_ratio(omega_cells, full, t)
-    filled_cells = np.repeat(np.repeat(t * ratio, CELL, axis=0), CELL, axis=1)
-    albedo = np.where(missing, filled_cells, a)
-
-    lat = 90 - (np.arange(OMEGA_SHAPE[0]) + 0.5) / 40
-    bands = {}
-    for north, south in ((90, 60), (60, 30), (30, 0), (0, -30), (-30, -60), (-60, -90)):
-        r = (lat <= north) & (lat > south)
-        bands[f"{north}..{south}"] = round(float(missing[r].mean()), 4)
-
-    out_albedo = area_average(albedo, WIDTH, HEIGHT)
-    out_source = area_average(missing.astype(np.float64), WIDTH, HEIGHT)
-    master = encode(out_albedo)
-    source = np.where(out_source > 0, np.clip(np.ceil(out_source * 255), 1, 255), 0).astype(np.uint8)
-
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    master = encode(green)
     trials = format_trials(master)
     chosen = choose(trials)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     albedo_out = OUT_DIR / "albedo.webp"
     albedo_out.write_bytes(chosen["_data"])
-    source_out = OUT_DIR / "albedo-source.png"
-    Image.fromarray(source, mode="L").save(source_out, optimize=True)
+    (OUT_DIR / "albedo-source.png").unlink(missing_ok=True)
+
+    k = WIDTH // COLOUR_WIDTH
+    coarse = {n: block_mean(b, k) for n, b in bands.items()}
+    ratios = {n: coarse[n] / coarse["green"] for n in ("red", "blue", "infrared")}
+    ranges = {
+        f"{FILTERS[n][1]}/530": [math.floor(float(r.min()) * 100) / 100, math.ceil(float(r.max()) * 100) / 100]
+        for n, r in ratios.items()
+    }
+    rgb = np.zeros((COLOUR_HEIGHT, COLOUR_WIDTH, 3), dtype=np.uint8)
+    for c, n in enumerate(("red", "blue", "infrared")):
+        rgb[:, :, c] = encode_ratio(ratios[n], *ranges[f"{FILTERS[n][1]}/530"])
+    colour_out = OUT_DIR / "albedo-colour.png"
+    Image.fromarray(rgb, mode="RGB").save(colour_out, optimize=True)
+
+    green8 = green.astype(np.float64)
+    checks = [compare(green8, omega_8ppd(), "OMEGA 1.08 um Lambert albedo (SS-14 W3 part 1)"), compare(green8, tes_8ppd(), "TES bolometric albedo")]
 
     manifest = {
         "product": {
-            "name": "Mars Express OMEGA 1.08 um Lambert albedo R1080, Ody et al. (2012), ESA PSA MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0",
-            "url": OMEGA_URL,
-            "sha256": OMEGA_SHA256,
-            "quantity": "I/F / cos(i) at 1.08 um, assuming a Lambertian surface; each sample the average of observations from 2004-01-08 to 2010-08-20 (label)",
-            "chosen": "owner, 2026-09-29: a long-term average, built from OMEGA checked by TES (docs/stories/SS-14.md)",
-            "missingFraction": round(float(missing.mean()), 5),
-            "missingFractionByLatitude": bands,
+            "name": SOURCES["source"],
+            "base": SOURCES["base"],
+            "files": "pipeline/hrsc_sources.json: 4 filters x 6 faces, SHA-256 pinned",
+            "licence": SOURCES["licence"],
+            "quantity": "reflectance per filter from a global colour model of relative colour within images, each filter calibrated to one observation area (Michael et al. 2025)",
+            "chosen": "owner: 2026-09-29 a long-term average; 2026-10-02 'HRSC for both' brightness and colour (docs/stories/SS-14.md)",
+            "faceAgreement": agreement,
+            "shading": "images used with the illumination as acquired: some shading remains in the brightness, most on steep walls; the colour ratios cancel most of it",
         },
-        "gapFill": {
-            "source": "MGS TES bolometric albedo, Christensen; PDS MGS-M-TES-SPECIAL-V1 global_albedo_8ppd",
-            "url": TES_URL,
-            "sha256": TES_SHA256,
-            "method": f"TES x (OMEGA / TES) averaged over the surrounding {RATIO_WINDOW} x {RATIO_WINDOW} TES cells ({RATIO_WINDOW / 8:.1f} deg) that OMEGA measured completely; filled pixels keep TES's 7.4 km cells",
-            "agreementWithOmega": agreement(omega_cells, full, t),
-            "check": fill_check(omega_cells, full, t),
-        },
+        "checks": checks,
         "conventions": {
-            "projection": "equirectangular (simple cylindrical); both sources on a 3396.0 km sphere (labels)",
+            "projection": "equirectangular (simple cylindrical), sphere R = 3396.0 km (the source faces')",
             "latitude": "planetocentric",
             "longitude": "east-positive; column 0 = -180 deg, last column ends at +180 deg",
             "rows": "row 0 = +90 deg latitude",
             "bodyFixedFrame": "IAU_MARS; see ephemeris.json",
-            "values": f"OMEGA 1.08 um Lambert albedo, stored as byte = 255 sqrt(A / {MAX_ALBEDO}). Not yet scaled to visible light",
+            "assembly": "each pixel from the face whose centre is nearest, after an area-average warp of every face",
         },
         "texture": {
             "file": albedo_out.name,
             "width": WIDTH,
             "height": HEIGHT,
-            "encoding": {"curve": "sqrt", "maxAlbedo": MAX_ALBEDO},
-            "clippedPixels": int(np.sum(out_albedo > MAX_ALBEDO)),
+            "values": f"HRSC reflectance at 530 nm, stored as byte = 255 sqrt(R / {MAX_REFLECTANCE})",
+            "encoding": {"curve": "sqrt", "maxReflectance": MAX_REFLECTANCE},
+            "clippedPixels": int(np.sum(green > MAX_REFLECTANCE)),
+            "medianReflectance": round(float(np.median(green)), 4),
+            "meanReflectance": round(float(green.mean()), 4),
             "kmPerPixelAtEquator": round(2 * math.pi * 3396.19 / WIDTH, 3),
             "sha256": sha256(albedo_out),
-            "source": {
-                "file": source_out.name,
-                "values": "0 = every source sample OMEGA; 1-255 = the share of the pixel filled from TES, rounded up",
-                "pixelsWithFill": int(np.sum(source > 0)),
-                "sha256": sha256(source_out),
-            },
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),
+        },
+        "colour": {
+            "file": colour_out.name,
+            "width": COLOUR_WIDTH,
+            "height": COLOUR_HEIGHT,
+            "bandsNm": [FILTERS[n][1] for n in ("blue", "green", "red", "infrared")],
+            "channels": "red = R(750)/R(530), green = R(440)/R(530), blue = R(970)/R(530), each byte linear over its range",
+            "ranges": ranges,
+            "medianRatios": {f"{FILTERS[n][1]}/530": round(float(np.median(r)), 4) for n, r in ratios.items()},
+            "sha256": sha256(colour_out),
+            "gpuBytesRGBA8WithMips": int(COLOUR_WIDTH * COLOUR_HEIGHT * 4 * 4 / 3),
         },
         "formatChoice": {
             "rule": f"smallest albedo at most {MAX_BYTES} bytes with PSNR >= {MIN_PSNR_DB} dB over all pixels (the Moon's rule)",
             "chosen": chosen["format"],
-            "trials": [{k: v for k, v in tr.items() if k != "_data"} for tr in trials],
+            "trials": [{k2: v for k2, v in t.items() if k2 != "_data"} for t in trials],
         },
     }
     (OUT_DIR / "albedo.json").write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
@@ -294,7 +348,5 @@ def build() -> dict:
 
 if __name__ == "__main__":
     m = build()
-    print(json.dumps({k: m[k] for k in ("product", "gapFill")}, indent=1))
-    print(f"chose {m['formatChoice']['chosen']}; clipped {m['texture']['clippedPixels']}")
-    for tr in m["formatChoice"]["trials"]:
-        print(f"  {tr['format']:14} {tr['bytes'] / 1e6:6.2f} MB  PSNR {tr['psnrDb']}  max err {tr['maxAbsError']}")
+    print(json.dumps({"agreement": m["product"]["faceAgreement"], "checks": m["checks"], "colour": m["colour"]["medianRatios"]}, indent=1))
+    print(f"chose {m['formatChoice']['chosen']}; clipped {m['texture']['clippedPixels']}; median {m['texture']['medianReflectance']}")

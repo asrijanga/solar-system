@@ -19,7 +19,13 @@ async function run(plugin: GunzipPlugin, signal?: AbortSignal): Promise<Response
     () => (settled = true),
     () => (settled = true),
   );
-  for (let i = 0; i < 50 && !settled; i++) await vi.advanceTimersByTimeAsync(500);
+  // Inflating runs in zlib's thread pool and answers on a real turn of the event loop, which a
+  // slow machine may take longer to reach than any fixed number of fake advances: yield a real
+  // turn between advances, until the fetch settles (the test's own timeout bounds it).
+  while (!settled) {
+    await vi.advanceTimersByTimeAsync(500);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
   return pending;
 }
 

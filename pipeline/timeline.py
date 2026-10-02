@@ -55,9 +55,11 @@ OUT_TRUTH = ROOT / "test" / "fixtures" / "moon-timeline-truth.json"
 
 
 def unit(v) -> tuple[np.ndarray, float]:
-    v = np.asarray(v, dtype=np.float64)
-    n = float(np.linalg.norm(v))
-    return v / n, n
+    """Plain IEEE arithmetic, as ephemeris.py's: numpy's norm can round the last bit differently
+    on different CPUs, which made CI's re-derived fixture differ from the committed one."""
+    x, y, z = (float(c) for c in v)
+    n = math.sqrt(x * x + y * y + z * z)
+    return np.array([x / n, y / n, z / n]), n
 
 
 def record(et: float) -> np.ndarray:

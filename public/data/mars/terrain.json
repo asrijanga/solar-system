@@ -266,10 +266,11 @@
   }
  },
  "provenance": {
-  "file": "terrain-source.png",
-  "pixelsPerDegree": 16,
+  "file": "terrain-source.webp",
+  "pixelsPerDegree": 8,
+  "exactPerBin": "pipeline/.cache/mars-terrain-64-source.img, uint8: {0: 'molaInterpolated', 1: 'molaMeasured', 2: 'hrsc', 3: 'blendBand'}",
   "channels": "red = HRSC, green = MOLA measured, blue = MOLA interpolated; each the share of the pixel, 0-255",
-  "sha256": "3d1d216756ff33049f8b3e6aa80eb03fe557c819e02b047977e8f8f89b61ac31"
+  "sha256": "2f5b294ff4938e5c7fd2eb80ca92158816fd9178485e866f5dcb16a0eddbd2ca"
  },
  "fits": {
   "h0010_0009_da4": {
@@ -11235,15 +11236,15 @@
  },
  "checks": {
   "molaMeasuredBins.outsideHrsc": {
-   "bins": 98253836,
+   "bins": 99077540,
    "medianM": 0.0,
    "rmsM": 0.0,
-   "maxAbsM": 12
+   "maxAbsM": 0
   },
   "molaMeasuredBins.insideHrsc": {
-   "bins": 50461982,
+   "bins": 51257150,
    "medianM": 0.0,
-   "rmsM": 32.45,
+   "rmsM": 32.52,
    "maxAbsM": 1795
   },
   "usgsBlend16ppd.everywhere": {
@@ -11253,13 +11254,13 @@
    "p99AbsM": 141.7
   },
   "usgsBlend16ppd.insideHrsc": {
-   "pixels": 5427594,
+   "pixels": 5423346,
    "medianM": 0.1,
    "rmsM": 39.8,
    "p99AbsM": 169.1
   },
   "usgsBlend16ppd.outsideHrsc": {
-   "pixels": 10621463,
+   "pixels": 10620858,
    "medianM": 0.0,
    "rmsM": 27.2,
    "p99AbsM": 122.1

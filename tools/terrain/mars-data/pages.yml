@@ -50,19 +50,20 @@ jobs:
           path: |
             app/pipeline/.cache/mars-terrain-64.img
             app/pipeline/.cache/mars-terrain-64-areoid.img
+            app/pipeline/.cache/mars-terrain-64-source.img
           key: mars-composite-${{ hashFiles('app/pipeline/mars_terrain.py', 'app/pipeline/hrsc_dtm_sources.json', 'app/pipeline/mola64_sources.json') }}
       - if: steps.composite.outputs.cache-hit != 'true'
         run: npm run pipeline:mars:terrain
         working-directory: app
       # A rebuilt composite must reproduce the committed manifest and provenance exactly.
       - if: steps.composite.outputs.cache-hit != 'true'
-        run: git diff --exit-code -- public/data/mars/terrain.json public/data/mars/terrain-source.png pipeline/hrsc_dtm_sources.json
+        run: git diff --exit-code -- public/data/mars/terrain.json public/data/mars/terrain-source.webp pipeline/hrsc_dtm_sources.json
         working-directory: app
       - run: npm run pipeline:mars:tiles -- "$GITHUB_WORKSPACE/site/terrain"
         working-directory: app
       - run: |
           cp data/README.md site/
-          cp app/public/data/mars/terrain.json app/public/data/mars/terrain-source.png site/terrain/
+          cp app/public/data/mars/terrain.json app/public/data/mars/terrain-source.webp site/terrain/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

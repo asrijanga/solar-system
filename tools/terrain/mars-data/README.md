@@ -9,4 +9,4 @@ Nothing in this repository is edited by hand. `.github/workflows/pages.yml` buil
 - **MOLA:** Mars Global Surveyor MOLA MEGDR, 64 px/deg (PDS `MGS-M-MOLA-5-MEGDR-L3-V1.0`), Smith et al. (2003).
 - **HRSC:** Mars Express HRSC stereo DTMs, the strips listed in `terrain/terrain.json` (PDS `MEX-M-HRSC-5-REFDR-DTM-V1.0`). Credit: ESA/DLR/FU Berlin (CC BY-SA 3.0 IGO).
 
-The tiles combine HRSC data, so they are shared under the same licence, [CC BY-SA 3.0 IGO](https://creativecommons.org/licenses/by-sa/3.0/igo/). `terrain/terrain-source.png` shows where each source was used.
+The tiles combine HRSC data, so they are shared under the same licence, [CC BY-SA 3.0 IGO](https://creativecommons.org/licenses/by-sa/3.0/igo/). `terrain/terrain-source.webp` shows where each source was used.

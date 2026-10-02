@@ -37,8 +37,9 @@ Outputs:
   the areoid, 23040 x 11520, column 0 = -180 deg, row 0 = +90 deg; and
   mars-terrain-64-areoid.img, the areoid radius in metres (int32), on the same grid. Too large
   to commit; the tile build reads them.
-- public/data/mars/terrain-source.png: provenance at 16 px/deg, the share of each pixel from
-  HRSC (red), MOLA measured (green) and MOLA interpolated (blue).
+- public/data/mars/terrain-source.webp: provenance at 8 px/deg, lossless, the share of each
+  pixel from HRSC (red), MOLA measured (green) and MOLA interpolated (blue); and
+  pipeline/.cache/mars-terrain-64-source.img, every bin's source exactly (SOURCE_CLASSES).
 - public/data/mars/terrain.json: the manifest, with every strip's fit.
 """
 
@@ -69,6 +70,10 @@ KM_PER_PIXEL = 2 * math.pi * SPHERE_M / 1000 / WIDTH
 BLEND_KM = 5.0
 REJECT_RMS_FACTOR = 3.0
 BAND_ROWS = 256
+PROVENANCE_PPD = 8
+# Where each bin of the composite came from, exactly: 0 MOLA interpolated, 1 MOLA measured,
+# 2 HRSC, 3 the band where HRSC fades into MOLA.
+SOURCE_CLASSES = ("molaInterpolated", "molaMeasured", "hrsc", "blendBand")
 
 MOLA_BASE = (
     "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg064/"
@@ -283,10 +288,11 @@ def blend_weight(hrsc: np.ndarray) -> np.ndarray:
     return weight
 
 
-def provenance_png(weight: np.ndarray, counts: np.ndarray, path: Path) -> dict:
+def provenance_image(weight: np.ndarray, counts: np.ndarray, path: Path) -> dict:
+    """Each source's share of every 8 px/deg pixel (7.4 km), and of Mars's area."""
     measured = (counts > 0).astype(np.float32)
     shares = [weight, (1 - weight) * measured, (1 - weight) * (1 - measured)]
-    k = 4
+    k = PPD // PROVENANCE_PPD
     rgb = np.stack(
         [
             np.rint(255 * s.reshape(HEIGHT // k, k, WIDTH // k, k).mean(axis=(1, 3)))
@@ -294,7 +300,7 @@ def provenance_png(weight: np.ndarray, counts: np.ndarray, path: Path) -> dict:
         ],
         axis=-1,
     ).astype(np.uint8)
-    Image.fromarray(rgb, mode="RGB").save(path, optimize=True)
+    Image.fromarray(rgb, mode="RGB").save(path, format="WEBP", lossless=True, method=6)
     lat = np.radians(90 - (np.arange(HEIGHT) + 0.5) / PPD)
     area = np.cos(lat)[:, None] / np.cos(lat).sum() / WIDTH
     return {
@@ -313,11 +319,11 @@ def checks() -> dict:
     out = np.fromfile(CACHE / "mars-terrain-64.img", dtype="<i2").reshape(HEIGHT, WIDTH)
     topo = roll(mola("megt"))
     shots = roll(mola("megc")) > 0
-    source = np.array(Image.open(OUT_DIR / "terrain-source.png"))
-    # The provenance is at 16 px/deg; HRSC's share of each 4 x 4 block.
-    hrsc = np.repeat(np.repeat(source[:, :, 0], 4, axis=0), 4, axis=1)
+    source = np.fromfile(CACHE / "mars-terrain-64-source.img", dtype="u1").reshape(
+        HEIGHT, WIDTH
+    )
     record = {}
-    for name, zone in (("outsideHrsc", hrsc == 0), ("insideHrsc", hrsc == 255)):
+    for name, zone in (("outsideHrsc", source <= 1), ("insideHrsc", source == 2)):
         m = shots & zone
         d = out[m].astype(np.float64) - topo[m]
         record[f"molaMeasuredBins.{name}"] = {
@@ -335,11 +341,11 @@ def checks() -> dict:
             1, out_shape=coarse.shape, resampling=Resampling.average, masked=True
         )
     blend = blend.astype(np.float64).filled(np.nan)
-    hrsc16 = source[:, :, 0]
+    blocks = source.reshape(HEIGHT // k, k, WIDTH // k, k)
     for name, zone in (
-        ("everywhere", np.ones_like(hrsc16, dtype=bool)),
-        ("insideHrsc", hrsc16 == 255),
-        ("outsideHrsc", hrsc16 == 0),
+        ("everywhere", np.ones(coarse.shape, dtype=bool)),
+        ("insideHrsc", (blocks == 2).all(axis=(1, 3))),
+        ("outsideHrsc", (blocks <= 1).all(axis=(1, 3))),
     ):
         m = zone & np.isfinite(blend)
         d = coarse[m] - blend[m]
@@ -407,8 +413,14 @@ def build() -> dict:
     roll(areoid).astype("<i4").tofile(CACHE / "mars-terrain-64-areoid.img")
     del areoid
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    source_png = OUT_DIR / "terrain-source.png"
-    shares = provenance_png(roll(weight), roll(counts), source_png)
+    classes = np.where(
+        weight >= 1, 2, np.where(weight > 0, 3, (counts > 0).astype(np.uint8))
+    )
+    roll(classes.astype(np.uint8)).tofile(CACHE / "mars-terrain-64-source.img")
+    del classes
+    (OUT_DIR / "terrain-source.png").unlink(missing_ok=True)
+    source_png = OUT_DIR / "terrain-source.webp"
+    shares = provenance_image(roll(weight), roll(counts), source_png)
 
     manifest = {
         "story": "docs/stories/SS-14.md, W4",
@@ -456,7 +468,8 @@ def build() -> dict:
         },
         "provenance": {
             "file": source_png.name,
-            "pixelsPerDegree": PPD // 4,
+            "pixelsPerDegree": PROVENANCE_PPD,
+            "exactPerBin": f"pipeline/.cache/mars-terrain-64-source.img, uint8: {dict(enumerate(SOURCE_CLASSES))}",
             "channels": "red = HRSC, green = MOLA measured, blue = MOLA interpolated; each the share of the pixel, 0-255",
             "sha256": sha256(source_png),
         },

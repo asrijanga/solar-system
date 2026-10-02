@@ -86,7 +86,13 @@ class MarsTerrain(unittest.TestCase):
         image = np.array(
             Image.open(DATA / MANIFEST["provenance"]["file"]).convert("RGB")
         ).astype(int)
-        self.assertEqual(image.shape[:2], (180 * 16, 360 * 16))
+        self.assertEqual(
+            image.shape[:2],
+            (
+                180 * MANIFEST["provenance"]["pixelsPerDegree"],
+                360 * MANIFEST["provenance"]["pixelsPerDegree"],
+            ),
+        )
         # Each pixel's three shares sum to the whole, up to rounding of each to a byte.
         self.assertLessEqual(int(np.abs(image.sum(axis=2) - 255).max()), 2)
 

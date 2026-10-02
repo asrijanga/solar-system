@@ -1,5 +1,7 @@
 """Checks the committed Mars albedo (public/data/mars) against the IAU Gazetteer and its manifest.
 
+The texture is reflectance at 530 nm (pipeline/mars.py).
+
 Classical albedo features have names because they are dark or bright from Earth: the texture must
 put them where the Gazetteer does (test/fixtures/iau-gazetteer-mars.json). The same check on the
 map mirrored in longitude must fail, so it can see a mirrored map. No network.
@@ -25,7 +27,7 @@ CONTRAST = 0.6
 
 def albedo() -> np.ndarray:
     byte = np.array(Image.open(DATA / MANIFEST["texture"]["file"]).convert("L")).astype(np.float64)
-    return MANIFEST["texture"]["encoding"]["maxAlbedo"] * (byte / 255) ** 2
+    return MANIFEST["texture"]["encoding"]["maxReflectance"] * (byte / 255) ** 2
 
 
 def mean_at(a: np.ndarray, lon: float, lat: float) -> float:
@@ -57,14 +59,20 @@ class MarsAlbedo(unittest.TestCase):
         self.assertFalse(separated(self.a, mirror=True))
 
     def test_fill_is_checked_and_recorded(self) -> None:
-        check = MANIFEST["gapFill"]["check"]
+        check = MANIFEST["anchor"]["gapFill"]["check"]
         self.assertGreater(check["within60"]["correlation"], 0.95)
         self.assertLess(abs(check["within60"]["meanRelativeError"]), 0.02)
 
-    def test_mean_albedo_is_omega_s(self) -> None:
-        """The label gives the source's mean, 0.294; the texture's pixel mean stays close to it."""
-        self.assertAlmostEqual(float(self.a.mean()), 0.294, delta=0.02)
+    def test_large_scale_is_omega_s(self) -> None:
+        """The blend keeps OMEGA's measured light and dark at the scale of its window (1 deg)."""
+        fit = MANIFEST["blend"]["blendAgainstOmega"]["1ppd.withinLatitude60"]
+        self.assertGreater(fit["correlation"], 0.99)
+        self.assertLess(abs(fit["meanRelativeDifference"]), 0.01)
 
+    def test_source_map_matches_manifest(self) -> None:
+        source = np.array(Image.open(DATA / MANIFEST["source"]["file"]).convert("L"))
+        self.assertEqual(source.shape, self.a.shape)
+        self.assertEqual(int(np.sum(source > 0)), MANIFEST["source"]["pixelsWithTes"])
 
 if __name__ == "__main__":
     unittest.main()

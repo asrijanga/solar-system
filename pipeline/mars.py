@@ -1,41 +1,56 @@
-"""Mars's surface as seen in visible light, a long-term average, from the Mars Express HRSC
-high-altitude global colour mosaic (SS-14 W3).
+"""Mars's surface as seen in visible light, a long-term average (SS-14 W3): OMEGA's measured
+light and dark, HRSC's edges and colour.
 
     npm run pipeline:mars
 
 Python for GDAL's reprojection and the array maths (CLAUDE.md, Stack).
 
 Owner decisions (docs/stories/SS-14.md):
-- 2026-09-29: a long-term average, not one date's dust and clouds.
-- 2026-10-02, after the colour comparison (docs/stories/ss14-colour-candidates.png): "HRSC for
-  both". HRSC gives the brightness and the colour; OMEGA and TES, which made the first map
-  (SS-14 W3 part 1), become independent checks.
+- 2026-09-29: a long-term average, not one date's dust and clouds; brightness from OMEGA,
+  checked by TES (SS-14 W3 part 1, pipeline/mars_omega.py).
+- 2026-10-02, after the colour comparison (docs/stories/ss14-colour-candidates.png): HRSC for the
+  colour. HRSC's own brightness was then measured to flatten Mars's dark markings to about half
+  their contrast (its large-scale brightness is detrended, as its paper says), and after the three
+  options in docs/stories/ss14-brightness-options.png the owner chose "C. Guided blend".
 
-Source (pipeline/hrsc_sources.json; docs/data/mars.md): Michael et al. 2025, Icarus 425, 116350,
-data doi:10.17169/refubium-40624. Four filters used, blue 440, green 530, red 750 and infrared
-970 nm, each as six orthographic faces (centred on the poles and on 0, 90, 180 and 270 E, each
-reaching 55.6 deg from its centre), float32 reflectance on a 3396.0 km sphere, nodata -1e32.
-From the paper: about 90 high-altitude images from 2019 on, with little dust and clouds cut out,
-joined through a global colour model built from "only the relative colour information internal
-to individual images" and each filter calibrated "to a single high quality observation area".
-Images are used "with the illumination as acquired": shading from the source images remains,
-most visibly on steep walls; band ratios cancel most of it.
+Sources (docs/data/mars.md):
+- HRSC high-altitude global colour mosaic (pipeline/hrsc_sources.json): Michael et al. 2025, Icarus
+  425, 116350, data doi:10.17169/refubium-40624. Four filters used, blue 440, green 530, red 750
+  and infrared 970 nm, each as six orthographic faces (centred on the poles and on 0, 90, 180 and
+  270 E, each reaching 55.6 deg from its centre), float32 reflectance on a 3396.0 km sphere,
+  nodata -1e32. From the paper: about 90 high-altitude images from 2019 on, with little dust and
+  clouds cut out, joined through a global colour model built from "only the relative colour
+  information internal to individual images" and each filter calibrated "to a single high quality
+  observation area". Images are used "with the illumination as acquired": shading from the source
+  images remains, most visibly on steep walls; band ratios cancel most of it.
+- OMEGA 1.08 um Lambert albedo with TES in its gaps (pipeline/mars_omega.py): measured, averaged
+  over 2004-2010, with Mars's true large-scale contrast, but 1.5 km per pixel at best and striped
+  where orbits met.
 
-Assembly: each face is warped (area average) onto one global grid, and every pixel takes the
-face whose centre is nearest, where its projection is least stretched. Where faces overlap
+Assembly of HRSC: each face is warped (area average) onto one global grid, and every pixel takes
+the face whose centre is nearest, where its projection is least stretched. Where faces overlap
 their values are compared and recorded. The face centred on 180 E is warped onto a 0..360 grid
 and rolled, because a warp across the antimeridian returns nothing.
 
+The blend, a guided filter (He, Sun and Tang 2013, IEEE TPAMI 35, 1397): within every window of
+GUIDED_RADIUS pixels, the near-infrared albedo is fitted as a * HRSC(970) + b to OMEGA's 1.08 um
+albedo (with TES's fill). The result keeps OMEGA's light and dark over scales larger than the
+window and HRSC's edges within it. 970 nm is HRSC's band nearest OMEGA's 1.08 um. The other bands
+follow from HRSC's own ratios to 970 nm, which keep Mars's contrast falling toward blue. Nothing
+is invented: every value is a measurement or a fit between two measurements, recorded below.
+
 Outputs in public/data/mars/, column 0 = longitude -180 deg (west edge), row 0 = latitude +90:
-- albedo.webp, 8192 x 4096, grey: reflectance at 530 nm (the band nearest V), stored as
-  byte = 255 sqrt(R / MAX_REFLECTANCE).
+- albedo.webp, 8192 x 4096, grey, lossless: reflectance at 530 nm (the band nearest V), stored
+  as byte = 255 sqrt(R / MAX_REFLECTANCE).
 - albedo-colour.png, 2048 x 1024, lossless RGB: the ratios R(750)/R(530), R(440)/R(530) and
   R(970)/R(530) in red, green and blue, each linear over the range the manifest gives. Colour is
   four times coarser than brightness, as for the Moon (SS-5b).
-- albedo.json, the manifest, with the faces' agreement and the checks against OMEGA and TES.
+- albedo-source.png, 8192 x 4096, lossless grey: 0 where the large-scale level came from OMEGA,
+  else the share of the pixel's anchor that came from TES, 1-255.
+- albedo.json, the manifest, with the faces' agreement, the blend's fit and the checks.
 
-Not yet: the overall scale is the mosaic's own, anchored to one area. Checking it against Mars's
-published brightness needs Mars drawn with its photometry (W7).
+Not yet: the overall scale is OMEGA's at 1.08 um carried by HRSC's ratios. Checking it against
+Mars's published brightness needs Mars drawn with its photometry (W7).
 """
 
 from __future__ import annotations
@@ -53,39 +68,63 @@ from rasterio.enums import Resampling
 from rasterio.transform import from_bounds
 from rasterio.warp import reproject
 
+import mars_omega
 from download import fetch, sha256
-from moon import MAX_BYTES, MIN_PSNR_DB, psnr
 
-SOURCES = json.loads((Path(__file__).resolve().parent / "hrsc_sources.json").read_text())
-FILTERS = {"blue": ("03-bl", 440), "green": ("02-gr", 530), "red": ("01-re", 750), "infrared": ("04-ir", 970)}
-FACES = {"000": (0.0, 0.0), "090": (90.0, 0.0), "180": (180.0, 0.0), "270": (-90.0, 0.0), "N": (0.0, 90.0), "S": (0.0, -90.0)}
+SOURCES = json.loads(
+    (Path(__file__).resolve().parent / "hrsc_sources.json").read_text()
+)
+FILTERS = {
+    "blue": ("03-bl", 440),
+    "green": ("02-gr", 530),
+    "red": ("01-re", 750),
+    "infrared": ("04-ir", 970),
+}
+FACES = {
+    "000": (0.0, 0.0),
+    "090": (90.0, 0.0),
+    "180": (180.0, 0.0),
+    "270": (-90.0, 0.0),
+    "N": (0.0, 90.0),
+    "S": (0.0, -90.0),
+}
 SPHERE_M = 3396000.0
 
-# Reflectance at byte 255. Above every value in the mosaic (the south polar ice reaches 1.07).
+# Reflectance at byte 255. Above every value in the result; clipped pixels are counted.
 MAX_REFLECTANCE = 1.2
+# The guided filter's window half-width in pixels (23 px = 1.01 deg at 8192 wide): OMEGA's level
+# is kept on larger scales, HRSC's edges within. And its regulariser, in squared reflectance:
+# windows whose HRSC varies by less than about its square root take OMEGA's mean instead of a slope.
+GUIDED_RADIUS = 23
+GUIDED_EPS = 1e-4
+# Floor on the blended infrared, below every OMEGA value (its minimum is 0.048): a fitted line can
+# overshoot below zero beside a sharp edge.
+MIN_INFRARED = 0.02
+
+# The albedo file's cap. The Moon's is 6 MiB; Mars's lossless map is 6.25 MB (owner, 2026-10-02,
+# "Lossless, 6.25 MB": the cap raised to 6.5 MiB for this file).
+MAX_BYTES = int(6.5 * 1024 * 1024)
 
 WIDTH, HEIGHT = 8192, 4096
 COLOUR_WIDTH, COLOUR_HEIGHT = 2048, 1024
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "public" / "data" / "mars"
 
-# The checks: OMEGA and TES, as in SS-14 W3 part 1 (docs/data/mars.md).
-OMEGA_URL = "https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/OMEGA/MEX-M-OMEGA-5-DDR-GLOBAL-MAPS-V1.0/DATA/ALBEDO/ALBEDO_R1080_EQU_MAP.IMG"
-OMEGA_SHA256 = "3fc99ad4190ba509492e2d2435f561c37f87251a96d037b596526e45c801e9c5"
-TES_URL = "https://pds-geosciences.wustl.edu/mgs/mgs-m-tes-special-v1/global_albedo_8ppd.img"
-TES_SHA256 = "47ee17fc9aca6aa9fd5d49e383c1acc366d4cb31cab4635bc823bc27a33283c7"
-
 
 def face_path(code: str, face: str) -> Path:
     name = f"{code}-face_{face}.tif"
-    return fetch(SOURCES["base"] + name, SOURCES["files"][name]["sha256"], f"mars-hrsc-{name}")
+    return fetch(
+        SOURCES["base"] + name, SOURCES["files"][name]["sha256"], f"mars-hrsc-{name}"
+    )
 
 
 def angular_distance(lon_c: float, lat_c: float, width: int, height: int) -> np.ndarray:
     lon = np.radians((np.arange(width) + 0.5) / width * 360 - 180)
     lat = np.radians(90 - (np.arange(height) + 0.5) / height * 180)
     c, cl = math.radians(lat_c), math.radians(lon_c)
-    cos = np.sin(lat)[:, None] * math.sin(c) + np.cos(lat)[:, None] * math.cos(c) * np.cos(lon[None, :] - cl)
+    cos = np.sin(lat)[:, None] * math.sin(c) + np.cos(lat)[:, None] * math.cos(
+        c
+    ) * np.cos(lon[None, :] - cl)
     return np.arccos(np.clip(cos, -1, 1)).astype(np.float32)
 
 
@@ -112,7 +151,12 @@ def sample_face(path: Path, lon: float, lat: float) -> float | None:
     from rasterio.warp import transform as transform_points
 
     with rasterio.open(path) as src:
-        xs, ys = transform_points(CRS.from_proj4(f"+proj=longlat +R={SPHERE_M} +no_defs"), src.crs, [lon], [lat])
+        xs, ys = transform_points(
+            CRS.from_proj4(f"+proj=longlat +R={SPHERE_M} +no_defs"),
+            src.crs,
+            [lon],
+            [lat],
+        )
         row, col = src.index(xs[0], ys[0])
         if not (0 <= row < src.height and 0 <= col < src.width):
             return None
@@ -120,7 +164,9 @@ def sample_face(path: Path, lon: float, lat: float) -> float | None:
     return value if value > 0 else None
 
 
-def mosaic(code: str, width: int, height: int, distances: dict[str, np.ndarray]) -> tuple[np.ndarray, dict]:
+def mosaic(
+    code: str, width: int, height: int, distances: dict[str, np.ndarray]
+) -> tuple[np.ndarray, dict]:
     """One filter on the global grid, each pixel from the face whose centre is nearest."""
     faces = {f: warp_face(face_path(code, f), f, width, height) for f in FACES}
     best = np.full((height, width), np.inf, dtype=np.float32)
@@ -166,9 +212,7 @@ def block_mean(a: np.ndarray, k: int) -> np.ndarray:
 
 
 def omega_8ppd() -> np.ndarray:
-    path = fetch(OMEGA_URL, OMEGA_SHA256, "mars-omega-albedo-r1080.img")
-    dn = np.fromfile(path, dtype="<i2").reshape(7200, 14400)
-    a = np.where(dn == -32768, np.nan, 0.52414565669 + 1.4522365285e-05 * dn.astype(np.float64))
+    a = mars_omega.omega()
     cells = a.reshape(1440, 5, 2880, 5)
     count = np.isfinite(cells).sum(axis=(1, 3))
     # Only cells OMEGA measured completely, as in part 1's checks.
@@ -176,8 +220,7 @@ def omega_8ppd() -> np.ndarray:
 
 
 def tes_8ppd() -> np.ndarray:
-    path = fetch(TES_URL, TES_SHA256, "mars-tes-albedo-8ppd.img")
-    return np.fromfile(path, dtype="<f4").reshape(1440, 2880).astype(np.float64)
+    return mars_omega.tes()
 
 
 def overlaps(n_in: int, n_out: int) -> tuple[np.ndarray, np.ndarray]:
@@ -207,7 +250,7 @@ def area_average(values: np.ndarray, width: int, height: int) -> np.ndarray:
 
 
 def compare(green: np.ndarray, other: np.ndarray, name: str) -> dict:
-    """HRSC's 530 nm reflectance against another instrument's map, on its 8 px/deg grid."""
+    """The texture's 530 nm reflectance against another instrument's map, on its 8 px/deg grid."""
     g = area_average(green, 2880, 1440)
     lat = 90 - (np.arange(1440) + 0.5) / 8
     out = {"instrument": name}
@@ -217,70 +260,135 @@ def compare(green: np.ndarray, other: np.ndarray, name: str) -> dict:
         out[f"withinLatitude{limit}"] = {
             "cells": int(m.sum()),
             "correlation": round(float(np.corrcoef(x, y)[0, 1]), 4),
-            "hrscOverItThroughZero": round(float(np.sum(x * y) / np.sum(x * x)), 4),
+            "textureOverItThroughZero": round(float(np.sum(x * y) / np.sum(x * x)), 4),
         }
     return out
 
 
 def encode(r: np.ndarray) -> np.ndarray:
-    return np.clip(np.rint(255 * np.sqrt(np.clip(r, 0, MAX_REFLECTANCE) / MAX_REFLECTANCE)), 1, 255).astype(np.uint8)
+    return np.clip(
+        np.rint(255 * np.sqrt(np.clip(r, 0, MAX_REFLECTANCE) / MAX_REFLECTANCE)), 1, 255
+    ).astype(np.uint8)
 
 
-def format_trials(master: np.ndarray) -> list[dict]:
-    image = Image.fromarray(master, mode="L")
-    results = []
-    for options in [{"lossless": True, "method": 6}] + [{"quality": q, "method": 6} for q in (95, 90, 85, 80, 70)]:
-        buffer = io.BytesIO()
-        image.save(buffer, format="WEBP", **options)
-        decoded = np.array(Image.open(io.BytesIO(buffer.getvalue())).convert("L"))
-        p = psnr(master, decoded)
-        results.append(
-            {
-                "format": "webp-lossless" if options.get("lossless") else f"webp-q{options['quality']}",
-                "bytes": buffer.tell(),
-                "psnrDb": None if math.isinf(p) else round(p, 2),
-                "maxAbsError": int(np.abs(master.astype(int) - decoded.astype(int)).max()),
-                "_data": buffer.getvalue(),
-            }
+def lossless_webp(master: np.ndarray) -> bytes:
+    """Lossless WebP, checked by decoding. Lossy WebP smeared Valles Marineris into 16-pixel blocks
+    even at q95 (docs/stories/ss14-encoding-valles.png): Mars's detail is low-contrast."""
+    buffer = io.BytesIO()
+    Image.fromarray(master, mode="L").save(
+        buffer, format="WEBP", lossless=True, method=6
+    )
+    data = buffer.getvalue()
+    decoded = np.array(Image.open(io.BytesIO(data)).convert("L"))
+    if not np.array_equal(decoded, master):
+        raise RuntimeError("lossless WebP did not decode to the master")
+    if len(data) > MAX_BYTES:
+        raise RuntimeError(
+            f"lossless albedo is {len(data)} bytes, over the {MAX_BYTES} cap"
         )
-    return results
-
-
-def choose(trials: list[dict]) -> dict:
-    eligible = [t for t in trials if t["bytes"] <= MAX_BYTES and (t["psnrDb"] is None or t["psnrDb"] >= MIN_PSNR_DB)]
-    if not eligible:
-        raise RuntimeError("no encoding meets the size and quality rules; see the trials")
-    return min(eligible, key=lambda t: t["bytes"])
+    return data
 
 
 def encode_ratio(r: np.ndarray, lo: float, hi: float) -> np.ndarray:
     return np.clip(np.rint((r - lo) / (hi - lo) * 255), 0, 255).astype(np.uint8)
 
 
+def guided(guide: np.ndarray, target: np.ndarray) -> tuple[np.ndarray, dict]:
+    """He et al.'s guided filter: target fitted, window by window, as a line in guide; the fitted
+    lines averaged over the windows that hold each pixel. Windows wrap in longitude and are cut
+    at the poles (mars_omega.box_mean)."""
+    size = 2 * GUIDED_RADIUS + 1
+    mean_g = mars_omega.box_mean(guide, size)
+    mean_t = mars_omega.box_mean(target, size)
+    var_g = mars_omega.box_mean(guide * guide, size) - mean_g * mean_g
+    cov = mars_omega.box_mean(guide * target, size) - mean_g * mean_t
+    a = cov / (np.maximum(var_g, 0) + GUIDED_EPS)
+    b = mean_t - a * mean_g
+    del mean_g, mean_t, var_g, cov
+    out = mars_omega.box_mean(a, size) * guide + mars_omega.box_mean(b, size)
+    record = {
+        "slopeQuantiles": {
+            f"q{q}": round(float(np.percentile(a, q)), 3) for q in (1, 50, 99)
+        },
+        "pixelsAtFloor": int(np.sum(out < MIN_INFRARED)),
+    }
+    return np.maximum(out, MIN_INFRARED), record
+
+
+def against(values: np.ndarray, reference: np.ndarray) -> dict:
+    """How closely values follow reference: at 8 px/deg (OMEGA's 7.4 km TES cells) and at
+    1 px/deg (about the blend's window), within 60 deg of the equator and everywhere."""
+    out = {}
+    for ppd in (8, 1):
+        v = area_average(values, 360 * ppd, 180 * ppd)
+        r = area_average(reference, 360 * ppd, 180 * ppd)
+        lat = 90 - (np.arange(180 * ppd) + 0.5) / ppd
+        for limit in (60, 90):
+            m = (np.abs(lat) <= limit)[:, None] & np.ones_like(v, dtype=bool)
+            x, y = r[m], v[m]
+            relative = y / x - 1
+            out[f"{ppd}ppd.withinLatitude{limit}"] = {
+                "correlation": round(float(np.corrcoef(x, y)[0, 1]), 4),
+                "meanRelativeDifference": round(float(relative.mean()), 4),
+                "rmsRelativeDifference": round(float(np.sqrt(np.mean(relative**2))), 4),
+            }
+    return out
+
+
 def build() -> dict:
     distances = {f: angular_distance(*c, WIDTH, HEIGHT) for f, c in FACES.items()}
-    bands: dict[str, np.ndarray] = {}
+    hrsc: dict[str, np.ndarray] = {}
     agreement: dict[str, dict] = {}
     for name, (code, _) in FILTERS.items():
-        bands[name], agreement[name] = mosaic(code, WIDTH, HEIGHT, distances)
-        print(f"{name}: {np.isfinite(bands[name]).mean():.4%} covered, faces agree to {agreement[name]['medianAbsoluteRelativeDifference']:.2%}", flush=True)
-    green = bands["green"]
-    if not all(np.isfinite(b).all() for b in bands.values()):
+        hrsc[name], agreement[name] = mosaic(code, WIDTH, HEIGHT, distances)
+        print(
+            f"{name}: {np.isfinite(hrsc[name]).mean():.4%} covered, faces agree to {agreement[name]['medianAbsoluteRelativeDifference']:.2%}",
+            flush=True,
+        )
+    del distances
+    if not all(np.isfinite(b).all() for b in hrsc.values()):
         raise RuntimeError("a pixel is unmeasured in some filter")
 
+    anchor, from_tes, anchor_record = mars_omega.filled_albedo(WIDTH, HEIGHT)
+    print("anchor ready", flush=True)
+    infrared = hrsc["infrared"].astype(np.float64)
+    blended, guided_record = guided(infrared, anchor)
+    print("blend ready", flush=True)
+    blend = {
+        "method": "guided filter (He, Sun and Tang 2013, IEEE TPAMI 35, 1397): guide HRSC 970 nm, target OMEGA 1.08 um with TES's fill",
+        "radiusPixels": GUIDED_RADIUS,
+        "windowDeg": round((2 * GUIDED_RADIUS + 1) * 360 / WIDTH, 3),
+        "eps": GUIDED_EPS,
+        "floor": MIN_INFRARED,
+        **guided_record,
+        "hrscInfraredAgainstOmega": against(infrared, anchor),
+        "blendAgainstOmega": against(blended, anchor),
+        "otherBands": "each HRSC band times blended(970) / HRSC(970): HRSC's own ratios to 970 nm, so the contrast falls toward blue as HRSC measured it",
+    }
+    del anchor
+    green = hrsc["green"] * (blended / infrared)
+
     master = encode(green)
-    trials = format_trials(master)
-    chosen = choose(trials)
+    webp = lossless_webp(master)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     albedo_out = OUT_DIR / "albedo.webp"
-    albedo_out.write_bytes(chosen["_data"])
-    (OUT_DIR / "albedo-source.png").unlink(missing_ok=True)
+    albedo_out.write_bytes(webp)
+    source_out = OUT_DIR / "albedo-source.png"
+    Image.fromarray(
+        np.where(from_tes > 0, np.clip(np.rint(255 * from_tes), 1, 255), 0).astype(
+            np.uint8
+        ),
+        mode="L",
+    ).save(source_out, optimize=True)
 
     k = WIDTH // COLOUR_WIDTH
-    coarse = {n: block_mean(b, k) for n, b in bands.items()}
+    coarse = {n: block_mean(b, k) for n, b in hrsc.items()}
     ratios = {n: coarse[n] / coarse["green"] for n in ("red", "blue", "infrared")}
     ranges = {
-        f"{FILTERS[n][1]}/530": [math.floor(float(r.min()) * 100) / 100, math.ceil(float(r.max()) * 100) / 100]
+        f"{FILTERS[n][1]}/530": [
+            math.floor(float(r.min()) * 100) / 100,
+            math.ceil(float(r.max()) * 100) / 100,
+        ]
         for n, r in ratios.items()
     }
     rgb = np.zeros((COLOUR_HEIGHT, COLOUR_WIDTH, 3), dtype=np.uint8)
@@ -290,7 +398,10 @@ def build() -> dict:
     Image.fromarray(rgb, mode="RGB").save(colour_out, optimize=True)
 
     green8 = green.astype(np.float64)
-    checks = [compare(green8, omega_8ppd(), "OMEGA 1.08 um Lambert albedo (SS-14 W3 part 1)"), compare(green8, tes_8ppd(), "TES bolometric albedo")]
+    checks = [
+        compare(green8, omega_8ppd(), "OMEGA 1.08 um Lambert albedo (SS-14 W3 part 1)"),
+        compare(green8, tes_8ppd(), "TES bolometric albedo"),
+    ]
 
     manifest = {
         "product": {
@@ -299,10 +410,12 @@ def build() -> dict:
             "files": "pipeline/hrsc_sources.json: 4 filters x 6 faces, SHA-256 pinned",
             "licence": SOURCES["licence"],
             "quantity": "reflectance per filter from a global colour model of relative colour within images, each filter calibrated to one observation area (Michael et al. 2025)",
-            "chosen": "owner: 2026-09-29 a long-term average; 2026-10-02 'HRSC for both' brightness and colour (docs/stories/SS-14.md)",
+            "chosen": "owner: 2026-09-29 a long-term average; 2026-10-02 'C. Guided blend': OMEGA's light and dark, HRSC's edges and colour (docs/stories/SS-14.md)",
             "faceAgreement": agreement,
             "shading": "images used with the illumination as acquired: some shading remains in the brightness, most on steep walls; the colour ratios cancel most of it",
         },
+        "anchor": anchor_record,
+        "blend": blend,
         "checks": checks,
         "conventions": {
             "projection": "equirectangular (simple cylindrical), sphere R = 3396.0 km (the source faces')",
@@ -316,7 +429,7 @@ def build() -> dict:
             "file": albedo_out.name,
             "width": WIDTH,
             "height": HEIGHT,
-            "values": f"HRSC reflectance at 530 nm, stored as byte = 255 sqrt(R / {MAX_REFLECTANCE})",
+            "values": f"reflectance at 530 nm: HRSC 530 nm x blended(970) / HRSC(970), stored as byte = 255 sqrt(R / {MAX_REFLECTANCE})",
             "encoding": {"curve": "sqrt", "maxReflectance": MAX_REFLECTANCE},
             "clippedPixels": int(np.sum(green > MAX_REFLECTANCE)),
             "medianReflectance": round(float(np.median(green)), 4),
@@ -325,28 +438,54 @@ def build() -> dict:
             "sha256": sha256(albedo_out),
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),
         },
+        "source": {
+            "file": source_out.name,
+            "width": WIDTH,
+            "height": HEIGHT,
+            "values": "0 where the large-scale level came from OMEGA, else the share of the pixel's anchor filled from TES, 1-255",
+            "pixelsWithTes": int(np.sum(from_tes > 0)),
+            "sha256": sha256(source_out),
+        },
         "colour": {
             "file": colour_out.name,
             "width": COLOUR_WIDTH,
             "height": COLOUR_HEIGHT,
             "bandsNm": [FILTERS[n][1] for n in ("blue", "green", "red", "infrared")],
-            "channels": "red = R(750)/R(530), green = R(440)/R(530), blue = R(970)/R(530), each byte linear over its range",
+            "channels": "red = R(750)/R(530), green = R(440)/R(530), blue = R(970)/R(530), each byte linear over its range; HRSC's own ratios, unchanged by the blend",
             "ranges": ranges,
-            "medianRatios": {f"{FILTERS[n][1]}/530": round(float(np.median(r)), 4) for n, r in ratios.items()},
+            "medianRatios": {
+                f"{FILTERS[n][1]}/530": round(float(np.median(r)), 4)
+                for n, r in ratios.items()
+            },
             "sha256": sha256(colour_out),
             "gpuBytesRGBA8WithMips": int(COLOUR_WIDTH * COLOUR_HEIGHT * 4 * 4 / 3),
         },
-        "formatChoice": {
-            "rule": f"smallest albedo at most {MAX_BYTES} bytes with PSNR >= {MIN_PSNR_DB} dB over all pixels (the Moon's rule)",
-            "chosen": chosen["format"],
-            "trials": [{k2: v for k2, v in t.items() if k2 != "_data"} for t in trials],
+        "format": {
+            "albedo": "lossless WebP, checked by decoding",
+            "bytes": len(webp),
+            "maxBytes": MAX_BYTES,
+            "decision": "owner, 2026-10-02: 'Lossless, 6.25 MB', after lossy WebP smeared Valles Marineris even at q95 (docs/stories/ss14-encoding-valles.png)",
         },
     }
-    (OUT_DIR / "albedo.json").write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
+    (OUT_DIR / "albedo.json").write_text(
+        json.dumps(manifest, indent=2, allow_nan=False) + "\n"
+    )
     return manifest
 
 
 if __name__ == "__main__":
     m = build()
-    print(json.dumps({"agreement": m["product"]["faceAgreement"], "checks": m["checks"], "colour": m["colour"]["medianRatios"]}, indent=1))
-    print(f"chose {m['formatChoice']['chosen']}; clipped {m['texture']['clippedPixels']}; median {m['texture']['medianReflectance']}")
+    print(
+        json.dumps(
+            {
+                "agreement": m["product"]["faceAgreement"],
+                "blend": m["blend"],
+                "checks": m["checks"],
+                "colour": m["colour"]["medianRatios"],
+            },
+            indent=1,
+        )
+    )
+    print(
+        f"albedo {m['format']['bytes']} bytes; clipped {m['texture']['clippedPixels']}; median {m['texture']['medianReflectance']}"
+    )

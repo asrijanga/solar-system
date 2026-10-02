@@ -147,14 +147,15 @@ jobs:
       # calibration from them and the committed texture and mask.
       - run: npm run pipeline:hapke
       - run: npm run pipeline:calibrate
-      # Mars's albedo is re-derived from its pinned OMEGA and TES maps (224 MB, cached; download
-      # re-verifies each file's SHA-256 either way).
+      # Mars's albedo is re-derived from its pinned OMEGA and TES maps and HRSC's 24 colour faces
+      # (978 MB, cached; download re-verifies each file's SHA-256 either way).
       - uses: actions/cache@v4
         with:
           path: |
             pipeline/.cache/mars-omega-albedo-r1080.img
             pipeline/.cache/mars-tes-albedo-8ppd.img
-          key: mars-albedo-${{ hashFiles('pipeline/mars.py') }}
+            pipeline/.cache/mars-hrsc-*.tif
+          key: mars-albedo-${{ hashFiles('pipeline/mars.py', 'pipeline/mars_omega.py', 'pipeline/hrsc_sources.json') }}
           restore-keys: mars-albedo-
       - run: npm run pipeline:mars
       # The Moon texture's 4.25 GB source is too large to fetch on every run; it is checked

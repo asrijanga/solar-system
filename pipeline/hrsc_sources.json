@@ -1,0 +1,80 @@
+{
+  "source": "Mars Express HRSC high-altitude global colour mosaic v1.0 (Michael et al. 2025, Icarus 425, 116350); data doi:10.17169/refubium-40624",
+  "base": "https://refubium.fu-berlin.de/bitstream/handle/fub188/40903/",
+  "licence": "Credit for HRSC data: ESA/DLR/FU Berlin (CC BY-SA 3.0 IGO)",
+  "pinned": "2026-10-02: SHA-256 at first retrieval; sizes checked against the server's Content-Length (no checksum is published)",
+  "files": {
+    "01-re-face_000.tif": {
+      "sha256": "062b16df971ed30993094b14f5a21382c5d6e1b473016821d146645e061fd383"
+    },
+    "01-re-face_090.tif": {
+      "sha256": "dc62a29b2b26c9fcc705eadfdeefb592a7df555efbd529a9a02cc5992d132f89"
+    },
+    "01-re-face_180.tif": {
+      "sha256": "1d1a43928fa9bc9325eea0dd9054dc2b004bc9081b1a481a175c61faace5a30b"
+    },
+    "01-re-face_270.tif": {
+      "sha256": "59fdd7159aa3d954791402fd06fba2007af03576dbbeb85f93f122df564dc795"
+    },
+    "01-re-face_N.tif": {
+      "sha256": "1453c66c0841245424d070beb1f855f19352c2032f74bbdac7af43a8644ee992"
+    },
+    "01-re-face_S.tif": {
+      "sha256": "f6f61e8ddd760f8f3bc313d29b2379aeec68fe393250967bbada50016a4ba1ad"
+    },
+    "02-gr-face_000.tif": {
+      "sha256": "31b02f34c3b1c66a51a811855babedd5ea85019274f9938303fe7868b14c2752"
+    },
+    "02-gr-face_090.tif": {
+      "sha256": "af4d687208d8bd252f05d78379ce48f6ce75d79c0d3a6763e6d1ce53b1c56cd9"
+    },
+    "02-gr-face_180.tif": {
+      "sha256": "a2d5678a477b5f39288cc97e44a50a311bb1715cbe1e29f9a50335d1e1570980"
+    },
+    "02-gr-face_270.tif": {
+      "sha256": "48dea4cf88b6269c06d0703030f128f7808d801e3c7651b3f0ccb7d771d7b640"
+    },
+    "02-gr-face_N.tif": {
+      "sha256": "7e1f467cd9fa3c0d0729427bc2bade6c68364777a5751ebcb1f67834a610e55f"
+    },
+    "02-gr-face_S.tif": {
+      "sha256": "db05d600e8670efbe4d99e30139cacaac96e53f99658ce75a517d7fe64dab814"
+    },
+    "03-bl-face_000.tif": {
+      "sha256": "2bc67e186f1f9935694e54144490dbd49b0b157b1e3b3e296e73192f0965711a"
+    },
+    "03-bl-face_090.tif": {
+      "sha256": "4af3d6fa1201bb7767b48e65643f9a9378b40bb679fa3056dbf997c9071eecdb"
+    },
+    "03-bl-face_180.tif": {
+      "sha256": "5522d6182ac534675ce1ef4045e090c8d3196f82106f29d7bb7d07f93d563c2a"
+    },
+    "03-bl-face_270.tif": {
+      "sha256": "ba14a17fcf4c7842551548effb599e68dea058dae2e7871bc0642796faac3423"
+    },
+    "03-bl-face_N.tif": {
+      "sha256": "527d89eff0a73a5ea25c0cc3189a4c9bbbff3eb4a0501000b5385235b28d42f7"
+    },
+    "03-bl-face_S.tif": {
+      "sha256": "f8eba829ce11a82d54b061b7f565170bed639b89d1922e88fa2ba6009bfe38f1"
+    },
+    "04-ir-face_000.tif": {
+      "sha256": "573f4c57d8050d43ce1452a4bb7dbaafe0076b7ec99b920b6fb413abe99d5f41"
+    },
+    "04-ir-face_090.tif": {
+      "sha256": "d23b4724ef05b0386718e009fd0e4daacf8bf70b22ce4c569f239e609537bab9"
+    },
+    "04-ir-face_180.tif": {
+      "sha256": "e4bc6443d117533f4954ba2de882dfc34acad47c6afffc4a54a8aa8192efb3a6"
+    },
+    "04-ir-face_270.tif": {
+      "sha256": "df6e0e0cbd4c1dc24b739d1993583c57e67bb782bd1c8e714124c2339dba7998"
+    },
+    "04-ir-face_N.tif": {
+      "sha256": "f2857a59ac247bb34e010201baaba78ef4669eed21f1d73239f56390e1c4e64b"
+    },
+    "04-ir-face_S.tif": {
+      "sha256": "ed74b6b84b3b0982577eab47a5c040743597fa7a60e21a8df6ec55169a04215c"
+    }
+  }
+}

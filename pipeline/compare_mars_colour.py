@@ -104,21 +104,32 @@ def display(bands: np.ndarray, green: np.ndarray, exposure: float) -> np.ndarray
     return to_srgb(exposure * green[None] * tint).transpose(1, 2, 0)
 
 
-def viking(dst_crs, dst_transform, size, lon, lat, resampling) -> np.ndarray:
-    """Reads only the rows it needs (the file is 12.7 GB of full-width strips), then reprojects
-    locally. The hemisphere is read by decimation (nearest), the close-up by area average."""
+def read_remote(path: str, lon, lat, size, resampling, metres_per_degree: float | None) -> tuple[np.ndarray, object, object]:
+    """Reads only the region it needs, at about twice the output size (out_shape lets GDAL use the
+    file's overviews where it has them), for a local reprojection afterwards."""
     from rasterio.windows import from_bounds as window_from_bounds
 
-    with rasterio.open(USGS + "Mars_Viking_MDIM21_ClrMosaic_global_232m.tif") as src:
-        k = math.pi / 180 * 3396190.0
+    with rasterio.open(path) as src:
+        k = metres_per_degree or 1.0
         window = window_from_bounds(lon[0] * k, lat[0] * k, lon[1] * k, lat[1] * k, src.transform)
-        shape = (3, size[1] * 2, size[0] * 2)
-        data = src.read(window=window, out_shape=shape, resampling=resampling).astype(np.float64)
-        src_transform = src.window_transform(window) * rasterio.Affine.scale(window.width / shape[2], window.height / shape[1])
-        src_crs = src.crs
-    out = np.full((3, size[1], size[0]), np.nan)
-    for i in range(3):
-        reproject(data[i], out[i], src_transform=src_transform, src_crs=src_crs, dst_transform=dst_transform, dst_crs=dst_crs, dst_nodata=np.nan, resampling=Resampling.average)
+        shape = (src.count, size[1] * 2, size[0] * 2)
+        data = src.read(window=window, out_shape=shape, resampling=resampling, masked=True).astype(np.float64).filled(np.nan)
+        transform = src.window_transform(window) * rasterio.Affine.scale(window.width / shape[2], window.height / shape[1])
+        return data, transform, src.crs
+
+
+def local_warp(data, src_transform, src_crs, dst_crs, dst_transform, size) -> np.ndarray:
+    out = np.full((data.shape[0], size[1], size[0]), np.nan)
+    for i in range(data.shape[0]):
+        reproject(data[i], out[i], src_transform=src_transform, src_crs=src_crs, src_nodata=np.nan, dst_transform=dst_transform, dst_crs=dst_crs, dst_nodata=np.nan, resampling=Resampling.average)
+    return out
+
+
+def viking(dst_crs, dst_transform, size, lon, lat, resampling) -> np.ndarray:
+    """The file is 12.7 GB of full-width strips with no overviews: the hemisphere is read by
+    decimation (nearest), the close-up by area average."""
+    data, transform, crs = read_remote(USGS + "Mars_Viking_MDIM21_ClrMosaic_global_232m.tif", lon, lat, size, resampling, math.pi / 180 * 3396190.0)
+    out = local_warp(data, transform, crs, dst_crs, dst_transform, size)
     bands = []
     for b in out:
         lo, hi = np.nanpercentile(b, [0.5, 99.5])
@@ -126,8 +137,10 @@ def viking(dst_crs, dst_transform, size, lon, lat, resampling) -> np.ndarray:
     return (np.stack(bands) * 255).astype(np.uint8).transpose(1, 2, 0)
 
 
-def relief(dst_crs, dst_transform, size) -> np.ndarray:
-    dem = warp(USGS + "Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif", dst_crs, dst_transform, size)[0]
+def relief(dst_crs, dst_transform, size, lon, lat) -> np.ndarray:
+    """The 11.4 GB DEM read through its overviews, then lit from the west at 30 degrees."""
+    data, transform, crs = read_remote(USGS + "Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif", lon, lat, size, Resampling.average, None)
+    dem = local_warp(data, transform, crs, dst_crs, dst_transform, size)[0]
     h = np.nan_to_num(dem, nan=float(np.nanmean(dem)))
     px = abs(dst_transform.a) * (math.pi / 180 * SPHERE if dst_crs.is_geographic else 1)
     gy, gx = np.gradient(h, px, px)
@@ -139,13 +152,21 @@ def relief(dst_crs, dst_transform, size) -> np.ndarray:
 
 
 def views(dst_crs, dst_transform, size, face: str, lon, lat, resampling) -> list[np.ndarray]:
+    import time
+
+    t0 = time.time()
     h = hrsc(face, dst_crs, dst_transform, size)
     om = omega(dst_crs, dst_transform, size)
+    print(f"  HRSC and OMEGA {time.time() - t0:.0f} s", flush=True)
     # OMEGA carried to 530 nm by HRSC's own green/infrared ratio (970 nm, next to OMEGA's 1080).
     green_from_omega = om * h[1] / h[3]
     exposure = 0.5 / float(np.nanmedian(h[1]))
-    print(f"  median green: HRSC {np.nanmedian(h[1]):.4f}, OMEGA-carried {np.nanmedian(green_from_omega):.4f}")
-    return [viking(dst_crs, dst_transform, size, lon, lat, resampling), display(h, h[1], exposure), display(h, green_from_omega, exposure), relief(dst_crs, dst_transform, size)]
+    print(f"  median green: HRSC {np.nanmedian(h[1]):.4f}, OMEGA-carried {np.nanmedian(green_from_omega):.4f}", flush=True)
+    v = viking(dst_crs, dst_transform, size, lon, lat, resampling)
+    print(f"  Viking {time.time() - t0:.0f} s", flush=True)
+    r = relief(dst_crs, dst_transform, size, lon, lat)
+    print(f"  relief {time.time() - t0:.0f} s", flush=True)
+    return [v, display(h, h[1], exposure), display(h, green_from_omega, exposure), r]
 
 
 def main(out: str) -> None:
@@ -160,9 +181,9 @@ def main(out: str) -> None:
     with rasterio.open(HRSC / "01-re-face_270.tif") as f:
         ortho_crs, ortho_size = f.crs, (700, 700)
         ortho_transform = from_bounds(*f.bounds, *ortho_size)
-    print("hemisphere 270 E")
+    print("hemisphere 270 E", flush=True)
     rows.append(views(ortho_crs, ortho_transform, ortho_size, "270", (-140.0, -40.0), (-50.0, 50.0), Resampling.nearest))
-    print("Valles Marineris")
+    print("Valles Marineris", flush=True)
     crs, transform = lonlat_grid(*CLOSE)
     rows.append(views(crs, transform, CLOSE[2], "270", CLOSE[0], CLOSE[1], Resampling.average))
 

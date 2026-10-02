@@ -598,6 +598,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 | SS-9 | As a learner, I want a visible vertical exaggeration control, so that I understand how flat worlds really are | Open |
 | SS-10 | As a learner, I want to zoom in and have detail sharpen, so that I can study one crater closely | Shipped: streamed terrain, 670 m everywhere on the website |
 | SS-10d | As a learner, I want the website's relief everywhere to be measured, not interpolated between laser tracks | Shipped 2026-09-29: levels 0–7 from SLDEM2015 (LOLA with Kaguya stereo) within 60°, same size (docs/stories/SS-10d.md) |
+| SS-10e | As a learner, I want the Moon whole every time, so that a dropped download never leaves a hole in it | Shipped 2026-10-02: tile downloads retried, and failed tiles loaded again later; the black square on the owner's iPhone and iPad (docs/stories/SS-10e.md) |
 | SS-10b | As a learner, I want detail below the measurements, labelled as an approximation | Shipped, local mode only |
 | SS-10c | As a learner, I want the whole Moon at full measured detail without anyone paying for hosting | Shipped: `npm run local` |
 | SS-11 | As a learner, I want to descend to a few kilometres and hover, so that I feel the scale of the terrain | Partly: tilt and ground-following; camera-relative rendering open |

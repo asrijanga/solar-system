@@ -10,3 +10,5 @@ pipeline/.venv/
 pipeline/.cache/
 public/terrain/
 .cache/
+# Written by pipeline/timeline.py, which CI re-runs and diffs.
+test/fixtures/moon-timeline-truth.json

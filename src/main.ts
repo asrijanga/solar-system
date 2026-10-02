@@ -28,7 +28,9 @@ import {
   maxTiltDeg,
   moonViewPose,
   type MoonEphemeris,
+  type MoonEpoch,
 } from './core/moon';
+import { epochAt, type TimelineManifest } from './core/timeline';
 import {
   orbitAlongView,
   orbitHeading,
@@ -101,8 +103,18 @@ const params = new URLSearchParams(location.search);
 /** Set by the headless harness: `?capture=<viewpoint id>`. */
 const captureId = params.get('capture');
 const debug = params.has('debug');
-/** `?epoch=full` shows the full Moon; the default is the app viewpoint's first quarter. */
-const epochParam: MoonEpochId | null = params.get('epoch') === 'full' ? 'full-2026-01' : null;
+/**
+ * The page opens at the current moment (owner, 2026-10-02, docs/stories/SS-13f.md). `?epoch=quarter`
+ * and `?epoch=full` show the two fixed instants instead: first quarter, when Earth's real face was
+ * measured, and the full Moon. Captures always use their viewpoint's own fixed instant.
+ */
+const epochChoice = params.get('epoch');
+const epochParam: MoonEpochId | null =
+  epochChoice === 'full'
+    ? 'full-2026-01'
+    : epochChoice === 'quarter'
+      ? 'first-quarter-2026-01'
+      : null;
 /**
  * `?detail=approx`: below the finest measurement, the labelled approximation
  * (docs/stories/SS-10b.md), served only by `npm run local`. Off unless asked for; never in a check.
@@ -237,6 +249,16 @@ interface Stage {
   readonly bodyToScene: readonly number[] | null;
 }
 
+/** The Moon at the moment the page opened, from the SPICE timeline; null outside its span. */
+async function epochNow(): Promise<MoonEpoch | null> {
+  const [manifest, bin] = await Promise.all([
+    loadJson<TimelineManifest>('data/moon/timeline.json'),
+    fetch(siteUrl('data/moon/timeline.bin')),
+  ]);
+  if (!bin.ok) throw new Error(`timeline.bin failed to load: HTTP ${bin.status}`);
+  return epochAt(manifest, new Float32Array(await bin.arrayBuffer()), Date.now());
+}
+
 async function loadJson<T>(path: string): Promise<T> {
   const response = await fetch(siteUrl(path));
   if (!response.ok) throw new Error(`${path} failed to load: HTTP ${response.status}`);
@@ -327,7 +349,11 @@ async function createStage(
         loadJson<{ landmarks: Landmark[] }>('data/moon/landmarks.json'),
         loadLabelFont(siteUrl),
       ]);
-      const epoch = findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
+      // Now, unless a fixed instant was asked for; outside the timeline's span, the viewpoint's.
+      const now = captureId === null && epochParam === null ? await epochNow() : null;
+      const epoch =
+        now ?? findEpoch(ephemeris, (captureId === null ? epochParam : null) ?? setup.epoch);
+      const nowOutOfSpan = captureId === null && epochParam === null && now === null;
       const radiusKm = ephemeris.body.radiiKm[0];
       const evenLight = uniform(setup.lighting === 'even' ? 1 : 0);
       const earthshineBoost = uniform(
@@ -420,7 +446,10 @@ async function createStage(
         terrainLayer: layer?.name ?? null,
         approximated: layer?.approximated ?? false,
         caption:
-          `The Moon from Earth · ${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°` +
+          `The Moon from Earth · ${epoch.id === 'now' ? 'now, ' : ''}${when} UTC · phase angle ${epoch.phaseAngleDeg.toFixed(1)}°` +
+          (nowOutOfSpan
+            ? ' · today is outside the 2026-2030 timeline, so a fixed date is shown'
+            : '') +
           // `npm run local` serves the whole Moon at full measured detail (tools/local/server.ts).
           (layer?.name.startsWith('moon-local') === true
             ? ' · full measured detail, streamed locally'
@@ -1058,7 +1087,7 @@ const ABOUT = [
   "Shape: the surface is polygons, every corner on a height measured by LOLA, the Lunar Reconnaissance Orbiter's laser altimeter. Zoom in and finer polygons stream in: vertices about 670 m apart everywhere, 41 m around the crater Albategnius from LOLA's finest data, and 10 m on its floor and central peak from the stereo cameras of Japan's Kaguya orbiter. Slopes catch the Sun and shade away from it; at full Moon the relief nearly vanishes, as it does in reality. Heights are true scale. Shadows cast across the ground are not drawn yet.",
   'Orbit: flies from wherever you are looking. Turn the Moon to any spot and pinch or scroll to choose the height first; Orbit starts over the point below you and flies towards the top of your screen, at the real circular speed for that height, and never below the height the terrain stays sharp from. Start over the far side flying towards the near side to watch Earth rise ahead.',
   'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Each label rises and sets with its landmark, dims on the night side, and small features wait until you are close enough for them to matter.',
-  'Earth: where it really is at this date, at its measured size, turned as it really was. On 26 January 2026 at 05:00 UTC it is Earth as the Himawari-9 (JMA) and GOES-18 (NOAA) weather satellites measured it at that moment: the real clouds, oceans, land and blue air, in colour, cross-calibrated and blended. They saw it from other directions than the Moon does, so cloud tops are approximate and the glint of the Sun on the sea that the Moon would see is missing. On 3 January (full Moon) it is still a plain sphere of its measured brightness (geometric albedo 0.434, NASA): that date needs Meteosat data.',
+  'Earth: where it really is at this date, at its measured size, turned as it really was. On 26 January 2026 at 05:00 UTC it is Earth as the Himawari-9 (JMA) and GOES-18 (NOAA) weather satellites measured it at that moment: the real clouds, oceans, land and blue air, in colour, cross-calibrated and blended. They saw it from other directions than the Moon does, so cloud tops are approximate and the glint of the Sun on the sea that the Moon would see is missing. At any other moment, now included, it is a plain sphere of its measured brightness (geometric albedo 0.434, NASA): no satellite image of that moment is built into the site yet.',
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon. How low you can go depends on how finely the ground beneath was measured.',
   'Detail (local mode only): measured shows only measurements. + approximation adds, below about 10 m, small craters and roughness generated from the Moon\u2019s statistics: crater numbers and shapes from NASA\u2019s lunar environment specification, roughness from NASA\u2019s 2 m stereo terrain models. The surface still passes through every measurement, but these are not the real craters there, and the screen says so while it is on.',
 ];
@@ -1078,14 +1107,32 @@ function createMoonControls(
   const text = document.createElement('p');
   text.textContent = caption;
 
-  const full = epochParam !== null;
-  const link = document.createElement('a');
-  const next = new URLSearchParams(location.search);
-  if (full) next.delete('epoch');
-  else next.set('epoch', 'full');
-  const query = next.toString();
-  link.href = query === '' ? location.pathname : `?${query}`;
-  link.textContent = full ? 'First quarter' : 'Full Moon';
+  // Now, or one of the two fixed instants (SS-13f). The one shown is plain text, the others links.
+  const dates = document.createElement('span');
+  dates.className = 'dates';
+  const choices: readonly [string | null, string][] = [
+    [null, 'Now'],
+    ['quarter', 'First quarter (26 Jan 2026)'],
+    ['full', 'Full Moon (3 Jan 2026)'],
+  ];
+  for (const [value, label] of choices) {
+    const current =
+      (value === null && epochParam === null) ||
+      (value === 'quarter' && epochParam === 'first-quarter-2026-01') ||
+      (value === 'full' && epochParam === 'full-2026-01');
+    const next = new URLSearchParams(location.search);
+    if (value === null) next.delete('epoch');
+    else next.set('epoch', value);
+    const query = next.toString();
+    const item = document.createElement(current ? 'span' : 'a');
+    if (item instanceof HTMLAnchorElement) {
+      item.href = query === '' ? location.pathname : `?${query}`;
+    } else {
+      item.setAttribute('aria-current', 'true');
+    }
+    item.textContent = label;
+    dates.append(item);
+  }
 
   const notes = document.createElement('div');
   const lighting = createToggle(
@@ -1108,7 +1155,7 @@ function createMoonControls(
   );
   const row = document.createElement('div');
   row.className = 'row';
-  row.append(link, lighting, earthshine, stars);
+  row.append(dates, lighting, earthshine, stars);
 
   // Orbit mode: a random real orbit, flown automatically; time can be sped up, labelled.
   const orbitLine = document.createElement('p');

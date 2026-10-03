@@ -1,0 +1,36 @@
+{
+  "source": "Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MARS_nomenclature_center_pts.zip",
+  "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MARS_nomenclature_center_pts.zip",
+  "sha256": "2f42824de1f7c41b7973eefc250fb86ed1e711c6d24b5c7b4c458a1e08741c9f",
+  "retrieved": "2026-10-02",
+  "longitudeConvention": "Gazetteer gives 0 to 360, 'Positive East'. The *EastDeg fields keep that; lonDeg, westDeg and eastDeg are the same longitudes in -180 to 180, the terrain's convention.",
+  "features": [
+    {
+      "name": "Olympus Mons",
+      "type": "Mons, montes",
+      "gazetteer": "http://planetarynames.wr.usgs.gov/Feature/4453",
+      "latDeg": 18.6528,
+      "lonEastDeg": 226.1975,
+      "lonDeg": -133.8025,
+      "diameterKm": 610.13,
+      "box": {
+        "southDeg": 13.4818,
+        "northDeg": 23.676,
+        "westDeg": -139.2433,
+        "eastDeg": -127.8016
+      },
+      "expect": "the highest point of Mars"
+    },
+    {
+      "name": "Hellas Planitia",
+      "type": "Planitia, planitiae",
+      "gazetteer": "http://planetarynames.wr.usgs.gov/Feature/2432",
+      "latDeg": -42.4301,
+      "lonEastDeg": 70.5025,
+      "lonDeg": 70.5025,
+      "diameterKm": 2299.16,
+      "box": { "southDeg": -55.4167, "northDeg": -27.863, "westDeg": 45.5822, "eastDeg": 96.1171 },
+      "expect": "the lowest point of Mars"
+    }
+  ]
+}

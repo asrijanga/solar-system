@@ -32,7 +32,7 @@
   "registration": "one height offset per strip: the median of MOLA minus HRSC over the bins with shots inside it",
   "rejection": "fit RMS more than 3.0 x the median over all strips (owner, 2026-10-02)",
   "stripsUsed": 1342,
-  "medianFitRmsM": 26.12,
+  "medianFitRmsM": 26.115,
   "offsetsM": {
    "p5": -2.8,
    "median": 0.1,

@@ -901,7 +901,7 @@ export const viewpoints: readonly Viewpoint[] = [
       'Negative control: the same view with the map mirrored east–west. The Gazetteer checks must fail, proving mars-from-earth can see a mirrored Mars.',
     scene: 'mars',
     body: { ...MARS_DISC, mirrored: true },
-    bodyChecks: MARS_GAZETTEER_CHECKS,
+    bodyChecks: [MARS_DISC_MAGNITUDE, ...MARS_GAZETTEER_CHECKS],
     negativeControl: true,
   },
   {

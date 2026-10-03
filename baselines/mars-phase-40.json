@@ -1,0 +1,95 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "full-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": -8.9,
+        "latDeg": -8.5
+      },
+      "distanceKm": 135847.6,
+      "fovDeg": 3.6,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false
+    },
+    "bodyChecks": [
+      {
+        "kind": "disc-magnitude",
+        "name": "whole-disc V magnitude",
+        "toleranceMag": 0.06
+      },
+      {
+        "kind": "night",
+        "name": "night side black",
+        "minDepthDeg": 1,
+        "minFraction": 0.99
+      }
+    ],
+    "negativeControl": false,
+    "id": "mars-phase-40",
+    "description": "Mars at 40° phase, seen from over 8.9°W 8.5°S on 3 January 2026: the scattering law fitted to Eq. 6 where it is steep, the whole-disc brightness checked again, and the night side black.",
+    "scene": "mars"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "whole-disc V magnitude: V(1, 39.5°) drawn -0.877, Mallama & Hilton -0.892 (+0.015 mag)",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "night side black: 48694 night pixels",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "d7c1effc0f6b0078e515ae7ab00c2c817eda5afe",
+    "dirty": false
+  }
+}

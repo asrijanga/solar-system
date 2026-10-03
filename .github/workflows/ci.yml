@@ -156,7 +156,8 @@ jobs:
             pipeline/.cache/mars-omega-albedo-r1080.img
             pipeline/.cache/mars-tes-albedo-8ppd.img
             pipeline/.cache/mars-hrsc-*.tif
-          key: mars-albedo-${{ hashFiles('pipeline/mars.py', 'pipeline/mars_omega.py', 'pipeline/hrsc_sources.json') }}
+            pipeline/.cache/hst
+          key: mars-albedo-${{ hashFiles('pipeline/mars.py', 'pipeline/mars_omega.py', 'pipeline/mars_hst.py', 'pipeline/hrsc_sources.json', 'pipeline/hst_sources.json') }}
           restore-keys: mars-albedo-
       - run: npm run pipeline:mars
       # Mars's scattering law, fitted to its measured brightness (docs/stories/SS-14.md, W7).

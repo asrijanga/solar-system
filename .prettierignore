@@ -17,3 +17,5 @@ dist-mars/
 # Written by pipeline/mars_terrain.py as it pins each source file.
 pipeline/hrsc_dtm_sources.json
 pipeline/mola64_sources.json
+# Written by src/core/hapkeFixture.test.ts (HAPKE_FIXTURE=write) for pipeline/test_hapke.py.
+test/fixtures/hapke-values.json

@@ -408,6 +408,28 @@ interface Model {
   readonly id: string;
   readonly url: string;
   readonly box: Box;
+  /** The four corners of its footprint (index CORNER1-4), latitude and longitude 0-360 E. */
+  readonly corners: readonly (readonly [number, number])[];
+}
+
+/** Whether a point lies inside a footprint's quadrilateral, longitudes taken near its first corner. */
+export function insideFootprint(
+  corners: readonly (readonly [number, number])[],
+  lat: number,
+  lon: number,
+): boolean {
+  const ref = corners[0]?.[1] ?? 0;
+  const near = (v: number) => ref + ((((v - ref) % 360) + 540) % 360) - 180;
+  const x = near(lon);
+  let inside = false;
+  for (let i = 0, j = corners.length - 1; i < corners.length; j = i++) {
+    const [yi, xiRaw] = corners[i] ?? [0, 0];
+    const [yj, xjRaw] = corners[j] ?? [0, 0];
+    const xi = near(xiRaw);
+    const xj = near(xjRaw);
+    if (yi > lat !== yj > lat && x < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
 }
 
 /** HiRISE DTMs from the archive's cumulative index (`PDS/INDEX/DTMCUMINDEX.TAB`). */
@@ -418,10 +440,12 @@ export function hiriseModels(indexText: string): Model[] {
     if (cells.length < 19 || cells[11] !== 'DTM') continue;
     const [south, north, west, east] = [15, 16, 17, 18].map((i) => Number(cells[i]));
     const path = cells[1] ?? '';
+    const corners = [26, 28, 30, 32].map((i) => [Number(cells[i]), Number(cells[i + 1])] as const);
     out.push({
       id: cells[4] ?? path,
       url: `${HIRISE}${path}`,
       box: { south: south ?? 0, north: north ?? 0, west: west ?? 0, east: east ?? 0 },
+      corners,
     });
   }
   return out;
@@ -705,9 +729,9 @@ export class MarsLadder {
 
   /**
    * Before a HiRISE model is used it must sit on MOLA (owner, 2026-10-03, "Moon's rule"): its
-   * mean difference from MOLA's 128 px/deg topography, over the bins inside its bounding box
-   * that hold laser shots, within 5 m, with the model measured in at least half of those bins.
-   * Verdicts are kept on disk with their numbers.
+   * mean difference from MOLA's 128 px/deg topography, over the bins inside its footprint (the
+   * index's four corners) that hold laser shots, within 5 m, with the model measured in at
+   * least half of those bins. Verdicts are kept on disk with their numbers.
    */
   private verdict(model: Model): Promise<Verdict> {
     const known = this.verdicts[model.id];
@@ -726,8 +750,11 @@ export class MarsLadder {
     const lon: number[] = [];
     for (let r = Math.ceil((90 - north) * 128 - 0.5); 90 - (r + 0.5) / 128 >= south; r++) {
       for (let c = Math.ceil(west * 128 - 0.5); (c + 0.5) / 128 <= east; c++) {
-        lat.push(90 - (r + 0.5) / 128);
-        lon.push((c + 0.5) / 128);
+        const la = 90 - (r + 0.5) / 128;
+        const lo = (c + 0.5) / 128;
+        if (!insideFootprint(model.corners, la, lo)) continue;
+        lat.push(la);
+        lon.push(lo);
       }
     }
     const la = Float64Array.from(lat);

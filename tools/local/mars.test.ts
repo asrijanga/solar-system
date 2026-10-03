@@ -4,6 +4,7 @@ import {
   MAX_LEVEL,
   hiriseModels,
   hrscStrips,
+  insideFootprint,
   marsAvailability,
   megdr128,
   sampleRaster,
@@ -54,6 +55,13 @@ describe('Mars local mode', () => {
       west: 326.323,
       east: 326.446,
     });
+    // The footprint is a tilted strip inside that box: its centre is in, a corner of the box
+    // is not, and longitudes match either side of 0 E.
+    const corners = models[0]?.corners ?? [];
+    expect(corners).toHaveLength(4);
+    expect(insideFootprint(corners, -23.84, 326.385)).toBe(true);
+    expect(insideFootprint(corners, -23.715, 326.44)).toBe(false);
+    expect(insideFootprint(corners, -23.84, 326.385 - 360)).toBe(true);
   });
 
   it('uses the strips the website used, with their fitted offsets, and none it left out', () => {

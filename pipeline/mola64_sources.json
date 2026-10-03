@@ -7,13 +7,25 @@
   "megc00n180gb.img": "87b50295c76f930c71419c1ba6a0bc5a5e5bda53db8bb764bc2226680a24c088",
   "megc90n000gb.img": "b30bf5913d4716f1c3d89b7fe55a1885b6511ab0b90d9e67e354c3934892c49b",
   "megc90n180gb.img": "9f452b6aaac7c15d2c7d5ba940e33cce864e2e45f9685ef0db2333768bfd4817",
-  "megr00n000gb.img": "e7efab659ceecb5cfe6a03dd4c9ff910dc814004ec0cff2bbe81d03df00f3c71",
-  "megr00n180gb.img": "47869677db4215c4e97b056f2177fe5d7a28018ba3f3abe60f550edeb9d0058b",
-  "megr90n000gb.img": "a23d70033211335092ba6c02f51d24e74207323009aadacf04fcd4a84b02497b",
-  "megr90n180gb.img": "ba8c17534342b2bf84eee8754652aa896ce98416b839a81cc1ecc296ab7ad927",
   "megt00n000gb.img": "59313efe92045324503e54f130ddc29096668523ae8dd0e6d64553cc8144c193",
   "megt00n180gb.img": "6cec4b2a319dc3f1d699a73cef303e097bcd9cd490ff85c412c725e1d81ae4a3",
   "megt90n000gb.img": "95b492b0670e0f572736820c13c3907a5294a04aa21cbbddd30e038bbd46f1b6",
   "megt90n180gb.img": "72c9ea46b2e2485718cddfc0041fec76d9024020d93d6ddf985ac727988d7e9a"
+ },
+ "areoid": {
+  "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/mega90n000eb.img",
+  "sha256": "e80333b01489e66ebf20ac83ec7e130bd5a03f0c3f98f8f7b8d5c054cd6ad239",
+  "label": "MEGA90N000EB.LBL: the areoid radius, MSB 16-bit metres + OFFSET 3396000, 2880 x 5760, 16 px/deg, SIMPLE CYLINDRICAL, pixel-registered from 90 N and 0 E",
+  "pinned": "SHA-256 at first retrieval, 2026-10-03"
+ },
+ "polar": {
+  "base": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/polar/",
+  "note": "Beyond 88 degrees the cylindrical MEGDR has laser shots in 1.5% of its bins (measured 2026-10-03) and departs from these polar grids by 300-500 m; they add MOLA's off-nadir polar shots. 128 px/deg at the pole, 10240 x 10240, POLAR STEREOGRAPHIC per DSMAP_POLAR.CAT; megt MSB unsigned 16-bit, metres = 0.25 v - 8000; megc unsigned bytes. Pinned at first retrieval, 2026-10-03",
+  "files": {
+   "megt_n_128_1.img": "e8fac6e99f9ee3c2c418a98599fb8369dd3ca72a84fdb6504756c7ae082de423",
+   "megt_s_128_1.img": "1dc9725eb018337ed73120a11eba8ef17253ce238373109a4f1ca37522209c96",
+   "megc_n_128.img": "813e02ceb93ebb7ba8775f61406dc95f8da0fd354c58824ed8e3be3a56979275",
+   "megc_s_128.img": "68d83891f543ca086f1dd4efce6e0a946e8a74b8dc3bdc306d052511a6a7e452"
+  }
  }
 }

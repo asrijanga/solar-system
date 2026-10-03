@@ -15,7 +15,8 @@ import {
   statSync,
 } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -29,12 +30,20 @@ export interface FileSpec {
   readonly url: string;
   readonly rows: number;
   readonly cols: number;
-  /** 32-bit little-endian float km (LOLA), or 16-bit big-endian integer metres (Kaguya). */
-  readonly dtype: 'f32le-km' | 'i16be-m';
+  /**
+   * 32-bit little-endian float km (LOLA); 16-bit big-endian integer metres (Kaguya; Mars's MOLA
+   * MEGDR and HRSC); 16-bit big-endian unsigned, metres = 0.25 v - 8000 (MOLA's polar MEGDR);
+   * unsigned bytes (MOLA's shot counts); 32-bit little-endian float metres (HiRISE).
+   */
+  readonly dtype: 'f32le-km' | 'i16be-m' | 'u16be-q' | 'u8' | 'f32le-m';
   /** A sample value meaning "not measured". */
   readonly nodata: number | null;
   /** Downloaded whole: the server ignores ranges (JAXA DARTS), or the file is small. */
   readonly whole: boolean;
+  /** Bytes before the image: an attached label (HRSC, HiRISE). 0 when absent. */
+  readonly offset?: number;
+  /** A pinned SHA-256, checked on a whole download (Mars's HRSC strips). */
+  readonly sha256?: string;
 }
 
 /** A product: one or more files forming one grid over its coverage. */
@@ -269,7 +278,12 @@ export class BlockStore {
   }
 
   private bytesPer(file: FileSpec): number {
-    return file.dtype === 'f32le-km' ? 4 : 2;
+    return file.dtype === 'f32le-km' || file.dtype === 'f32le-m' ? 4 : file.dtype === 'u8' ? 1 : 2;
+  }
+
+  /** The file's size its label implies: the label before the image, then rows x columns. */
+  private size(file: FileSpec): number {
+    return (file.offset ?? 0) + file.rows * file.cols * this.bytesPer(file);
   }
 
   private decode(
@@ -281,10 +295,26 @@ export class BlockStore {
   ): void {
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     for (let i = 0; i < n; i++) {
-      const v =
-        file.dtype === 'f32le-km'
-          ? view.getFloat32(i * 4, true) * 1000
-          : view.getInt16(i * 2, false);
+      let v: number;
+      switch (file.dtype) {
+        case 'f32le-km':
+          v = view.getFloat32(i * 4, true) * 1000;
+          break;
+        case 'i16be-m':
+          v = view.getInt16(i * 2, false);
+          break;
+        case 'u16be-q':
+          v = view.getUint16(i * 2, false) * 0.25 - 8000;
+          break;
+        case 'u8':
+          v = view.getUint8(i);
+          break;
+        case 'f32le-m':
+          v = view.getFloat32(i * 4, true);
+          // HiRISE's MISSING_CONSTANT 16#FF7FFFFB# and its neighbours: the most negative floats.
+          if (v < -3e38) v = Number.NaN;
+          break;
+      }
       out[at + i] = file.nodata !== null && v === file.nodata ? Number.NaN : v;
     }
   }
@@ -294,7 +324,7 @@ export class BlockStore {
     const bps = this.bytesPer(file);
     const ranges: ByteRange[] = [];
     for (let r = 0; r < h; r++) {
-      const start = ((r0 + r) * file.cols + c0) * bps;
+      const start = (file.offset ?? 0) + ((r0 + r) * file.cols + c0) * bps;
       ranges.push({ start, end: start + w * bps });
     }
     const response = await this.network(() =>
@@ -312,10 +342,8 @@ export class BlockStore {
       response.headers.get('content-range'),
       ranges,
     );
-    if (total !== undefined && Number(total) !== file.rows * file.cols * bps) {
-      throw new Error(
-        `${file.url} is ${total} bytes, its label implies ${file.rows * file.cols * bps}`,
-      );
+    if (total !== undefined && Number(total) !== this.size(file)) {
+      throw new Error(`${file.url} is ${total} bytes, its label implies ${this.size(file)}`);
     }
     const out = new Float32Array(h * w);
     parts.forEach((part, r) => this.decode(file, part, out, r * w, w));
@@ -333,7 +361,7 @@ export class BlockStore {
     try {
       const row = new Uint8Array(w * bps);
       for (let r = 0; r < h; r++) {
-        readSync(fd, row, 0, row.length, ((r0 + r) * file.cols + c0) * bps);
+        readSync(fd, row, 0, row.length, (file.offset ?? 0) + ((r0 + r) * file.cols + c0) * bps);
         this.decode(file, row, out, r * w, w);
       }
     } finally {
@@ -354,7 +382,7 @@ export class BlockStore {
 
   private async fetchWhole(file: FileSpec): Promise<string | null> {
     const path = join(this.cacheDir, 'files', `${file.id}.img`);
-    const size = file.rows * file.cols * this.bytesPer(file);
+    const size = this.size(file);
     if (existsSync(path) && statSync(path).size === size) return path;
     const missing = `${path}.missing`;
     if (existsSync(missing)) return null;
@@ -373,6 +401,14 @@ export class BlockStore {
       throw new Error(
         `${file.url}: got ${statSync(partial).size} bytes, the label implies ${size}`,
       );
+    }
+    if (file.sha256 !== undefined) {
+      const hash = createHash('sha256');
+      await pipeline(createReadStream(partial), hash);
+      const actual = hash.digest('hex');
+      if (actual !== file.sha256) {
+        throw new Error(`${file.url}: SHA-256 ${actual}, pinned ${file.sha256}`);
+      }
     }
     renameSync(partial, path);
     this.log(`downloaded ${file.id}`);

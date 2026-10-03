@@ -13,8 +13,10 @@ more than 3x the median RMS ("Approve, 3x median RMS").
 Sources (docs/data/mars.md), all heights above the same areoid, MOLA's GMM3 (mgm1025) to degree
 and order 50:
 - MOLA MEGDR at 64 px/deg (PDS MGS-M-MOLA-5-MEGDR-L3-V1.0, meg064): four tiles each of
-  megt (median topography, MSB 16-bit metres), megc (shots per bin, 8-bit) and megr (radius,
-  metres + 3396000). From the labels: SIMPLE CYLINDRICAL on a 3396.0 km sphere,
+  megt (median topography, MSB 16-bit metres) and megc (shots per bin, 8-bit); and the areoid,
+  mega (radius in metres + 3396000) at 16 px/deg, read bilinearly. Beyond 88 degrees, where
+  the cylindrical grid has laser shots in 1.5% of its bins, megt and megc come from MOLA's polar
+  MEGDR at 128 px/deg, which adds its off-nadir polar shots. From the labels: SIMPLE CYLINDRICAL on a 3396.0 km sphere,
   planetocentric, east-positive, pixel-registered; "Where no observations lie within the area,
   an interpolated value is supplied."
 - HRSC DTMs (PDS MEX-M-HRSC-5-REFDR-DTM-V1.0, volume mexhrs_2001 of 2016-10-28): every DA4
@@ -40,11 +42,14 @@ Outputs:
 - public/data/mars/terrain-source.webp: provenance at 8 px/deg, lossless, the share of each
   pixel from HRSC (red), MOLA measured (green) and MOLA interpolated (blue); and
   pipeline/.cache/mars-terrain-64-source.img, every bin's source exactly (SOURCE_CLASSES).
+- pipeline/.cache/mars-terrain-64-hrsc-weight.u8.gz: the HRSC fade weight of every bin, for local
+  mode (W5), published beside the tiles; each strip's extent is in the manifest.
 - public/data/mars/terrain.json: the manifest, with every strip's fit.
 """
 
 from __future__ import annotations
 
+import gzip
 import json
 import math
 import re
@@ -91,6 +96,56 @@ OUT_DIR = ROOT / "public" / "data" / "mars"
 WARPED = CACHE / "hrscdtm-warped"
 
 
+POLAR_LAT = 88
+POLAR_N = 10240
+POLAR_PPD = 128
+
+
+def polar_grid(product: str, north: bool) -> np.ndarray:
+    """MOLA's polar MEGDR at 128 px/deg (pipeline/mola64_sources.json): topography in metres or
+    shots per bin."""
+    pinned = json.loads(MOLA_SOURCES.read_text())["polar"]
+    name = (
+        f"{product}_{'n' if north else 's'}_128{'_1' if product == 'megt' else ''}.img"
+    )
+    path = fetch(pinned["base"] + name, pinned["files"][name], f"mola-polar/{name}")
+    raw = np.fromfile(path, dtype=">u2" if product == "megt" else "u1").reshape(
+        POLAR_N, POLAR_N
+    )
+    return raw.astype(np.float64) * 0.25 - 8000 if product == "megt" else raw
+
+
+def polar_rows(product: str, grid: np.ndarray) -> None:
+    """Replaces the rows beyond 88 degrees of a 64 px/deg grid (column 0 = 0 E) with MOLA's polar
+    grids, sampled at each bin's centre: bilinear for topography, nearest for shot counts. The
+    projection is DSMAP_POLAR.CAT's, longitude 0 down the grid in the north and up in the south
+    (settled by measurement: tools/local/marsProjection.ts)."""
+    lon = np.radians((np.arange(WIDTH) + 0.5) / PPD)
+    rows = (90 - POLAR_LAT) * PPD
+    for north in (True, False):
+        polar = polar_grid(product, north)
+        span = range(rows) if north else range(HEIGHT - rows, HEIGHT)
+        for r in span:
+            lat = 90 - (r + 0.5) / PPD
+            radius = (360 / math.pi) * math.tan(math.radians(90 - abs(lat)) / 2)
+            x = radius * np.sin(lon) * POLAR_PPD + POLAR_N / 2 - 0.5
+            y = (
+                (1 if north else -1) * radius * np.cos(lon) * POLAR_PPD
+                + POLAR_N / 2
+                - 0.5
+            )
+            if product == "megt":
+                r0 = np.floor(y).astype(int)
+                c0 = np.floor(x).astype(int)
+                fy, fx = y - r0, x - c0
+                v = (polar[r0, c0] * (1 - fx) + polar[r0, c0 + 1] * fx) * (1 - fy) + (
+                    polar[r0 + 1, c0] * (1 - fx) + polar[r0 + 1, c0 + 1] * fx
+                ) * fy
+                grid[r] = np.rint(v)
+            else:
+                grid[r] = polar[np.rint(y).astype(int), np.rint(x).astype(int)]
+
+
 def mola(product: str) -> np.ndarray:
     """One MEGDR product as a global grid, column 0 = 0 E (as the tiles), row 0 = +90."""
     pinned = json.loads(MOLA_SOURCES.read_text())["files"]
@@ -105,7 +160,41 @@ def mola(product: str) -> np.ndarray:
                 np.fromfile(path, dtype=dtype).reshape(HEIGHT // 2, WIDTH // 2)
             )
         rows.append(np.concatenate(tiles, axis=1))
-    return np.concatenate(rows, axis=0)
+    grid = np.concatenate(rows, axis=0)
+    if product in ("megt", "megc"):
+        polar_rows(product, grid)
+    return grid
+
+
+def areoid_64() -> np.ndarray:
+    """MOLA's areoid radius on the 64 px/deg grid (column 0 = 0 E), whole metres: the MEGDR's own
+    areoid product (`mega`, 16 px/deg) read bilinearly. Not megr - megt: those are medians of
+    the shots in a bin taken separately, and on steep ground their difference strays from the
+    areoid by up to 3.4 km (measured 2026-10-03)."""
+    pinned = json.loads(MOLA_SOURCES.read_text())["areoid"]
+    path = fetch(pinned["url"], pinned["sha256"], "mola16-mega90n000eb.img")
+    a = (
+        np.fromfile(path, dtype=">i2").reshape(180 * 16, 360 * 16).astype(np.float64)
+        + 3396000
+    )
+    k = PPD // 16
+    pos = (np.arange(HEIGHT) + 0.5) / k - 0.5
+    r0 = np.clip(np.floor(pos).astype(int), 0, a.shape[0] - 2)
+    fr = np.clip(pos - r0, 0, 1)[:, None]
+    pos = (np.arange(WIDTH) + 0.5) / k - 0.5
+    c0 = np.floor(pos).astype(int)
+    fc = (pos - c0)[None, :]
+    c0, c1 = c0 % a.shape[1], (c0 + 1) % a.shape[1]
+    out = np.empty((HEIGHT, WIDTH), dtype=np.int32)
+    for b0 in range(0, HEIGHT, BAND_ROWS):
+        rows = slice(b0, b0 + BAND_ROWS)
+        top, bottom = a[r0[rows]], a[r0[rows] + 1]
+        f = fr[rows]
+        v = (top[:, c0] * (1 - fc) + top[:, c1] * fc) * (1 - f) + (
+            bottom[:, c0] * (1 - fc) + bottom[:, c1] * fc
+        ) * f
+        out[rows] = np.rint(v)
+    return out
 
 
 def strip_list() -> dict:
@@ -170,19 +259,27 @@ def window(grid: np.ndarray, r0: int, c0: int, shape: tuple[int, int]) -> np.nda
 
 
 def process(name: str, entry: dict, topo: np.ndarray, counts: np.ndarray) -> dict:
-    """Downloads one strip, warps it, fits it to MOLA, keeps the warped grid, deletes the file.
+    """Downloads one strip, warps it and keeps the warped grid (deleting the file), then fits it
+    to MOLA. The warp is cached; the fit is recomputed against the MOLA of this run every time.
     The fit carries the file's SHA-256 and size, for pinning."""
     target = WARPED / (name + ".npz")
     if target.exists():
-        return json.loads(str(np.load(target)["fit"]))
-    path = fetch(
-        HRSC_BASE + entry["path"],
-        entry.get("sha256"),
-        f"hrscdtm/{name}.img",
-        md5=entry["md5"],
-    )
-    pin = {"sha256": sha256(path), "bytes": path.stat().st_size}
-    r0, c0, h = warp_strip(path)
+        cached = np.load(target)
+        stored = json.loads(str(cached["fit"]))
+        pin = {"sha256": stored["sha256"], "bytes": stored["bytes"]}
+        r0, c0, h = stored["row"], stored["col"], cached["h"]
+    else:
+        path = fetch(
+            HRSC_BASE + entry["path"],
+            entry.get("sha256"),
+            f"hrscdtm/{name}.img",
+            md5=entry["md5"],
+        )
+        pin = {"sha256": sha256(path), "bytes": path.stat().st_size}
+        r0, c0, h = warp_strip(path)
+        WARPED.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(target, h=h, fit=json.dumps({**pin, "row": r0, "col": c0}))
+        path.unlink()
     t = window(topo, r0, c0, h.shape).astype(np.float64)
     c = window(counts, r0, c0, h.shape)
     shots = np.isfinite(h) & (c > 0)
@@ -198,9 +295,6 @@ def process(name: str, entry: dict, topo: np.ndarray, counts: np.ndarray) -> dic
         offset = float(np.median(d))
         fit["offsetM"] = round(offset, 2)
         fit["rmsM"] = round(float(np.sqrt(np.mean((d - offset) ** 2))), 2)
-    WARPED.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(target, h=h, fit=json.dumps(fit))
-    path.unlink()
     return fit
 
 
@@ -342,8 +436,13 @@ def checks() -> dict:
         )
     blend = blend.astype(np.float64).filled(np.nan)
     blocks = source.reshape(HEIGHT // k, k, WIDTH // k, k)
+    # Beyond 88 degrees the blend keeps the cylindrical MEGDR this composite replaces with the
+    # polar one (300-500 m apart there), so the comparison is also given without those rows.
+    lat16 = 90 - (np.arange(coarse.shape[0]) + 0.5) / 16
+    within88 = np.repeat((np.abs(lat16) <= POLAR_LAT)[:, None], coarse.shape[1], axis=1)
     for name, zone in (
         ("everywhere", np.ones(coarse.shape, dtype=bool)),
+        ("within88", within88),
         ("insideHrsc", (blocks == 2).all(axis=(1, 3))),
         ("outsideHrsc", (blocks <= 1).all(axis=(1, 3))),
     ):
@@ -395,6 +494,15 @@ def build() -> dict:
         flush=True,
     )
 
+    # Each strip's extent on the grid, for local mode to find the strips under a view (W5):
+    # rows from +90 deg, columns from 0 E, the end exclusive and the columns possibly past 360.
+    for name in fitted:
+        r0, c0, h = load_strip(name, fits[name])
+        fits[name]["extent"] = {
+            "rows": [r0, r0 + h.shape[0]],
+            "cols": [c0, c0 + h.shape[1]],
+        }
+
     hrsc, overlap = combine(used, fits, HEIGHT)
     weight = blend_weight(hrsc)
     composite = topo.astype(np.float32)
@@ -409,15 +517,22 @@ def build() -> dict:
     out = roll(np.rint(composite)).astype("<i2")
     del composite
     out.tofile(CACHE / "mars-terrain-64.img")
-    areoid = mola("megr").astype(np.int32) + 3396000 - topo
-    roll(areoid).astype("<i4").tofile(CACHE / "mars-terrain-64-areoid.img")
-    del areoid
+    roll(areoid_64()).astype("<i4").tofile(CACHE / "mars-terrain-64-areoid.img")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     classes = np.where(
         weight >= 1, 2, np.where(weight > 0, 3, (counts > 0).astype(np.uint8))
     )
     roll(classes.astype(np.uint8)).tofile(CACHE / "mars-terrain-64-source.img")
     del classes
+    # The HRSC fade weight of every bin, byte = round(255 w), for local mode to fade its finer
+    # HRSC into MOLA exactly as here (W5). Published beside the tiles, gzip-compressed raw bytes
+    # (no image decoder needed to read it), with no timestamp so a rebuild is byte-identical.
+    weight_bin = CACHE / "mars-terrain-64-hrsc-weight.u8.gz"
+    weight_bin.write_bytes(
+        gzip.compress(
+            roll(np.rint(255 * weight).astype(np.uint8)).tobytes(), 9, mtime=0
+        )
+    )
     (OUT_DIR / "terrain-source.png").unlink(missing_ok=True)
     source_png = OUT_DIR / "terrain-source.webp"
     shares = provenance_image(roll(weight), roll(counts), source_png)
@@ -435,7 +550,7 @@ def build() -> dict:
         },
         "sources": {
             "mola": {
-                "product": "MGS-M-MOLA-5-MEGDR-L3-V1.0 meg064 megt, megc, megr",
+                "product": "MGS-M-MOLA-5-MEGDR-L3-V1.0 meg064 megt and megc; meg016 mega (the areoid, read bilinearly)",
                 "base": MOLA_BASE,
                 "files": "pipeline/mola64_sources.json",
             },
@@ -456,7 +571,7 @@ def build() -> dict:
             "registration": "one height offset per strip: the median of MOLA minus HRSC over the bins with shots inside it",
             "rejection": f"fit RMS more than {REJECT_RMS_FACTOR} x the median over all strips (owner, 2026-10-02)",
             "stripsUsed": len(used),
-            "medianFitRmsM": round(median_rms, 2),
+            "medianFitRmsM": round(median_rms, 4),
             "offsetsM": {
                 q: round(float(np.percentile([fits[n]["offsetM"] for n in used], p)), 1)
                 for q, p in (("p5", 5), ("median", 50), ("p95", 95))
@@ -472,6 +587,17 @@ def build() -> dict:
             "exactPerBin": f"pipeline/.cache/mars-terrain-64-source.img, uint8: {dict(enumerate(SOURCE_CLASSES))}",
             "channels": "red = HRSC, green = MOLA measured, blue = MOLA interpolated; each the share of the pixel, 0-255",
             "sha256": sha256(source_png),
+        },
+        "localMode": {
+            "hrscWeight": {
+                "file": weight_bin.name,
+                "published": "beside the tiles, as terrain/hrsc-weight.u8.gz",
+                "encoding": "gzip of 23040 x 11520 unsigned bytes, row-major",
+                "grid": "the composite's: 64 px/deg, column 0 = -180 deg, row 0 = +90 deg",
+                "values": f"byte = round(255 w), w the weight of HRSC against MOLA, fading over {BLEND_KM} km inside HRSC's coverage",
+                "sha256": sha256(weight_bin),
+            },
+            "stripExtents": "fits[name].extent: rows from +90 deg and columns from 0 E on the 64 px/deg grid, end exclusive, columns modulo 23040",
         },
         "fits": fits,
     }

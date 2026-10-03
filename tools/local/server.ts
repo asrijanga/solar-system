@@ -1,9 +1,10 @@
 // npm run local
 //
-// The Moon at full measured detail, on this computer. Serves the built app and makes each
-// terrain tile the first time a view needs it, from the publishers' own files (NASA PDS, JAXA
-// DARTS), fetching only the parts of them that tile covers. Everything fetched or built is
-// cached in .cache/local/, so a place is only downloaded once. docs/stories/SS-10c.md.
+// The Moon and Mars at full measured detail, on this computer. Serves the built app and makes
+// each terrain tile the first time a view needs it, from the publishers' own files (NASA PDS,
+// JAXA DARTS, the HiRISE archive), fetching only the parts of them that tile covers. Everything
+// fetched or built is cached in .cache/local/, so a place is only downloaded once. The Moon:
+// docs/stories/SS-10c.md. Mars, at /mars-terrain/: tools/local/mars.ts, docs/stories/SS-14.md W5.
 
 import { createServer, type ServerResponse } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
@@ -13,6 +14,14 @@ import { BlockStore } from './grids.ts';
 import { Ladder, availability, MAX_LEVEL } from './ladder.ts';
 import { APPROX_MAX_LEVEL, Approximation, approxAvailability } from './approximate.ts';
 import { encodeTile } from '../terrain/quantizedMesh.ts';
+import {
+  DATA_SITE,
+  MAX_LEVEL as MARS_MAX_LEVEL,
+  MarsLadder,
+  SPHERE_M as MARS_SPHERE_M,
+  WEBSITE_LEVELS as MARS_WEBSITE_LEVELS,
+  marsAvailability,
+} from './mars.ts';
 
 const root = join(import.meta.dirname, '..', '..');
 const dist = join(root, 'dist');
@@ -23,6 +32,12 @@ const log = (message: string): void => console.log(`[moon] ${message}`);
 const store = new BlockStore(cacheDir, 4, log);
 const ladder = new Ladder(store, cacheDir, log);
 const approximation = new Approximation(ladder, store);
+const marsCache = join(cacheDir, 'mars');
+const marsStore = new BlockStore(marsCache, 4, (m) => console.log(`[mars] ${m}`));
+const mars = new MarsLadder(marsStore, marsCache, (m) => console.log(`[mars] ${m}`));
+const MARS_SOURCES =
+  "levels 0-7: the website's composite (MOLA MEGDR and HRSC DTMs); below: HRSC DTMs (PDS MEX-M-HRSC-5-REFDR-DTM-V1.0; ESA/DLR/FU Berlin, CC BY-SA 3.0 IGO), MOLA MEGDR (PDS MGS-M-MOLA-5-MEGDR-L3-V1.0), HiRISE DTMs (MRO HiRISE, University of Arizona)";
+let marsLayer: Promise<string> | null = null;
 
 const layerJson = (name: string, available: unknown, attribution: string): string =>
   JSON.stringify({
@@ -92,6 +107,39 @@ async function tile(approx: boolean, z: number, x: number, y: number): Promise<U
   return promise;
 }
 
+/**
+ * A Mars tile: the website's own from Mars's data site down to its deepest level (cached here
+ * as fetched, gzip-compressed), then built from the measurements below it.
+ */
+async function marsTile(z: number, x: number, y: number): Promise<Uint8Array> {
+  const website = z <= MARS_WEBSITE_LEVELS;
+  const path = join(marsCache, website ? 'website' : 'tiles', String(z), String(x), `${y}.terrain`);
+  if (existsSync(path)) return readFile(path);
+  const key = `mars/${z}/${x}/${y}`;
+  let promise = building.get(key);
+  if (promise === undefined) {
+    promise = (async () => {
+      const started = performance.now();
+      let bytes: Uint8Array;
+      if (website) {
+        const response = await fetch(`${DATA_SITE}${z}/${x}/${y}.terrain`);
+        if (!response.ok)
+          throw new Error(`${DATA_SITE}${z}/${x}/${y}.terrain: HTTP ${response.status}`);
+        bytes = new Uint8Array(await response.arrayBuffer());
+      } else {
+        bytes = await encodeTile(z, x, y, mars.heightsFor(z), 65, MARS_SPHERE_M);
+      }
+      mkdirSync(dirname(path), { recursive: true });
+      await writeFile(`${path}.partial`, bytes);
+      await rename(`${path}.partial`, path);
+      log(`mars tile ${z}/${x}/${y} in ${((performance.now() - started) / 1000).toFixed(1)} s`);
+      return bytes;
+    })().finally(() => building.delete(key));
+    building.set(key, promise);
+  }
+  return promise;
+}
+
 function send(res: ServerResponse, status: number, type: string, body: Uint8Array | string): void {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
   res.end(body);
@@ -105,6 +153,31 @@ if (!existsSync(join(dist, 'index.html'))) {
 createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const path = decodeURIComponent(url.pathname);
+  if (path === '/mars-terrain/layer.json') {
+    marsLayer ??= mars
+      .hiriseBoxes()
+      .then((boxes) => layerJson('mars-local', marsAvailability(boxes), MARS_SOURCES));
+    marsLayer.then(
+      (json) => send(res, 200, 'application/json', json),
+      (error: unknown) => send(res, 502, 'text/plain', String(error)),
+    );
+    return;
+  }
+  const marsMatch = /^\/mars-terrain\/(\d+)\/(\d+)\/(\d+)\.terrain$/.exec(path);
+  if (marsMatch !== null) {
+    const [z, x, y] = [Number(marsMatch[1]), Number(marsMatch[2]), Number(marsMatch[3])];
+    if (z > MARS_MAX_LEVEL || x >= 2 ** (z + 1) || y >= 2 ** z) {
+      return send(res, 404, 'text/plain', '');
+    }
+    marsTile(z, x, y).then(
+      (bytes) => send(res, 200, 'application/octet-stream', bytes),
+      (error: unknown) => {
+        log(`mars tile ${z}/${x}/${y} failed: ${String(error)}`);
+        send(res, 502, 'text/plain', String(error));
+      },
+    );
+    return;
+  }
   const layerMatch = /^\/(terrain|terrain-approx)\/layer\.json$/.exec(path);
   if (layerMatch !== null) {
     return send(res, 200, 'application/json', layers[layerMatch[1] as keyof typeof layers].json);
@@ -133,5 +206,6 @@ createServer((req, res) => {
   send(res, 200, TYPES[extname(file)] ?? 'application/octet-stream', readFileSync(file));
 }).listen(port, '127.0.0.1', () => {
   log(`the Moon at full measured detail: http://localhost:${port}/moon/`);
+  log(`Mars's terrain, for its page (W7): http://localhost:${port}/mars-terrain/layer.json`);
   log(`cache: ${cacheDir}`);
 });

@@ -436,8 +436,13 @@ def checks() -> dict:
         )
     blend = blend.astype(np.float64).filled(np.nan)
     blocks = source.reshape(HEIGHT // k, k, WIDTH // k, k)
+    # Beyond 88 degrees the blend keeps the cylindrical MEGDR this composite replaces with the
+    # polar one (300-500 m apart there), so the comparison is also given without those rows.
+    lat16 = 90 - (np.arange(coarse.shape[0]) + 0.5) / 16
+    within88 = np.repeat((np.abs(lat16) <= POLAR_LAT)[:, None], coarse.shape[1], axis=1)
     for name, zone in (
         ("everywhere", np.ones(coarse.shape, dtype=bool)),
+        ("within88", within88),
         ("insideHrsc", (blocks == 2).all(axis=(1, 3))),
         ("outsideHrsc", (blocks <= 1).all(axis=(1, 3))),
     ):
@@ -566,7 +571,7 @@ def build() -> dict:
             "registration": "one height offset per strip: the median of MOLA minus HRSC over the bins with shots inside it",
             "rejection": f"fit RMS more than {REJECT_RMS_FACTOR} x the median over all strips (owner, 2026-10-02)",
             "stripsUsed": len(used),
-            "medianFitRmsM": round(median_rms, 2),
+            "medianFitRmsM": round(median_rms, 4),
             "offsetsM": {
                 q: round(float(np.percentile([fits[n]["offsetM"] for n in used], p)), 1)
                 for q, p in (("p5", 5), ("median", 50), ("p95", 95))

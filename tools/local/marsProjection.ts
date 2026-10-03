@@ -51,9 +51,15 @@ function dLon(lonDeg: number, centreDeg: number): number {
 /** The projection a label describes. */
 export function projectionOf(label: Label): Projection {
   const type = (label.get('MAP_PROJECTION_TYPE') ?? '').replace(/"/g, '').trim();
-  const radius = labelNumber(label, 'A_AXIS_RADIUS', 'm');
   // HRSC gives MAP_SCALE in km/pixel, HiRISE in m/pixel: the unit says which.
   const scale = labelNumber(label, 'MAP_SCALE', 'm');
+  // The projection's sphere is the one its own scale and resolution imply: scale x pixels per
+  // degree x 180 / pi. That is A_AXIS_RADIUS for HRSC and HiRISE's equirectangular DTMs, but
+  // the polar radius (C_AXIS_RADIUS, 3376.2 km) for HiRISE's polar stereographic ones, whose
+  // labels give the full ellipsoid; GDAL agrees (test/fixtures/mars-local-projections.json).
+  const radius = label.has('MAP_RESOLUTION')
+    ? (scale * labelNumber(label, 'MAP_RESOLUTION') * 180) / Math.PI
+    : labelNumber(label, 'A_AXIS_RADIUS', 'm');
   const lineOffset = labelNumber(label, 'LINE_PROJECTION_OFFSET');
   const sampleOffset = labelNumber(label, 'SAMPLE_PROJECTION_OFFSET');
   const centreLat = labelNumber(label, 'CENTER_LATITUDE');

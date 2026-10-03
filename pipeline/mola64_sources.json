@@ -17,5 +17,15 @@
   "sha256": "e80333b01489e66ebf20ac83ec7e130bd5a03f0c3f98f8f7b8d5c054cd6ad239",
   "label": "MEGA90N000EB.LBL: the areoid radius, MSB 16-bit metres + OFFSET 3396000, 2880 x 5760, 16 px/deg, SIMPLE CYLINDRICAL, pixel-registered from 90 N and 0 E",
   "pinned": "SHA-256 at first retrieval, 2026-10-03"
+ },
+ "polar": {
+  "base": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/polar/",
+  "note": "Beyond 88 degrees the cylindrical MEGDR has laser shots in 1.5% of its bins (measured 2026-10-03) and departs from these polar grids by 300-500 m; they add MOLA's off-nadir polar shots. 128 px/deg at the pole, 10240 x 10240, POLAR STEREOGRAPHIC per DSMAP_POLAR.CAT; megt MSB unsigned 16-bit, metres = 0.25 v - 8000; megc unsigned bytes. Pinned at first retrieval, 2026-10-03",
+  "files": {
+   "megt_n_128_1.img": "e8fac6e99f9ee3c2c418a98599fb8369dd3ca72a84fdb6504756c7ae082de423",
+   "megt_s_128_1.img": "1dc9725eb018337ed73120a11eba8ef17253ce238373109a4f1ca37522209c96",
+   "megc_n_128.img": "813e02ceb93ebb7ba8775f61406dc95f8da0fd354c58824ed8e3be3a56979275",
+   "megc_s_128.img": "68d83891f543ca086f1dd4efce6e0a946e8a74b8dc3bdc306d052511a6a7e452"
+  }
  }
 }

@@ -14,7 +14,9 @@ Sources (docs/data/mars.md), all heights above the same areoid, MOLA's GMM3 (mgm
 and order 50:
 - MOLA MEGDR at 64 px/deg (PDS MGS-M-MOLA-5-MEGDR-L3-V1.0, meg064): four tiles each of
   megt (median topography, MSB 16-bit metres) and megc (shots per bin, 8-bit); and the areoid,
-  mega (radius in metres + 3396000) at 16 px/deg, read bilinearly. From the labels: SIMPLE CYLINDRICAL on a 3396.0 km sphere,
+  mega (radius in metres + 3396000) at 16 px/deg, read bilinearly. Beyond 88 degrees, where
+  the cylindrical grid has laser shots in 1.5% of its bins, megt and megc come from MOLA's polar
+  MEGDR at 128 px/deg, which adds its off-nadir polar shots. From the labels: SIMPLE CYLINDRICAL on a 3396.0 km sphere,
   planetocentric, east-positive, pixel-registered; "Where no observations lie within the area,
   an interpolated value is supplied."
 - HRSC DTMs (PDS MEX-M-HRSC-5-REFDR-DTM-V1.0, volume mexhrs_2001 of 2016-10-28): every DA4
@@ -94,6 +96,56 @@ OUT_DIR = ROOT / "public" / "data" / "mars"
 WARPED = CACHE / "hrscdtm-warped"
 
 
+POLAR_LAT = 88
+POLAR_N = 10240
+POLAR_PPD = 128
+
+
+def polar_grid(product: str, north: bool) -> np.ndarray:
+    """MOLA's polar MEGDR at 128 px/deg (pipeline/mola64_sources.json): topography in metres or
+    shots per bin."""
+    pinned = json.loads(MOLA_SOURCES.read_text())["polar"]
+    name = (
+        f"{product}_{'n' if north else 's'}_128{'_1' if product == 'megt' else ''}.img"
+    )
+    path = fetch(pinned["base"] + name, pinned["files"][name], f"mola-polar/{name}")
+    raw = np.fromfile(path, dtype=">u2" if product == "megt" else "u1").reshape(
+        POLAR_N, POLAR_N
+    )
+    return raw.astype(np.float64) * 0.25 - 8000 if product == "megt" else raw
+
+
+def polar_rows(product: str, grid: np.ndarray) -> None:
+    """Replaces the rows beyond 88 degrees of a 64 px/deg grid (column 0 = 0 E) with MOLA's polar
+    grids, sampled at each bin's centre: bilinear for topography, nearest for shot counts. The
+    projection is DSMAP_POLAR.CAT's, longitude 0 down the grid in the north and up in the south
+    (settled by measurement: tools/local/marsProjection.ts)."""
+    lon = np.radians((np.arange(WIDTH) + 0.5) / PPD)
+    rows = (90 - POLAR_LAT) * PPD
+    for north in (True, False):
+        polar = polar_grid(product, north)
+        span = range(rows) if north else range(HEIGHT - rows, HEIGHT)
+        for r in span:
+            lat = 90 - (r + 0.5) / PPD
+            radius = (360 / math.pi) * math.tan(math.radians(90 - abs(lat)) / 2)
+            x = radius * np.sin(lon) * POLAR_PPD + POLAR_N / 2 - 0.5
+            y = (
+                (1 if north else -1) * radius * np.cos(lon) * POLAR_PPD
+                + POLAR_N / 2
+                - 0.5
+            )
+            if product == "megt":
+                r0 = np.floor(y).astype(int)
+                c0 = np.floor(x).astype(int)
+                fy, fx = y - r0, x - c0
+                v = (polar[r0, c0] * (1 - fx) + polar[r0, c0 + 1] * fx) * (1 - fy) + (
+                    polar[r0 + 1, c0] * (1 - fx) + polar[r0 + 1, c0 + 1] * fx
+                ) * fy
+                grid[r] = np.rint(v)
+            else:
+                grid[r] = polar[np.rint(y).astype(int), np.rint(x).astype(int)]
+
+
 def mola(product: str) -> np.ndarray:
     """One MEGDR product as a global grid, column 0 = 0 E (as the tiles), row 0 = +90."""
     pinned = json.loads(MOLA_SOURCES.read_text())["files"]
@@ -108,7 +160,10 @@ def mola(product: str) -> np.ndarray:
                 np.fromfile(path, dtype=dtype).reshape(HEIGHT // 2, WIDTH // 2)
             )
         rows.append(np.concatenate(tiles, axis=1))
-    return np.concatenate(rows, axis=0)
+    grid = np.concatenate(rows, axis=0)
+    if product in ("megt", "megc"):
+        polar_rows(product, grid)
+    return grid
 
 
 def areoid_64() -> np.ndarray:
@@ -204,19 +259,27 @@ def window(grid: np.ndarray, r0: int, c0: int, shape: tuple[int, int]) -> np.nda
 
 
 def process(name: str, entry: dict, topo: np.ndarray, counts: np.ndarray) -> dict:
-    """Downloads one strip, warps it, fits it to MOLA, keeps the warped grid, deletes the file.
+    """Downloads one strip, warps it and keeps the warped grid (deleting the file), then fits it
+    to MOLA. The warp is cached; the fit is recomputed against the MOLA of this run every time.
     The fit carries the file's SHA-256 and size, for pinning."""
     target = WARPED / (name + ".npz")
     if target.exists():
-        return json.loads(str(np.load(target)["fit"]))
-    path = fetch(
-        HRSC_BASE + entry["path"],
-        entry.get("sha256"),
-        f"hrscdtm/{name}.img",
-        md5=entry["md5"],
-    )
-    pin = {"sha256": sha256(path), "bytes": path.stat().st_size}
-    r0, c0, h = warp_strip(path)
+        cached = np.load(target)
+        stored = json.loads(str(cached["fit"]))
+        pin = {"sha256": stored["sha256"], "bytes": stored["bytes"]}
+        r0, c0, h = stored["row"], stored["col"], cached["h"]
+    else:
+        path = fetch(
+            HRSC_BASE + entry["path"],
+            entry.get("sha256"),
+            f"hrscdtm/{name}.img",
+            md5=entry["md5"],
+        )
+        pin = {"sha256": sha256(path), "bytes": path.stat().st_size}
+        r0, c0, h = warp_strip(path)
+        WARPED.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(target, h=h, fit=json.dumps({**pin, "row": r0, "col": c0}))
+        path.unlink()
     t = window(topo, r0, c0, h.shape).astype(np.float64)
     c = window(counts, r0, c0, h.shape)
     shots = np.isfinite(h) & (c > 0)
@@ -232,9 +295,6 @@ def process(name: str, entry: dict, topo: np.ndarray, counts: np.ndarray) -> dic
         offset = float(np.median(d))
         fit["offsetM"] = round(offset, 2)
         fit["rmsM"] = round(float(np.sqrt(np.mean((d - offset) ** 2))), 2)
-    WARPED.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(target, h=h, fit=json.dumps(fit))
-    path.unlink()
     return fit
 
 

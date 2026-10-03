@@ -72,6 +72,15 @@ Mars differs from the Moon in one way that decides W3: **it has weather.** Dust 
 | HRSC Phobos maps (ESA PSA `MEX-MSA-HRSC-5-REFDR-PHOBOS-MAPS-V1.0`) | to evaluate (W8) | Listing reachable. Phobos's surface |
 | IAU Gazetteer of Planetary Nomenclature, Mars (`MARS_nomenclature_center_pts.zip`, 5.4 MB, the same S3 bucket as the Moon's) | to use: labels and ground truth | Reachable. Names, centres and diameters for labels (W7) and checks. Olympus Mons, Valles Marineris, Hellas and the landing sites give elevation checks against MOLA's published extremes |
 
+## Photometry and the atmosphere (W7, read 2026-10-03)
+
+| Dataset | Status | What was established |
+| --- | --- | --- |
+| Mars's disc-integrated V magnitude: Mallama & Hilton (2018), Astronomy and Computing 25, doi:10.1016/j.ascom.2018.08.002, arXiv:1808.01973, Eq. 6, after Mallama (2007), Icarus 192, 404, doi:10.1016/j.icarus.2007.07.011 | to use (W7): the phase curve the scattering law is fitted to, and the brightness check | The arXiv copy was read. Eq. 6: "V = 5 log10 ( r d ) -1.601 + 0.02267 α - 0.0001302 α2 + L(λe) + L(LS)", "valid for α ≤ 50o". The longitude term has an "RMS variation over longitude in the V-band [of] about 0.035 magnitude with excursions as large as 0.060". "The mean decrease from global dust storms on Mars in the V-band is −0.12 magnitude". This gives p_V = 0.171 at 3,389.5 km. The L(λe) and L(Ls) tables are in Mallama (2007) and in the paper's code (sourceforge `planetary-magnitudes`), not yet read. Mallama (2007) itself is not reachable: the publisher returns 403 |
+| Per-region Hapke parameters: CRISM (Fernando et al. 2013, 2016), Pathfinder IMP (Johnson et al. 1999), MER Pancam (Johnson et al. 2006) | to evaluate: not reachable | The publishers (Elsevier, Wiley/AGU) return 403 to the cloud, and no open copy was found. Nothing was read, so nothing is used |
+| OMEGA 1.08 µm albedo definition (Ody et al. 2012, JGR Planets, doi:10.1029/2012JE004117) | to read | Used since W3. Whether its "Lambert albedo" has the atmosphere removed is in the paper, not reachable from the cloud (403). The PDS label read in W3 is what is cited so far |
+| Dust optical depth climatology (Montabone et al. 2015, Icarus 251, doi:10.1016/j.icarus.2014.12.034, arXiv:1409.4841) | to evaluate: the atmosphere's own story | The arXiv copy was read. It gives "absorption CDOD at 9.3 μm", normalised to 610 Pa. Its conversion to visible extinction is "a factor … 2.6", which "is affected by large errors". The clear-season values are still to be read from its figures |
+
 ## What this means for the next stories
 
 - **W2 (ephemeris) is straightforward:** everything is reachable at NAIF.

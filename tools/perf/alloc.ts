@@ -72,7 +72,13 @@ async function main(): Promise<number> {
   const server = await createServer({
     root,
     logLevel: 'silent',
-    server: { port: 0, strictPort: false },
+    // Caches and the pipeline hold thousands of files nobody edits during a measurement; watching
+    // them can exhaust the system's file watchers.
+    server: {
+      port: 0,
+      strictPort: false,
+      watch: { ignored: ['**/.cache/**', '**/pipeline/**', '**/public/terrain/**'] },
+    },
   });
   await server.listen();
   const base = server.resolvedUrls?.local[0];

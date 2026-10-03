@@ -37,11 +37,7 @@ const HIGHEST_POINT_KM = 21.291;
 /** `?epoch=quarter` and `?epoch=full`: the Moon's two fixed instants, which Mars's W2 shares. */
 function epochParam(params: URLSearchParams): MoonEpochId | null {
   const choice = params.get('epoch');
-  return choice === 'full'
-    ? 'full-2026-01'
-    : choice === 'quarter'
-      ? 'first-quarter-2026-01'
-      : null;
+  return choice === 'full' ? 'full-2026-01' : choice === 'quarter' ? 'first-quarter-2026-01' : null;
 }
 
 /** Mars at the moment the page opened, from its SPICE timeline; null outside its span. */
@@ -91,7 +87,8 @@ export async function createMarsStage(context: StageContext): Promise<Stage> {
     loadJson<{ landmarks: Landmark[] }>('data/mars/landmarks.json'),
     loadLabelFont(siteUrl),
   ]);
-  const textures = listed.albedo === 'map' ? await loadMarsTextures(maxAnisotropy, photometry) : null;
+  const textures =
+    listed.albedo === 'map' ? await loadMarsTextures(maxAnisotropy, photometry) : null;
   const radiiKm = ephemeris.body.radiiKm;
   const radiusKm = radiiKm[0];
   const setup = placedAt(context.viewpoint, params, radiusKm).body ?? listed;
@@ -169,7 +166,7 @@ export async function createMarsStage(context: StageContext): Promise<Stage> {
 }
 
 const ABOUT = [
-  'Surface brightness: the near-infrared brightness Mars Express’s OMEGA spectrometer measured from 2004 to 2010 (Ody and others, 2012), the gaps filled from Mars Global Surveyor’s TES, carried to visible light and coloured by the colour Mars Express’s HRSC camera measured (Michael and others, 2025; ESA/DLR/FU Berlin, CC BY-SA 3.0 IGO). It is Mars as it usually looks, averaged over years, clear of dust storms and clouds: not Mars on this date.',
+  'Surface brightness: on scales over a few hundred kilometres, Mars as the Hubble Space Telescope photographed it in green light in 1999 (Bell, 2004), calibrated brightness in a clear season; finer than that, the near-infrared brightness Mars Express\u2019s OMEGA spectrometer measured from 2004 to 2010 (Ody and others, 2012), with Mars Global Surveyor\u2019s TES in its gaps; colour from Mars Express\u2019s HRSC camera (Michael and others, 2025; ESA/DLR/FU Berlin, CC BY-SA 3.0 IGO). Hubble did not see south of about 35\u00b0S then, so there the light and dark are OMEGA\u2019s, a little stronger than Mars shows. It is Mars as it usually looks, clear of dust storms and clouds: not Mars on this date.',
   'How bright: each colour is scaled so the whole planet is exactly as bright as astronomers measure Mars to be in that colour (Mallama and others, 2017). How brightness changes with the Sun’s angle is fitted to Mars’s measured brightness from full to 50° phase (Mallama and Hilton, 2018). Those measurements include Mars’s thin dusty air, so its average effect on brightness is in the light, but the air itself is not drawn yet: no haze at the edge of the disc, no blue sunsets.',
   'Shape: the surface is polygons, every corner on a height measured by Mars Global Surveyor’s laser altimeter (MOLA) or Mars Express’s stereo camera (HRSC), registered to the laser. Vertices are about 1.3 km apart everywhere on this site; `npm run local` streams HRSC’s and HiRISE’s full detail. Heights are true scale: Olympus Mons is 21 km high, Hellas 8 km deep.',
   'Stars: physical is a real exposure. Next to sunlit Mars, stars are far too faint to show. Boosted makes them 100,000 times brighter.',
@@ -184,7 +181,11 @@ const ATMOSPHERE_NOTE =
 
 function marsUi(caption: string, fixedEpoch: MoonEpochId | null): WorldUi {
   const current =
-    fixedEpoch === 'first-quarter-2026-01' ? 'quarter' : fixedEpoch === 'full-2026-01' ? 'full' : null;
+    fixedEpoch === 'first-quarter-2026-01'
+      ? 'quarter'
+      : fixedEpoch === 'full-2026-01'
+        ? 'full'
+        : null;
   return {
     caption,
     leading: (row, notes) => {

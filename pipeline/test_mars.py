@@ -21,8 +21,12 @@ DATA = ROOT / "public/data/mars"
 MANIFEST = json.loads((DATA / "albedo.json").read_text())
 FEATURES = json.loads((ROOT / "test/fixtures/iau-gazetteer-mars.json").read_text())["features"]
 BOX_DEG = 1.5
-# Every dark feature at most this share of every bright one.
-CONTRAST = 0.6
+# Every dark feature darker than every bright one: what the Gazetteer's classical albedo names
+# assert. It was 0.6 until part 3, a reference set against OMEGA's near-infrared contrast; Hubble's
+# calibrated 547 nm measurement of these boxes gives 0.62 (Mare Acidalium against Arabia Terra), so
+# 0.6 was physically wrong for visible light. Corrected with the owner's approval, 2026-10-03:
+# "Dark below bright, < 1". The mirrored map gives 2.09, so the control still fails.
+CONTRAST = 1.0
 
 
 def albedo() -> np.ndarray:
@@ -68,6 +72,18 @@ class MarsAlbedo(unittest.TestCase):
         fit = MANIFEST["blend"]["blendAgainstOmega"]["1ppd.withinLatitude60"]
         self.assertGreater(fit["correlation"], 0.99)
         self.assertLess(abs(fit["meanRelativeDifference"]), 0.01)
+
+    def test_large_scale_is_hubble_s(self) -> None:
+        """Part 3 (owner-approved, 2026-10-03): within Hubble's coverage the map's 2 deg means
+        are within 3% of Hubble's 547 nm brightness, median absolute difference."""
+        agreement = MANIFEST["hubble"]["agreement"]
+        self.assertGreater(agreement["cells"], 5000)
+        self.assertLessEqual(agreement["medianAbsoluteDifference"], 0.03)
+
+    def test_hubble_coverage_matches_manifest(self) -> None:
+        coverage = np.array(Image.open(DATA / MANIFEST["hubble"]["file"]).convert("L"))
+        self.assertEqual(coverage.shape, (600, 1200))
+        self.assertAlmostEqual(float((coverage == 255).mean()), MANIFEST["hubble"]["coveredFraction"], delta=0.01)
 
     def test_source_map_matches_manifest(self) -> None:
         source = np.array(Image.open(DATA / MANIFEST["source"]["file"]).convert("L"))

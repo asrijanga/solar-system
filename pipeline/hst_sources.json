@@ -1,0 +1,15 @@
+{
+ "source": "HST WFPC2 observations of Mars, Bell III, J.F. (2004), HST-M-WFPC2-3-V1.0, NASA PDS, doi:10.17189/1519478",
+ "base": "https://pds-geosciences.wustl.edu/mars/hst-m-wfpc2-3-v1/hstm_0001/data/",
+ "cubes": {
+  "990427": {"path": "19990427/990427_cyl.cub", "sha256": "4238748bf4ad868616bbf91457a213bc34d86f448a2ba4687cec6e1b08394acc"},
+  "990428": {"path": "19990428/990428_cyl.cub", "sha256": "72f3882bf061970308b6ff297b2e2c9da0f5bc0d31c58dfe8f5486c06997747a"},
+  "990501": {"path": "19990501/990501_cyl.cub", "sha256": "4692f70f2e5f64f3122603f5002f94942761238cc05738c771950a85e2475588"},
+  "990506": {"path": "19990506/990506_cyl.cub", "sha256": "c15d4591c35a877e0e6960bfeb197278f8cdf7c24c3123299b6cc5fbe0c0bb44"}
+ },
+ "law": {
+  "note": "The scattering law the cubes are normalised with: W7's fit (public/data/mars/photometry.json, 2026-10-03) to Mallama & Hilton (2018) Eq. 6 with the W3 part 2 map. Pinned here so the map and the fit that follows it are not circular; the refit on the corrected map is reported in the story.",
+  "w": 0.60653, "b": 0.01, "c": 1, "bs0": 1.27266, "hs": 0.13499, "thetaBarDeg": 0.233,
+  "normalisation": {"incidenceDeg": 30, "emissionDeg": 0, "phaseDeg": 30}
+ }
+}

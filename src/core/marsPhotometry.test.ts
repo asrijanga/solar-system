@@ -49,6 +49,14 @@ describe("Mars's brightness", () => {
   });
 });
 
+describe("Mars's light curve", () => {
+  it("follows Mallama's L1 within 0.035 mag RMS (owner-approved, SS-14 W3 part 3)", () => {
+    // 0.035 mag is the RMS of the longitude term Mallama & Hilton (2018) give.
+    expect(photometry.lightCurve.points).toHaveLength(36);
+    expect(photometry.lightCurve.rmsMag).toBeLessThanOrEqual(0.035);
+  });
+});
+
 describe("Mallama & Hilton's longitude and season corrections", () => {
   it('interpolates their tables through every tabulated point', () => {
     for (let k = 0; k <= 35; k++) {

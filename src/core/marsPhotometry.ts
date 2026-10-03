@@ -151,6 +151,18 @@ export interface MarsPhotometry {
     readonly factor: number;
   }[];
   readonly calibrationSource: string;
+  /** The drawn light curve against Mallama's L1 (SS-14 W3 part 3). */
+  readonly lightCurve: {
+    readonly what: string;
+    readonly rmsMag: number;
+    readonly rangeMag: number;
+    readonly l1RangeMag: number;
+    readonly points: readonly {
+      readonly westDeg: number;
+      readonly drawn: number;
+      readonly l1: number;
+    }[];
+  };
   /** The drawn luminance brought to V: each band's target scaled by one common factor. */
   readonly luminance: {
     readonly weights: readonly number[];

@@ -77,7 +77,13 @@ const BANDS_NM = [440, 530, 750, 970] as const;
  * byte linear over its range), multiplied at the colour file's 2048 x 1024 before averaging.
  */
 function albedoGrid(): { bands: Float64Array[]; cols: number; rows: number } {
-  const file = join(cache, `mars-albedo-bands-block${BLOCK}.f64`);
+  // Named by the map's own hash, so a rebuilt map is never read from an old cache.
+  const sha = (
+    JSON.parse(readFileSync(join(root, 'public', 'data', 'mars', 'albedo.json'), 'utf8')) as {
+      texture: { sha256: string };
+    }
+  ).texture.sha256.slice(0, 16);
+  const file = join(cache, `mars-albedo-bands-block${BLOCK}-${sha}.f64`);
   const width = 8192 / BLOCK;
   const height = 4096 / BLOCK;
   if (!existsSync(file)) {
@@ -512,6 +518,17 @@ const result: MarsPhotometry = {
   },
   calibration,
   calibrationSource: MALLAMA_2017.source,
+  lightCurve: {
+    what: "the drawn disc's V against central meridian (west), seen from the equator at full phase, against Mallama's L1 (Mallama 2007 Table 6), both about their means",
+    rmsMag: Number(curveRms.toFixed(4)),
+    rangeMag: Number(range(lightCurve.map((p) => p.drawn)).toFixed(4)),
+    l1RangeMag: Number(range(lightCurve.map((p) => p.mallama)).toFixed(4)),
+    points: lightCurve.map((p) => ({
+      westDeg: p.westDeg,
+      drawn: Number((p.drawn - drawnMean).toFixed(4)),
+      l1: Number((p.mallama - mallamaMean).toFixed(4)),
+    })),
+  },
   luminance: {
     weights: luminance.map((w) => Number(w.toFixed(5))),
     withEachBandAtItsTarget: Number(pY.toFixed(5)),

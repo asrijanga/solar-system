@@ -2,12 +2,12 @@
  "story": "docs/stories/SS-14.md (W7)",
  "law": {
   "form": "Hapke (core/hapke.ts): single-lobed Henyey-Greenstein (c = 1) with a shadow-hiding opposition surge",
-  "w": 0.60653,
+  "w": 0.50081,
   "b": 0.01,
   "c": 1,
-  "bs0": 1.27266,
-  "hs": 0.13499,
-  "thetaBarDeg": 0.233
+  "bs0": 1.13244,
+  "hs": 0.13451,
+  "thetaBarDeg": 0.061
  },
  "normalisation": {
   "incidenceDeg": 30,
@@ -24,10 +24,10 @@
   "validToDeg": 50,
   "leftOut": "L(lambda_e), \"RMS variation over longitude ... about 0.035 magnitude with excursions as large as 0.060\", and L(Ls): their tables are in Mallama (2007), not read"
  },
- "albedoAreaMean": 0.18116,
- "shapeRmsMag": 0.0184,
+ "albedoAreaMean": 0.13156,
+ "shapeRmsMag": 0.0181,
  "zeroPhaseMagnitudeUncalibrated": {
-  "built": -1.9003,
+  "built": -1.5644,
   "mallamaHilton": -1.601
  },
  "calibration": [
@@ -35,32 +35,220 @@
    "nm": 440,
    "band": "Johnson B",
    "target": 0.0825,
-   "built": 0.12387,
-   "factor": 0.66599
+   "built": 0.091,
+   "factor": 0.90662
   },
   {
    "nm": 530,
    "band": "Johnson V",
    "target": 0.15937,
-   "built": 0.22622,
-   "factor": 0.7045
+   "built": 0.16603,
+   "factor": 0.95992
   },
   {
    "nm": 750,
    "band": "Sloan i'",
    "target": 0.27938,
-   "built": 0.43267,
-   "factor": 0.64571
+   "built": 0.31724,
+   "factor": 0.88064
   },
   {
    "nm": 970,
    "band": "Sloan z'",
    "target": 0.30469,
-   "built": 0.36408,
-   "factor": 0.8369
+   "built": 0.267,
+   "factor": 1.14118
   }
  ],
  "calibrationSource": "Mallama, Krobusek & Pavlov (2017), \"Comprehensive wide-band magnitudes and albedos for the planets\", Icarus 282, 19-33, doi:10.1016/j.icarus.2016.09.023, arXiv:1609.05048, Table 7",
+ "lightCurve": {
+  "what": "the drawn disc's V against central meridian (west), seen from the equator at full phase, against Mallama's L1 (Mallama 2007 Table 6), both about their means",
+  "rmsMag": 0.0257,
+  "rangeMag": 0.1529,
+  "l1RangeMag": 0.11,
+  "points": [
+   {
+    "westDeg": 0,
+    "drawn": 0.0483,
+    "l1": 0.036
+   },
+   {
+    "westDeg": 10,
+    "drawn": 0.0437,
+    "l1": 0.045
+   },
+   {
+    "westDeg": 20,
+    "drawn": 0.0369,
+    "l1": 0.038
+   },
+   {
+    "westDeg": 30,
+    "drawn": 0.0283,
+    "l1": 0.023
+   },
+   {
+    "westDeg": 40,
+    "drawn": 0.017,
+    "l1": 0.015
+   },
+   {
+    "westDeg": 50,
+    "drawn": 0.0021,
+    "l1": 0.011
+   },
+   {
+    "westDeg": 60,
+    "drawn": -0.0152,
+    "l1": 0
+   },
+   {
+    "westDeg": 70,
+    "drawn": -0.0332,
+    "l1": -0.012
+   },
+   {
+    "westDeg": 80,
+    "drawn": -0.0508,
+    "l1": -0.018
+   },
+   {
+    "westDeg": 90,
+    "drawn": -0.0666,
+    "l1": -0.036
+   },
+   {
+    "westDeg": 100,
+    "drawn": -0.08,
+    "l1": -0.044
+   },
+   {
+    "westDeg": 110,
+    "drawn": -0.0897,
+    "l1": -0.059
+   },
+   {
+    "westDeg": 120,
+    "drawn": -0.0948,
+    "l1": -0.06
+   },
+   {
+    "westDeg": 130,
+    "drawn": -0.0952,
+    "l1": -0.055
+   },
+   {
+    "westDeg": 140,
+    "drawn": -0.0912,
+    "l1": -0.043
+   },
+   {
+    "westDeg": 150,
+    "drawn": -0.0828,
+    "l1": -0.041
+   },
+   {
+    "westDeg": 160,
+    "drawn": -0.0708,
+    "l1": -0.041
+   },
+   {
+    "westDeg": 170,
+    "drawn": -0.0567,
+    "l1": -0.036
+   },
+   {
+    "westDeg": 180,
+    "drawn": -0.0407,
+    "l1": -0.036
+   },
+   {
+    "westDeg": 190,
+    "drawn": -0.0237,
+    "l1": -0.018
+   },
+   {
+    "westDeg": 200,
+    "drawn": -0.0067,
+    "l1": -0.038
+   },
+   {
+    "westDeg": 210,
+    "drawn": 0.0103,
+    "l1": -0.011
+   },
+   {
+    "westDeg": 220,
+    "drawn": 0.0258,
+    "l1": 0.002
+   },
+   {
+    "westDeg": 230,
+    "drawn": 0.0378,
+    "l1": 0.004
+   },
+   {
+    "westDeg": 240,
+    "drawn": 0.0466,
+    "l1": 0.018
+   },
+   {
+    "westDeg": 250,
+    "drawn": 0.0525,
+    "l1": 0.019
+   },
+   {
+    "westDeg": 260,
+    "drawn": 0.0561,
+    "l1": 0.035
+   },
+   {
+    "westDeg": 270,
+    "drawn": 0.0577,
+    "l1": 0.05
+   },
+   {
+    "westDeg": 280,
+    "drawn": 0.0576,
+    "l1": 0.035
+   },
+   {
+    "westDeg": 290,
+    "drawn": 0.0565,
+    "l1": 0.027
+   },
+   {
+    "westDeg": 300,
+    "drawn": 0.0553,
+    "l1": 0.037
+   },
+   {
+    "westDeg": 310,
+    "drawn": 0.0543,
+    "l1": 0.048
+   },
+   {
+    "westDeg": 320,
+    "drawn": 0.0536,
+    "l1": 0.025
+   },
+   {
+    "westDeg": 330,
+    "drawn": 0.0533,
+    "l1": 0.022
+   },
+   {
+    "westDeg": 340,
+    "drawn": 0.053,
+    "l1": 0.024
+   },
+   {
+    "westDeg": 350,
+    "drawn": 0.0512,
+    "l1": 0.034
+   }
+  ]
+ },
  "luminance": {
   "weights": [
    0.06916,
@@ -81,52 +269,52 @@
   },
   {
    "alphaDeg": 5,
-   "built": -1.4699,
+   "built": -1.4698,
    "mallamaHilton": -1.4909
   },
   {
    "alphaDeg": 10,
-   "built": -1.3694,
+   "built": -1.3692,
    "mallamaHilton": -1.3873
   },
   {
    "alphaDeg": 15,
-   "built": -1.2844,
+   "built": -1.284,
    "mallamaHilton": -1.2902
   },
   {
    "alphaDeg": 20,
-   "built": -1.207,
+   "built": -1.2066,
    "mallamaHilton": -1.1997
   },
   {
    "alphaDeg": 25,
-   "built": -1.1332,
+   "built": -1.1328,
    "mallamaHilton": -1.1156
   },
   {
    "alphaDeg": 30,
-   "built": -1.0606,
+   "built": -1.0603,
    "mallamaHilton": -1.0381
   },
   {
    "alphaDeg": 35,
-   "built": -0.9874,
+   "built": -0.9873,
    "mallamaHilton": -0.967
   },
   {
    "alphaDeg": 40,
-   "built": -0.9125,
+   "built": -0.9127,
    "mallamaHilton": -0.9025
   },
   {
    "alphaDeg": 45,
-   "built": -0.8352,
+   "built": -0.8357,
    "mallamaHilton": -0.8445
   },
   {
    "alphaDeg": 50,
-   "built": -0.7548,
+   "built": -0.7558,
    "mallamaHilton": -0.793
   }
  ],
@@ -134,30 +322,30 @@
   {
    "incidenceDeg": 15,
    "b": 0.01,
-   "thetaBarDeg": 0.119,
-   "shapeRmsMag": 0.0184,
-   "zeroPhaseMagnitudeUncalibrated": -1.8453
+   "thetaBarDeg": 0,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.5095
   },
   {
    "incidenceDeg": 30,
    "b": 0.01,
-   "thetaBarDeg": 0.233,
-   "shapeRmsMag": 0.0184,
-   "zeroPhaseMagnitudeUncalibrated": -1.9003
+   "thetaBarDeg": 0.061,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.5644
   },
   {
    "incidenceDeg": 45,
    "b": 0.01,
-   "thetaBarDeg": 0.106,
-   "shapeRmsMag": 0.0184,
-   "zeroPhaseMagnitudeUncalibrated": -1.8848
+   "thetaBarDeg": 0,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.5449
   },
   {
    "incidenceDeg": 60,
    "b": 0.01,
-   "thetaBarDeg": 8.539,
-   "shapeRmsMag": 0.0188,
-   "zeroPhaseMagnitudeUncalibrated": -1.8149
+   "thetaBarDeg": 0.118,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.4744
   }
  ],
  "method": {

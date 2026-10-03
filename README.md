@@ -628,7 +628,7 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 
 | ID | World | Round | Notes for this world |
 | --- | --- | --- | --- |
-| SS-14 | Mars | W1–W8 | MOLA global elevation, HRSC and CTX mosaics, HiRISE locally. Likely the first world to need its own data repository (W4) |
+| SS-14 | Mars | W1–W8 | In progress: W1–W4 done (2026-10-03). Albedo and colour from OMEGA and HRSC; terrain from MOLA with HRSC stereo, on its own data site, `asrijanga/solar-system-mars-data` (docs/stories/SS-14.md) |
 | SS-18 | Mercury | W1–W8 | MESSENGER. Permanently shadowed polar craters, as on the Moon |
 | SS-19 | Venus | W1–W8, adapted | Magellan radar is not albedo. W3 becomes radar brightness, labelled as such, over coarse relief |
 | SS-20 | Earth | W1–W8, plus atmosphere | W1 started (`docs/data/earth.md`), and W3 at the Moon's distance is done (SS-13c). The rest: Copernicus, Sentinel, GEBCO. Ocean, clouds and atmosphere are their own stories. Clouds come from the same geostationary satellites at the scene's instant |

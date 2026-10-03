@@ -31,15 +31,15 @@
   "blendKm": 5.0,
   "registration": "one height offset per strip: the median of MOLA minus HRSC over the bins with shots inside it",
   "rejection": "fit RMS more than 3.0 x the median over all strips (owner, 2026-10-02)",
-  "stripsUsed": 1344,
-  "medianFitRmsM": 26.09,
+  "stripsUsed": 1342,
+  "medianFitRmsM": 26.12,
   "offsetsM": {
    "p5": -2.8,
    "median": 0.1,
    "p95": 3.9
   },
   "overlap": {
-   "binsWithTwoOrMoreStrips": 23989416,
+   "binsWithTwoOrMoreStrips": 23837843,
    "spreadM": {
     "median": 18.5,
     "p95": 86.9
@@ -513,12 +513,48 @@
       3889
      ]
     }
+   },
+   "h4526_0000_da4": {
+    "row": 11323,
+    "col": 0,
+    "cells": 131281,
+    "cellsWithShots": 6961,
+    "offsetM": -65.14,
+    "rmsM": 133.17,
+    "extent": {
+     "rows": [
+      11325,
+      11432
+     ],
+     "cols": [
+      18642,
+      20849
+     ]
+    }
+   },
+   "h4706_0000_da4": {
+    "row": 11299,
+    "col": 0,
+    "cells": 1372533,
+    "cellsWithShots": 239289,
+    "offsetM": -268.43,
+    "rmsM": 194.14,
+    "extent": {
+     "rows": [
+      11301,
+      11520
+     ],
+     "cols": [
+      0,
+      23040
+     ]
+    }
    }
   },
   "areaShares": {
-   "hrsc": 0.3864,
+   "hrsc": 0.3863,
    "molaMeasured": 0.3466,
-   "molaInterpolated": 0.267
+   "molaInterpolated": 0.2671
   },
   "extremesM": {
    "max": 21179,
@@ -530,7 +566,7 @@
   "pixelsPerDegree": 8,
   "exactPerBin": "pipeline/.cache/mars-terrain-64-source.img, uint8: {0: 'molaInterpolated', 1: 'molaMeasured', 2: 'hrsc', 3: 'blendBand'}",
   "channels": "red = HRSC, green = MOLA measured, blue = MOLA interpolated; each the share of the pixel, 0-255",
-  "sha256": "ad105991574786827ce4869be957a8a22a240f9fc7e0ae6c98bdfc0816251d8a"
+  "sha256": "eb29adf315cd2c5198a48757c9a0505e7aaf946dbdea924da8f16de7f970cba5"
  },
  "localMode": {
   "hrscWeight": {
@@ -539,7 +575,7 @@
    "encoding": "gzip of 23040 x 11520 unsigned bytes, row-major",
    "grid": "the composite's: 64 px/deg, column 0 = -180 deg, row 0 = +90 deg",
    "values": "byte = round(255 w), w the weight of HRSC against MOLA, fading over 5.0 km inside HRSC's coverage",
-   "sha256": "1f0b1e527c8bebac31d6e28977fa8fe1eb2c484b38aea328cf7f4958c468305c"
+   "sha256": "fd80f00e53bc41d92d6aa2ce2b5112dad37d7efad281aa1abd076888607166f4"
   },
   "stripExtents": "fits[name].extent: rows from +90 deg and columns from 0 E on the 64 px/deg grid, end exclusive, columns modulo 23040"
  },
@@ -9818,9 +9854,9 @@
    "row": 11160,
    "col": 2808,
    "cells": 701790,
-   "cellsWithShots": 335514,
-   "offsetM": 8.96,
-   "rmsM": 37.6,
+   "cellsWithShots": 348940,
+   "offsetM": 7.53,
+   "rmsM": 56.77,
    "extent": {
     "rows": [
      11162,
@@ -11456,9 +11492,9 @@
    "row": 11252,
    "col": 19468,
    "cells": 497433,
-   "cellsWithShots": 160188,
-   "offsetM": 6.5,
-   "rmsM": 17.28,
+   "cellsWithShots": 169030,
+   "offsetM": 4.76,
+   "rmsM": 77.5,
    "extent": {
     "rows": [
      11253,
@@ -19538,9 +19574,9 @@
    "row": 11323,
    "col": 0,
    "cells": 131281,
-   "cellsWithShots": 3789,
-   "offsetM": 21.89,
-   "rmsM": 36.69,
+   "cellsWithShots": 6961,
+   "offsetM": -65.14,
+   "rmsM": 133.17,
    "extent": {
     "rows": [
      11325,
@@ -19862,9 +19898,9 @@
    "row": 11299,
    "col": 0,
    "cells": 1372533,
-   "cellsWithShots": 61734,
-   "offsetM": 12.44,
-   "rmsM": 31.71,
+   "cellsWithShots": 239289,
+   "offsetM": -268.43,
+   "rmsM": 194.14,
    "extent": {
     "rows": [
      11301,
@@ -19898,9 +19934,9 @@
    "row": 11124,
    "col": 0,
    "cells": 965596,
-   "cellsWithShots": 649963,
-   "offsetM": 3.79,
-   "rmsM": 64.83,
+   "cellsWithShots": 658475,
+   "offsetM": 3.2,
+   "rmsM": 75.09,
    "extent": {
     "rows": [
      11126,
@@ -25207,34 +25243,40 @@
  },
  "checks": {
   "molaMeasuredBins.outsideHrsc": {
-   "bins": 99038364,
+   "bins": 99863773,
    "medianM": 0.0,
    "rmsM": 0.0,
    "maxAbsM": 0
   },
   "molaMeasuredBins.insideHrsc": {
-   "bins": 51290945,
+   "bins": 51295219,
    "medianM": 0.0,
-   "rmsM": 32.5,
+   "rmsM": 32.92,
    "maxAbsM": 1795
   },
   "usgsBlend16ppd.everywhere": {
    "pixels": 16588800,
-   "medianM": 0.0,
-   "rmsM": 32.1,
-   "p99AbsM": 141.4
+   "medianM": -0.1,
+   "rmsM": 69.8,
+   "p99AbsM": 390.0
+  },
+  "usgsBlend16ppd.within88": {
+   "pixels": 16220160,
+   "medianM": 0.1,
+   "rmsM": 32.3,
+   "p99AbsM": 142.6
   },
   "usgsBlend16ppd.insideHrsc": {
-   "pixels": 5489794,
-   "medianM": 0.1,
-   "rmsM": 39.7,
-   "p99AbsM": 168.4
+   "pixels": 5424456,
+   "medianM": 0.0,
+   "rmsM": 39.9,
+   "p99AbsM": 169.1
   },
   "usgsBlend16ppd.outsideHrsc": {
-   "pixels": 10541243,
-   "medianM": 0.0,
-   "rmsM": 26.9,
-   "p99AbsM": 121.8
+   "pixels": 10619391,
+   "medianM": -0.1,
+   "rmsM": 82.0,
+   "p99AbsM": 503.5
   },
   "maxHeight": {
    "m": 21179,

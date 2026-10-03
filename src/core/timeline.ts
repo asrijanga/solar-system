@@ -107,9 +107,18 @@ export function iauRotation(
   const centuries = days / 36525;
   const poly = (c: readonly [number, number, number], t: number): number =>
     c[0] + c[1] * t + c[2] * t * t;
-  const ra = poly(constants.poleRaDeg, centuries) * DEG;
-  const dec = poly(constants.poleDecDeg, centuries) * DEG;
-  const w = poly(constants.primeMeridianDeg, days) * DEG;
+  return poleAndMeridian(
+    poly(constants.poleRaDeg, centuries),
+    poly(constants.poleDecDeg, centuries),
+    poly(constants.primeMeridianDeg, days),
+  );
+}
+
+/** [W]₃ [90° − δ]₁ [90° + α]₃: J2000 to body, row-major, from the pole and prime meridian, degrees. */
+export function poleAndMeridian(raDeg: number, decDeg: number, wDeg: number): Mat3Rows {
+  const ra = raDeg * DEG;
+  const dec = decDeg * DEG;
+  const w = wDeg * DEG;
   return multiply(rot3(w), multiply(rot1(Math.PI / 2 - dec), rot3(Math.PI / 2 + ra)));
 }
 

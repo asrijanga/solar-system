@@ -1,0 +1,289 @@
+{
+  "story": "docs/stories/SS-14.md (W7)",
+  "file": "timeline.bin",
+  "sha256": "22fdc95cb470b8563efbffda9b70a290d1cde2a40923f02214ede8959c4c8ebb",
+  "encoding": "little-endian float32, one record of `fields` per sample",
+  "fields": [
+    "sunDirectionJ2000.x",
+    "sunDirectionJ2000.y",
+    "sunDirectionJ2000.z",
+    "sunDistanceKm",
+    "earthDirectionJ2000.x",
+    "earthDirectionJ2000.y",
+    "earthDirectionJ2000.z",
+    "earthDistanceKm",
+    "cosSolarLongitudeLs",
+    "sinSolarLongitudeLs"
+  ],
+  "firstSampleUtc": "2025-12-31T12:00:00Z",
+  "spanUtc": [
+    "2026-01-01T00:00:00Z",
+    "2031-01-01T00:00:00Z"
+  ],
+  "firstSampleTdbSecondsPastJ2000": 820454469.18392,
+  "stepHours": 12,
+  "samples": 3656,
+  "interpolation": "4-point Lagrange through the samples either side (core/timeline.ts)",
+  "measuredWorstError": {
+    "moments": 2000,
+    "seed": 2026,
+    "sunDeg": 2.09e-06,
+    "sunKm": 9.51,
+    "earthDeg": 2.26e-06,
+    "earthKm": 17.7,
+    "lsDeg": 2.41e-06
+  },
+  "timeScales": {
+    "note": "As the Moon's timeline (public/data/moon/timeline.json): UTC to TDB by the span's constant offset at the first sample; no leap second in the span as of naif0012.tls.",
+    "lastLeapSecond": {
+      "deltaAtSeconds": 37.0,
+      "fromTdbSecondsPastJ2000": 536500800.0
+    }
+  },
+  "rotation": {
+    "frame": "IAU_MARS",
+    "source": "pck00011.tpc: BODY499_POLE_RA, BODY499_POLE_DEC, BODY499_PM, BODY499_NUT_PREC_RA/DEC/PM, BODY4_NUT_PREC_ANGLES (BODY4_MAX_PHASE_DEGREE 2). Angles in degrees; T Julian centuries and d days of TDB since J2000. alpha = poly(T) + sum ra_k sin(theta_k), delta = poly(T) + sum dec_k cos(theta_k), W = poly(d) + sum pm_k sin(theta_k), theta_k = A_k + B_k T + C_k T^2",
+    "poleRaDeg": [
+      317.269202,
+      -0.10927547,
+      0.0
+    ],
+    "poleDecDeg": [
+      54.432516,
+      -0.05827105,
+      0.0
+    ],
+    "primeMeridianDeg": [
+      176.049863,
+      350.891982443297,
+      0.0
+    ],
+    "nutPrecRaDeg": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      6.8e-05,
+      0.000238,
+      5.2e-05,
+      9e-06,
+      0.419057
+    ],
+    "nutPrecDecDeg": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      5.1e-05,
+      0.000141,
+      3.1e-05,
+      5e-06,
+      1.5912739999999999
+    ],
+    "nutPrecPmDeg": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.000145,
+      0.000157,
+      4e-05,
+      1e-06,
+      1e-06,
+      0.584542
+    ],
+    "nutPrecAnglesDeg": [
+      [
+        190.72646643,
+        15917.10818695,
+        0.0
+      ],
+      [
+        21.4689247,
+        31834.27934054,
+        0.0
+      ],
+      [
+        332.86082793,
+        19139.89694742,
+        0.0
+      ],
+      [
+        394.93256437,
+        38280.79631835,
+        0.0
+      ],
+      [
+        189.6327156,
+        41215158.1842005,
+        12.711923222
+      ],
+      [
+        121.46893664,
+        660.22803474,
+        0.0
+      ],
+      [
+        231.05028581,
+        660.9912354,
+        0.0
+      ],
+      [
+        251.37314025,
+        1320.50145245,
+        0.0
+      ],
+      [
+        217.98635955,
+        38279.9612555,
+        0.0
+      ],
+      [
+        196.19729402,
+        19139.83628608,
+        0.0
+      ],
+      [
+        198.991226,
+        19139.4819985,
+        0.0
+      ],
+      [
+        226.292679,
+        38280.8511281,
+        0.0
+      ],
+      [
+        249.663391,
+        57420.7251593,
+        0.0
+      ],
+      [
+        266.18351,
+        76560.636795,
+        0.0
+      ],
+      [
+        79.398797,
+        0.5042615,
+        0.0
+      ],
+      [
+        122.433576,
+        19139.9407476,
+        0.0
+      ],
+      [
+        43.058401,
+        38280.8753272,
+        0.0
+      ],
+      [
+        57.663379,
+        57420.7517205,
+        0.0
+      ],
+      [
+        79.476401,
+        76560.6495004,
+        0.0
+      ],
+      [
+        166.325722,
+        0.5042615,
+        0.0
+      ],
+      [
+        129.071773,
+        19140.0328244,
+        0.0
+      ],
+      [
+        36.352167,
+        38281.0473591,
+        0.0
+      ],
+      [
+        56.668646,
+        57420.929536,
+        0.0
+      ],
+      [
+        67.364003,
+        76560.2552215,
+        0.0
+      ],
+      [
+        104.79268,
+        95700.4387578,
+        0.0
+      ],
+      [
+        95.391654,
+        0.5042615,
+        0.0
+      ]
+    ]
+  },
+  "aberrationCorrection": "LT+S",
+  "kernels": [
+    {
+      "file": "naif0012.tls",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
+      "sha256": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b"
+    },
+    {
+      "file": "de440s.bsp",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
+      "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2"
+    },
+    {
+      "file": "pck00011.tpc",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+      "sha256": "3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1"
+    },
+    {
+      "file": "gm_de440.tpc",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/gm_de440.tpc",
+      "sha256": "924ddf4fb9ead9fe8a1aa55780bcabde40b09d00065d58226e24b68d8092f140"
+    },
+    {
+      "file": "mar099s.bsp",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/mar099s.bsp",
+      "sha256": "997dc93ba640e476da7a494d2237dcdeb145e528db37be8ccee588c615e4e1ff"
+    }
+  ]
+}

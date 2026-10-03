@@ -1,0 +1,162 @@
+{
+ "story": "docs/stories/SS-14.md (W7)",
+ "law": {
+  "form": "Hapke (core/hapke.ts): single-lobed Henyey-Greenstein (c = 1) with a shadow-hiding opposition surge",
+  "w": 0.60653,
+  "b": 0.01,
+  "c": 1,
+  "bs0": 1.27266,
+  "hs": 0.13499,
+  "thetaBarDeg": 0.233
+ },
+ "normalisation": {
+  "incidenceDeg": 30,
+  "emissionDeg": 0,
+  "phaseDeg": 30,
+  "why": "OMEGA albedo = I/F / cos(i), near nadir (e < 15 deg), i < 75 deg (Ody et al. 2012, §2.2, §3.1); the incidence within that range is a choice, its effect measured in `normalisationTried`"
+ },
+ "fittedTo": {
+  "source": "Mallama & Hilton (2018), \"Computing apparent planetary magnitudes for The Astronomical Almanac\", Astronomy and Computing 25, doi:10.1016/j.ascom.2018.08.002, arXiv:1808.01973, Eq. 6",
+  "formula": "V = 5 log10(r d) - 1.601 + 0.02267 a - 0.0001302 a^2 + L(lambda_e) + L(Ls), a <= 50 deg",
+  "v10": -1.601,
+  "linear": 0.02267,
+  "quadratic": -0.0001302,
+  "validToDeg": 50,
+  "leftOut": "L(lambda_e), \"RMS variation over longitude ... about 0.035 magnitude with excursions as large as 0.060\", and L(Ls): their tables are in Mallama (2007), not read"
+ },
+ "albedoAreaMean": 0.18116,
+ "shapeRmsMag": 0.0184,
+ "zeroPhaseMagnitudeUncalibrated": {
+  "built": -1.9003,
+  "mallamaHilton": -1.601
+ },
+ "calibration": [
+  {
+   "nm": 440,
+   "band": "Johnson B",
+   "target": 0.08889,
+   "built": 0.12387,
+   "factor": 0.71759
+  },
+  {
+   "nm": 530,
+   "band": "Johnson V",
+   "target": 0.17172,
+   "built": 0.22622,
+   "factor": 0.75908
+  },
+  {
+   "nm": 750,
+   "band": "Sloan i'",
+   "target": 0.30102,
+   "built": 0.43267,
+   "factor": 0.69573
+  },
+  {
+   "nm": 970,
+   "band": "Sloan z'",
+   "target": 0.3283,
+   "built": 0.36408,
+   "factor": 0.90174
+  }
+ ],
+ "calibrationSource": "Mallama, Krobusek & Pavlov (2017), \"Comprehensive wide-band magnitudes and albedos for the planets\", Icarus 282, 19-33, doi:10.1016/j.icarus.2016.09.023, arXiv:1609.05048, Table 7",
+ "curve": [
+  {
+   "alphaDeg": 0,
+   "built": -1.601,
+   "mallamaHilton": -1.601
+  },
+  {
+   "alphaDeg": 5,
+   "built": -1.4698,
+   "mallamaHilton": -1.4909
+  },
+  {
+   "alphaDeg": 10,
+   "built": -1.3694,
+   "mallamaHilton": -1.3873
+  },
+  {
+   "alphaDeg": 15,
+   "built": -1.2843,
+   "mallamaHilton": -1.2902
+  },
+  {
+   "alphaDeg": 20,
+   "built": -1.2069,
+   "mallamaHilton": -1.1997
+  },
+  {
+   "alphaDeg": 25,
+   "built": -1.1331,
+   "mallamaHilton": -1.1156
+  },
+  {
+   "alphaDeg": 30,
+   "built": -1.0605,
+   "mallamaHilton": -1.0381
+  },
+  {
+   "alphaDeg": 35,
+   "built": -0.9873,
+   "mallamaHilton": -0.967
+  },
+  {
+   "alphaDeg": 40,
+   "built": -0.9124,
+   "mallamaHilton": -0.9025
+  },
+  {
+   "alphaDeg": 45,
+   "built": -0.8351,
+   "mallamaHilton": -0.8445
+  },
+  {
+   "alphaDeg": 50,
+   "built": -0.7547,
+   "mallamaHilton": -0.793
+  }
+ ],
+ "normalisationTried": [
+  {
+   "incidenceDeg": 15,
+   "b": 0.01,
+   "thetaBarDeg": 0.119,
+   "shapeRmsMag": 0.0184,
+   "zeroPhaseMagnitudeUncalibrated": -1.8453
+  },
+  {
+   "incidenceDeg": 30,
+   "b": 0.01,
+   "thetaBarDeg": 0.233,
+   "shapeRmsMag": 0.0184,
+   "zeroPhaseMagnitudeUncalibrated": -1.9003
+  },
+  {
+   "incidenceDeg": 45,
+   "b": 0.01,
+   "thetaBarDeg": 0.106,
+   "shapeRmsMag": 0.0184,
+   "zeroPhaseMagnitudeUncalibrated": -1.8848
+  },
+  {
+   "incidenceDeg": 60,
+   "b": 0.01,
+   "thetaBarDeg": 8.539,
+   "shapeRmsMag": 0.0188,
+   "zeroPhaseMagnitudeUncalibrated": -1.8149
+  }
+ ],
+ "method": {
+  "grid": "albedo.webp in 64 x 64 pixel block means (128 x 64)",
+  "longitudesAveraged": 12,
+  "viewer": "on the equator; the Sun in the equatorial plane",
+  "radiiKm": [
+   3396.19,
+   3376.2
+  ],
+  "sunVMagnitude": -26.74,
+  "band": "the map is reflectance at 530 nm; Eq. 6 is Johnson V (about 550 nm)"
+ }
+}

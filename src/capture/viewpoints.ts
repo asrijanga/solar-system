@@ -404,6 +404,14 @@ const SEAM_CHECK: BodyCheck = { kind: 'seam', name: 'no line at ±180°', maxRat
 const MARS_RADIUS_KM = 3396.19;
 
 /**
+ * Teisserenc de Bort, as public/data/mars/landmarks.json has it from the Gazetteer; a test asserts
+ * it. Chosen for a fresh 115 km crater with the Sun 11° up on 26 January 2026: Cassini (408 km), the
+ * first choice, is old and gentle, and across it the Sun's own height changes by 7°, which
+ * outweighed its walls (east 71.4 against west 78.5, 2026-10-03).
+ */
+const TEISSERENC_DE_BORT = { lonDeg: 45.0726, latDeg: 0.4335, diameterKm: 114.888 } as const;
+
+/**
  * Mars far away, as a disc: 40 radii out the visible cap is all but a hemisphere (87.1° from
  * the centre), so the disc's mean brightness is its geometric-albedo-like p Φ(α). A 3.6° field
  * makes the disc 80% of the frame. The smooth ellipsoid: the photometry checks are written for it.
@@ -884,6 +892,69 @@ export const viewpoints: readonly Viewpoint[] = [
       ...MOON_SETUP,
       vantage: { kind: 'over', lonDeg: 0, latDeg: -80 },
       shading: 'albedo',
+    },
+  },
+  {
+    ...SPACE,
+    id: 'mars-teisserenc-de-bort',
+    description:
+      'Teisserenc de Bort crater (115 km, 0.4\u00b0N 45.1\u00b0E) on 26 January 2026, the Sun 11\u00b0 up in the west: Mars\u2019s terrain from its data site, lit by the fitted law. Its eastern inner wall faces the Sun and must be the brighter.',
+    scene: 'mars',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: {
+        kind: 'over',
+        lonDeg: TEISSERENC_DE_BORT.lonDeg,
+        latDeg: TEISSERENC_DE_BORT.latDeg,
+      },
+      distanceKm: MARS_RADIUS_KM + 400,
+      fovDeg: 40,
+    },
+    bodyChecks: [
+      {
+        kind: 'walls',
+        name: 'Teisserenc de Bort\u2019s sunward wall',
+        ...TEISSERENC_DE_BORT,
+        inner: [0.35, 0.5],
+        brighter: 'east',
+      },
+    ],
+  },
+  {
+    ...SPACE,
+    id: 'mars-valles-tilted',
+    description:
+      'Looking north across Valles Marineris (Melas and Coprates Chasmata) from over 15\u00b0S 72\u00b0W, 250 km up and tilted 50\u00b0 towards the horizon, 26 January 2026. For eyes: the canyon\u2019s walls and depth should read in true scale.',
+    scene: 'mars',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: -72, latDeg: -15 },
+      distanceKm: MARS_RADIUS_KM + 250,
+      fovDeg: 60,
+      tiltDeg: 50,
+    },
+  },
+  {
+    ...SPACE,
+    id: 'mars-orbit',
+    description:
+      'Orbit mode (?orbit=7) at its start, 26 January 2026: a random orbit around Mars at the lowest height its website terrain stays sharp from for this 1024-pixel view. For eyes.',
+    scene: 'mars',
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', orbitSeed: 7 },
+  },
+  {
+    ...SPACE,
+    id: 'mars-orbit-labels',
+    description:
+      'The orbit from over Valles Marineris heading north at the lowest sharp height, 26 January 2026, with the Gazetteer labels on. (Olympus Mons, the first choice, is on the night side then.) For eyes.',
+    scene: 'mars',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      orbitFrom: { landmark: 'Valles Marineris', angleDeg: 0 },
+      labels: true,
     },
   },
   {

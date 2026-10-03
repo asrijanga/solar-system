@@ -53,11 +53,8 @@ interface MarsAlbedoManifest {
   };
 }
 
-/** The sphere Mars's terrain tiles are heights above (tools/terrain/mars.ts, W4), km. */
-export const MARS_TILE_SPHERE_KM = 3396;
-
-/** Mars's own data site, whose Pages serve its terrain (W4); `npm run local` serves /mars-terrain/. */
-export const MARS_TERRAIN_SITE = 'https://asrijanga.github.io/solar-system-mars-data/terrain/';
+export { MARS_TERRAIN_SITE, MARS_TILE_SPHERE_KM } from './marsSite';
+import { MARS_TERRAIN_SITE, MARS_TILE_SPHERE_KM } from './marsSite';
 
 /** Mars's map bands in the colour weights' column order: shorter, reference, mid, longer (nm). */
 const MARS_BANDS_NM = [440, 530, 750, 970] as const;

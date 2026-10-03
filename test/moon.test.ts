@@ -58,3 +58,41 @@ describe('albedo map against the Hapke parameter maps', () => {
     expect(albedo.calibration.consistency.tiles).toBe(360 * 140);
   });
 });
+
+describe('Mars viewpoint checks', () => {
+  const landmarks = (
+    JSON.parse(
+      readFileSync(join(import.meta.dirname, '../public/data/mars/landmarks.json'), 'utf8'),
+    ) as {
+      landmarks: { name: string; lonDeg: number; latDeg: number; diameterKm: number }[];
+    }
+  ).landmarks;
+  const fixture = (
+    JSON.parse(
+      readFileSync(join(import.meta.dirname, 'fixtures/iau-gazetteer-mars.json'), 'utf8'),
+    ) as {
+      features: { name: string; lonDeg: number; latDeg: number; expect: string }[];
+    }
+  ).features;
+
+  it('take their features where the Gazetteer puts them', () => {
+    for (const v of viewpoints.filter((x) => x.scene === 'mars')) {
+      for (const check of v.bodyChecks) {
+        if (check.kind === 'feature') {
+          const f = fixture.find((x) => x.name === check.name);
+          expect(f, check.name).toBeDefined();
+          expect(check.lonDeg).toBeCloseTo(f?.lonDeg ?? NaN, 4);
+          expect(check.latDeg).toBeCloseTo(f?.latDeg ?? NaN, 4);
+          expect(check.expect).toBe(f?.expect === 'dark' ? 'darker' : 'brighter');
+        }
+        if (check.kind === 'walls') {
+          const l = landmarks.find((x) => check.name.startsWith(x.name));
+          expect(l, check.name).toBeDefined();
+          expect(check.lonDeg).toBeCloseTo(l?.lonDeg ?? NaN, 4);
+          expect(check.latDeg).toBeCloseTo(l?.latDeg ?? NaN, 4);
+          expect(check.diameterKm).toBeCloseTo(l?.diameterKm ?? NaN, 3);
+        }
+      }
+    }
+  });
+});

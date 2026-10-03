@@ -10,6 +10,7 @@ import { preview } from 'vite';
 import type { CaptureReport } from '../../src/capture/protocol.ts';
 import { findViewpoint, viewpoints, type Viewpoint } from '../../src/capture/viewpoints.ts';
 import { judge } from './checks.ts';
+import { MARS_TERRAIN_SITE } from '../../src/scenes/marsSite.ts';
 import type { EphemerisFile } from './moon.ts';
 import { compareImages, identicalPixels } from './compare.ts';
 import { capturesDir, distDir, pngPath, root, sidecarPath } from './paths.ts';
@@ -69,6 +70,19 @@ async function render(
     deviceScaleFactor: 1,
   });
   try {
+    // Behind an HTTPS proxy (a sandbox), Chromium cannot reach Mars's data site (docs/stories/
+    // SS-14.md, W4) itself; Node fetches its files for it, byte for byte. Elsewhere, as in CI,
+    // the browser fetches them directly.
+    if (process.env['HTTPS_PROXY'] !== undefined) {
+      await context.route(`${MARS_TERRAIN_SITE}**`, async (route) => {
+        const response = await fetch(route.request().url());
+        await route.fulfill({
+          status: response.status,
+          headers: Object.fromEntries(response.headers),
+          body: Buffer.from(await response.arrayBuffer()),
+        });
+      });
+    }
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));

@@ -545,6 +545,15 @@
    "latDeg": 72.7677,
    "diameterKm": 81.36881,
    "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3091"
+  },
+  {
+   "name": "Teisserenc de Bort",
+   "label": "Teisserenc de Bort",
+   "kind": "crater",
+   "lonDeg": 45.0726,
+   "latDeg": 0.4335,
+   "diameterKm": 114.888,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5901"
   }
  ]
 }

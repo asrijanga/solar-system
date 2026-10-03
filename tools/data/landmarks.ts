@@ -167,6 +167,8 @@ const MARS_CHOSEN: Chosen = [
   ['Newton', 'crater'],
   ['Lyot', 'crater'],
   ['Korolev', 'crater'],
+  // Near the terminator on 26 January 2026: the relief check's crater (src/capture/viewpoints.ts).
+  ['Teisserenc de Bort', 'crater'],
 ];
 
 /** Where each world's Gazetteer file is, pinned, and what to label. */

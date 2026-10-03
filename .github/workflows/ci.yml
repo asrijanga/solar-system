@@ -85,7 +85,7 @@ jobs:
           # base gives exactly what the pull request changes.
           git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
           changed=$(git diff --name-only "origin/${{ github.base_ref }}" HEAD -- \
-            src/main.ts src/scenes src/core src/gpu tools/perf package.json package-lock.json \
+            src/main.ts src/worlds src/ui src/scenes src/core src/gpu tools/perf package.json package-lock.json \
             | grep -v '\.test\.ts$' || true)
           echo "Frame code changed:"
           echo "${changed:-  (nothing: allocation not measured)}"
@@ -121,6 +121,9 @@ jobs:
         run: npm run alloc
       - if: steps.frame.outputs.changed == 'true'
         run: npm run alloc -- orbit=7 relief=off
+      # Mars's page, its terrain from Mars's own data site (docs/stories/SS-14.md, W7).
+      - if: steps.frame.outputs.changed == 'true'
+        run: npm run alloc -- world=mars
       - uses: actions/upload-artifact@v4
         if: always() && steps.frame.outputs.changed == 'true'
         with:

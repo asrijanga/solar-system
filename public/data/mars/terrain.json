@@ -32,17 +32,17 @@
   "registration": "one height offset per strip: the median of MOLA minus HRSC over the bins with shots inside it",
   "rejection": "fit RMS more than 3.0 x the median over all strips (owner, 2026-10-02)",
   "stripsUsed": 1344,
-  "medianFitRmsM": 26.05,
+  "medianFitRmsM": 26.09,
   "offsetsM": {
    "p5": -2.8,
    "median": 0.1,
    "p95": 3.9
   },
   "overlap": {
-   "binsWithTwoOrMoreStrips": 23769255,
+   "binsWithTwoOrMoreStrips": 23989416,
    "spreadM": {
-    "median": 18.6,
-    "p95": 87.1
+    "median": 18.5,
+    "p95": 86.9
    }
   },
   "leftOut": {
@@ -256,9 +256,9 @@
    }
   },
   "areaShares": {
-   "hrsc": 0.3863,
+   "hrsc": 0.3864,
    "molaMeasured": 0.3466,
-   "molaInterpolated": 0.2671
+   "molaInterpolated": 0.267
   },
   "extremesM": {
    "max": 21179,
@@ -270,7 +270,7 @@
   "pixelsPerDegree": 8,
   "exactPerBin": "pipeline/.cache/mars-terrain-64-source.img, uint8: {0: 'molaInterpolated', 1: 'molaMeasured', 2: 'hrsc', 3: 'blendBand'}",
   "channels": "red = HRSC, green = MOLA measured, blue = MOLA interpolated; each the share of the pixel, 0-255",
-  "sha256": "2f5b294ff4938e5c7fd2eb80ca92158816fd9178485e866f5dcb16a0eddbd2ca"
+  "sha256": "ad105991574786827ce4869be957a8a22a240f9fc7e0ae6c98bdfc0816251d8a"
  },
  "fits": {
   "h0010_0009_da4": {
@@ -8723,11 +8723,11 @@
   },
   "h4547_0000_da4": {
    "row": 11304,
-   "col": -2,
-   "cells": 149,
-   "cellsWithShots": 96,
-   "offsetM": 9.46,
-   "rmsM": 4.96
+   "col": 0,
+   "cells": 132527,
+   "cellsWithShots": 50967,
+   "offsetM": 10.82,
+   "rmsM": 16.79
   },
   "h4559_0000_da4": {
    "row": 10841,
@@ -8803,11 +8803,11 @@
   },
   "h4661_0000_da4": {
    "row": 11150,
-   "col": -2,
-   "cells": 188,
-   "cellsWithShots": 173,
-   "offsetM": -0.22,
-   "rmsM": 24.09
+   "col": 0,
+   "cells": 48213,
+   "cellsWithShots": 44019,
+   "offsetM": 0.09,
+   "rmsM": 35.98
   },
   "h4685_0000_da4": {
    "row": 11182,
@@ -8859,11 +8859,11 @@
   },
   "h4706_0000_da4": {
    "row": 11299,
-   "col": -2,
-   "cells": 112,
-   "cellsWithShots": 2,
-   "offsetM": 28.19,
-   "rmsM": 8.62
+   "col": 0,
+   "cells": 1372533,
+   "cellsWithShots": 61734,
+   "offsetM": 12.44,
+   "rmsM": 31.71
   },
   "h4709_0000_da4": {
    "row": 10496,
@@ -11236,34 +11236,34 @@
  },
  "checks": {
   "molaMeasuredBins.outsideHrsc": {
-   "bins": 99077540,
+   "bins": 99038364,
    "medianM": 0.0,
    "rmsM": 0.0,
    "maxAbsM": 0
   },
   "molaMeasuredBins.insideHrsc": {
-   "bins": 51257150,
+   "bins": 51290945,
    "medianM": 0.0,
-   "rmsM": 32.52,
+   "rmsM": 32.5,
    "maxAbsM": 1795
   },
   "usgsBlend16ppd.everywhere": {
    "pixels": 16588800,
-   "medianM": 0.1,
-   "rmsM": 32.2,
-   "p99AbsM": 141.7
+   "medianM": 0.0,
+   "rmsM": 32.1,
+   "p99AbsM": 141.4
   },
   "usgsBlend16ppd.insideHrsc": {
-   "pixels": 5423346,
+   "pixels": 5489794,
    "medianM": 0.1,
-   "rmsM": 39.8,
-   "p99AbsM": 169.1
+   "rmsM": 39.7,
+   "p99AbsM": 168.4
   },
   "usgsBlend16ppd.outsideHrsc": {
-   "pixels": 10620858,
+   "pixels": 10541243,
    "medianM": 0.0,
-   "rmsM": 27.2,
-   "p99AbsM": 122.1
+   "rmsM": 26.9,
+   "p99AbsM": 121.8
   },
   "maxHeight": {
    "m": 21179,

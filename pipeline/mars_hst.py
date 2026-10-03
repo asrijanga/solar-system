@@ -21,12 +21,14 @@ Method:
    to the map's geometry (e = 0, g = i = 30 deg: the map is I/F / cos i seen near nadir, Ody et al.
    2012) by the law in hst_sources.json: A = I/F x R(30, 0, 30) / (cos 30 x R(i, e, g)), with g the
    cube's own phase angle from its header's sub-Earth and sub-solar points.
-2. The four days are averaged, each pixel weighted by mu mu0, and resampled onto the map's 0.3 deg
+2. The four days are averaged, each pixel weighted by (mu - cos 60)(mu0 - cos 60), and resampled onto the map's 0.3 deg
    pixel centres.
 3. The ratio of that to the map at 0.3 deg is smoothed by a Gaussian of SIGMA_DEG (normalised
    convolution with the same weights, wrapping in longitude).
-4. Where Hubble did not see, the factor fades to the ratio's median over the covered planet within
-   FADE_DEG of the coverage edge: there the map keeps its own contrast, and albedo-hst.png says so.
+4. Where Hubble did not see, the factor fades to the ratio's median over the covered planet as the
+   smoothed weight falls away, over the same Gaussian: there the map keeps its own contrast, and
+   albedo-hst.png says so. Each day's weight falls to zero at the angle cut, so no day's edge leaves
+   a step (the first build, cut sharply, left arcs where a day stopped).
 """
 
 from __future__ import annotations
@@ -38,7 +40,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-from scipy.ndimage import distance_transform_edt, gaussian_filter, map_coordinates
+from scipy.ndimage import gaussian_filter, map_coordinates
 
 from download import fetch
 from hapke import hapke
@@ -49,14 +51,14 @@ WIDTH, HEIGHT = 1200, 600
 STEP_DEG = 0.3
 # The filter nearest the map's 530 nm band and Johnson V: F547M, 546.78 nm, 48 nm wide.
 WAVELENGTH_NM = 546.78
-# Limb and terminator are left out: there the law's normalisation is least certain.
+# Limb and terminator are left out: there the law's normalisation is least certain. Weights fall
+# to zero at this angle.
 MAX_ANGLE_DEG = 60.0
-# The scale above which Hubble sets the level (owner-approved spec: 2 deg, part 2's blend scale),
-# and the width over which the factor fades to its median outside Hubble's coverage.
+# The scale above which Hubble sets the level (owner-approved spec: 2 deg, part 2's blend scale).
+# The fade to the median outside Hubble's coverage runs over the same Gaussian.
 SIGMA_DEG = 2.0
-FADE_DEG = 2.0
-# A 0.3 deg pixel counts as covered when the smoothed weight there is at least this fraction of
-# the weight of fully covered ground.
+# Hubble sets the level fully where the smoothed weight is at least this fraction of the weight of
+# fully covered ground, and fades out below it.
 COVERED = 0.5
 
 
@@ -117,7 +119,11 @@ def normalised_day(day: str) -> tuple[np.ndarray, np.ndarray, dict]:
         "pixelsUsed": int(ok.sum()),
         "medianAtMapGeometry": round(float(np.median(a[ok])), 4),
     }
-    return a, np.where(ok, mu * mu0, 0.0), record
+    # Each day's weight falls to zero at the angle cut, so no day's edge leaves a step where it
+    # stops contributing: (mu - cos cut)(mu0 - cos cut), scaled to 1 at the centre of the disc.
+    cut = math.cos(math.radians(MAX_ANGLE_DEG))
+    weight = np.where(ok, (mu - cut) * (mu0 - cut) / (1 - cut) ** 2, 0.0)
+    return a, np.maximum(weight, 0.0), record
 
 
 def to_map_centres(field: np.ndarray) -> np.ndarray:
@@ -154,13 +160,14 @@ def factor_field(
     num = smooth(ratio * hst_w, sigma_px)
     den = smooth(hst_w, sigma_px)
     smoothed = num / np.maximum(den, 1e-12)
-    # Full weight: the smoothed weight over ground every day saw well, its 90th percentile.
+    # Full weight: the smoothed weight over ground every day saw well, its 90th percentile. The
+    # factor leans on Hubble as far as its smoothed weight reaches that, and fades to the median as
+    # the weight falls away: continuous, over the same SIGMA_DEG Gaussian.
     full = float(np.percentile(den[seen], 90))
-    covered = den >= COVERED * full
+    fade = np.clip(den / (COVERED * full), 0, 1)
+    covered = fade >= 1
     median = float(np.median((hst / map_03)[seen]))
-    distance = distance_transform_edt(~covered) * STEP_DEG
-    fade = np.clip(1 - distance / FADE_DEG, 0, 1)
-    factor = median + fade * (np.where(covered | (fade > 0), smoothed, median) - median)
+    factor = median + fade * (smoothed - median)
 
     lat = 90 - (np.arange(HEIGHT) + 0.5) * STEP_DEG
     bands = {}
@@ -174,7 +181,7 @@ def factor_field(
         "maxAngleDeg": MAX_ANGLE_DEG,
         "law": SOURCES["law"],
         "sigmaDeg": SIGMA_DEG,
-        "fadeDeg": FADE_DEG,
+        "fade": "to the median as the smoothed weight falls below COVERED of full, over the same Gaussian",
         "coveredFraction": round(float(covered.mean()), 4),
         "coveredFractionByLatitude": bands,
         "medianRatioHubbleOverMap": round(median, 4),

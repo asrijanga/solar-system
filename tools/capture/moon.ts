@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import type { PNG } from 'pngjs';
 import type { BodyCheck, BodySetup } from '../../src/capture/viewpoints.ts';
 import { hapke, type HapkeParameters } from '../../src/core/hapke.ts';
-import { mallamaHiltonV } from '../../src/core/marsPhotometry.ts';
+import { mallamaHiltonFullV } from '../../src/core/marsPhotometry.ts';
 import {
   AU_KM,
   displayValue,
@@ -29,6 +29,8 @@ export interface EphemerisFile {
     readonly sunDistanceKm: number;
     readonly earthDirectionJ2000: readonly number[];
     readonly j2000ToBodyFixed: readonly (readonly number[])[];
+    /** Mars's season, degrees (public/data/mars/ephemeris.json). */
+    readonly solarLongitudeLsDeg?: number;
   }[];
 }
 
@@ -67,6 +69,10 @@ export interface MoonPixels {
   readonly sunDistanceKm: number;
   /** Sun-body-camera angle at the body's centre, degrees. */
   readonly phaseAngleDeg: number;
+  /** East longitudes of the points below the camera and the Sun, degrees, and the season, if any. */
+  readonly subObserverLonDeg: number;
+  readonly subSolarLonDeg: number;
+  readonly lsDeg: number | null;
   /** The area the body's outline encloses seen from the camera's direction, km² (a sphere: πR²). */
   readonly projectedAreaKm2: number;
 }
@@ -137,6 +143,12 @@ export function castMoonRays(
     hit: new Uint8Array(n),
     normal: new Float64Array(n * 3),
     solidAngle: new Float64Array(n),
+    subObserverLonDeg: (Math.atan2(fromBody[1], fromBody[0]) * 180) / Math.PI,
+    subSolarLonDeg: (() => {
+      const s = toBody(sun);
+      return (Math.atan2(s[1], s[0]) * 180) / Math.PI;
+    })(),
+    lsDeg: epoch.solarLongitudeLsDeg ?? null,
     phaseAngleDeg: (Math.acos(Math.max(-1, Math.min(1, dot(from, sun)))) * 180) / Math.PI,
     projectedAreaKm2:
       Math.PI *
@@ -356,7 +368,14 @@ export function runMoonCheck(png: PNG, pixels: MoonPixels, check: BodyCheck): Ch
       const measured =
         SUN_V_MAGNITUDE -
         2.5 * Math.log10((pPhi * pixels.projectedAreaKm2) / (Math.PI * AU_KM * AU_KM));
-      const expected = mallamaHiltonV(pixels.phaseAngleDeg);
+      if (pixels.lsDeg === null) throw new Error(`${check.name}: the epoch has no season (Ls)`);
+      // Eq. 6 with Mallama's longitude and season corrections (core/marsPhotometry.ts).
+      const expected = mallamaHiltonFullV(
+        pixels.phaseAngleDeg,
+        pixels.subObserverLonDeg,
+        pixels.subSolarLonDeg,
+        pixels.lsDeg,
+      );
       const off = measured - expected;
       const pass = omega > 0 && Math.abs(off) <= check.toleranceMag;
       return {

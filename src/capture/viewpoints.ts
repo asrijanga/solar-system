@@ -99,7 +99,8 @@ export type BodyCheck =
   | {
       /**
        * The whole disc's brightness as a V magnitude at 1 AU, against Mars's measured one,
-       * Mallama & Hilton (2018) Eq. 6 (core/marsPhotometry.ts), at the capture's phase angle.
+       * Mallama & Hilton (2018) Eq. 6 with its longitude and season terms
+       * (core/marsPhotometry.ts), at the capture's geometry.
        * The harness sums the drawn colour's luminance over the disc's solid angle.
        */
       readonly kind: 'disc-magnitude';
@@ -417,9 +418,9 @@ const MARS_DISC: BodySetup = {
 };
 
 /**
- * Mars's whole-disc brightness against its measured phase curve, within the owner's 0.06 mag
- * (2026-10-03, the W7 spec): the largest longitude effect Mallama & Hilton give, as their
- * longitude and season terms are not modelled.
+ * Mars's whole-disc brightness against its measured one, within the owner's 0.06 mag (2026-10-03,
+ * the W7 spec): Eq. 6 with Mallama's longitude and season corrections, read from his published
+ * code (core/marsPhotometry.ts) after the spec was approved.
  */
 const MARS_DISC_MAGNITUDE: BodyCheck = {
   kind: 'disc-magnitude',

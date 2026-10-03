@@ -10,7 +10,7 @@
 // Everything is linear in the band ratios, so each display channel is a fixed weighted sum of
 // them: tint_c = Σ_k W[c][k] · ratio_k, with each row of W summing to 1. The shader uses W.
 
-import { cie1931, xyzToLinearSrgb } from './starColour';
+import { cie1931, xyzToLinearSrgb } from './starColour.ts';
 
 /** WAC bands in the colour map, nm, in the order of the weights' columns. */
 export const COLOUR_BANDS_NM = [415, 566, 643, 689] as const;
@@ -28,11 +28,13 @@ export function sunlight(lambdaNm: number): number {
   return 1 / (l ** 5 * (Math.exp((H * C) / (l * K * SUN_EFFECTIVE_TEMPERATURE_K)) - 1));
 }
 
-/** The tent functions that interpolate linearly between the bands, flat beyond them. */
-export function bandBasis(lambdaNm: number): number[] {
-  const b = COLOUR_BANDS_NM;
+/**
+ * The tent functions that interpolate linearly between the bands, flat beyond them. The Moon's
+ * WAC bands unless given (Mars's map: 440, 530, 750, 970 nm).
+ */
+export function bandBasis(lambdaNm: number, b: readonly number[] = COLOUR_BANDS_NM): number[] {
   const out = b.map(() => 0);
-  if (lambdaNm <= b[0]) {
+  if (lambdaNm <= (b[0] ?? 0)) {
     out[0] = 1;
     return out;
   }
@@ -58,14 +60,14 @@ export function bandBasis(lambdaNm: number): number[] {
  * W[c][k]: display channel c (linear sRGB red, green, blue) per unit ratio in band k.
  * Integrated 360 to 830 nm in 1 nm steps.
  */
-export function colourWeights(): number[][] {
-  const bands = COLOUR_BANDS_NM.length;
+export function colourWeights(bandsNm: readonly number[] = COLOUR_BANDS_NM): number[][] {
+  const bands = bandsNm.length;
   const numerator = [0, 1, 2].map(() => new Array<number>(bands).fill(0));
   const denominator = [0, 0, 0];
   for (let lambda = 360; lambda <= 830; lambda++) {
     const s = sunlight(lambda);
     const rgb = xyzToLinearSrgb(...cie1931(lambda));
-    const basis = bandBasis(lambda);
+    const basis = bandBasis(lambda, bandsNm);
     for (let c = 0; c < 3; c++) {
       const w = s * (rgb[c] ?? 0);
       denominator[c] = (denominator[c] ?? 0) + w;

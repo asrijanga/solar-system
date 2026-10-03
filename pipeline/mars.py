@@ -47,10 +47,14 @@ Outputs in public/data/mars/, column 0 = longitude -180 deg (west edge), row 0 =
   four times coarser than brightness, as for the Moon (SS-5b).
 - albedo-source.png, 8192 x 4096, lossless grey: 0 where the large-scale level came from OMEGA,
   else the share of the pixel's anchor that came from TES, 1-255.
+- albedo-hst.png, 1200 x 600, grey: where Hubble's 547 nm brightness sets the large-scale level
+  (255), fading to 0 where it did not see (pipeline/mars_hst.py, part 3).
 - albedo.json, the manifest, with the faces' agreement, the blend's fit and the checks.
 
-Not yet: the overall scale is OMEGA's at 1.08 um carried by HRSC's ratios. Checking it against
-Mars's published brightness needs Mars drawn with its photometry (W7).
+Part 3 (2026-10-03): W7 found the visible map's large-scale contrast 2.4 times Mars's measured
+light curve, HRSC's ratios being flattened at large scale. Hubble's 1999 cubes at 547 nm now set
+the visible level on scales over 2 deg (pipeline/mars_hst.py). The absolute scale is calibrated to
+Mars's measured geometric albedo when it is drawn (W7, core/marsPhotometry.ts).
 """
 
 from __future__ import annotations
@@ -68,6 +72,7 @@ from rasterio.enums import Resampling
 from rasterio.transform import from_bounds
 from rasterio.warp import reproject
 
+import mars_hst
 import mars_omega
 from download import fetch, sha256
 
@@ -249,6 +254,24 @@ def area_average(values: np.ndarray, width: int, height: int) -> np.ndarray:
     return sum(cw[None, :, k] * rows[:, ci[:, k]] for k in range(ci.shape[1]))
 
 
+def hubble_agreement(corrected: np.ndarray, hst: np.ndarray, weights: np.ndarray) -> dict:
+    """The corrected map's 2 deg means against Hubble's, over the 2 deg cells Hubble saw entirely
+    (owner-approved check, 2026-10-03: median absolute difference at most 3%)."""
+    w, h = 180, 90
+    seen = area_average((weights > 0).astype(np.float64), w, h)
+    den = area_average(weights, w, h)
+    ours = area_average(corrected * weights, w, h) / np.maximum(den, 1e-12)
+    theirs = area_average(np.nan_to_num(hst) * weights, w, h) / np.maximum(den, 1e-12)
+    full = seen >= 0.999
+    rel = np.abs(ours[full] / theirs[full] - 1)
+    return {
+        "cellsDeg": 2.0,
+        "cells": int(full.sum()),
+        "medianAbsoluteDifference": round(float(np.median(rel)), 4),
+        "p95AbsoluteDifference": round(float(np.percentile(rel, 95)), 4),
+    }
+
+
 def compare(green: np.ndarray, other: np.ndarray, name: str) -> dict:
     """The texture's 530 nm reflectance against another instrument's map, on its 8 px/deg grid."""
     g = area_average(green, 2880, 1440)
@@ -368,11 +391,25 @@ def build() -> dict:
     del anchor
     green = hrsc["green"] * (blended / infrared)
 
+    # Part 3: Hubble's large-scale visible level (pipeline/mars_hst.py). Every band takes the same
+    # factor, so the colour stays HRSC's ratios, which are computed from HRSC's own bands below.
+    green_03 = area_average(green, mars_hst.WIDTH, mars_hst.HEIGHT)
+    factor, fade, hubble, hst, hst_w = mars_hst.factor_field(green_03)
+    green = green * mars_hst.upsample(factor, WIDTH, HEIGHT)
+    hubble["agreement"] = hubble_agreement(
+        area_average(green, mars_hst.WIDTH, mars_hst.HEIGHT), hst, hst_w
+    )
+    del factor
+
     master = encode(green)
+    # The bytes' mean, for the capture harness to check the app decoded them unchanged (W7).
+    decoded_mean = round(float(master.mean(dtype=np.float64)), 4)
     webp = lossless_webp(master)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     albedo_out = OUT_DIR / "albedo.webp"
     albedo_out.write_bytes(webp)
+    hubble_out = OUT_DIR / "albedo-hst.png"
+    hubble_out.write_bytes(mars_hst.coverage_png(fade))
     source_out = OUT_DIR / "albedo-source.png"
     Image.fromarray(
         np.where(from_tes > 0, np.clip(np.rint(255 * from_tes), 1, 255), 0).astype(
@@ -415,6 +452,12 @@ def build() -> dict:
             "shading": "images used with the illumination as acquired: some shading remains in the brightness, most on steep walls; the colour ratios cancel most of it",
         },
         "anchor": anchor_record,
+        "hubble": {
+            **hubble,
+            "file": "albedo-hst.png",
+            "values": "255 where Hubble sets the large-scale level, fading to 0 where the map keeps its own contrast scaled by the median ratio (SS-14 W3 part 3)",
+            "chosen": "owner, 2026-10-03: 'Fix W3 from HST first', '1999 only, fade south'",
+        },
         "blend": blend,
         "checks": checks,
         "conventions": {
@@ -434,6 +477,7 @@ def build() -> dict:
             "clippedPixels": int(np.sum(green > MAX_REFLECTANCE)),
             "medianReflectance": round(float(np.median(green)), 4),
             "meanReflectance": round(float(green.mean()), 4),
+            "decodedMean": decoded_mean,
             "kmPerPixelAtEquator": round(2 * math.pi * 3396.19 / WIDTH, 3),
             "sha256": sha256(albedo_out),
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),

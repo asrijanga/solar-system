@@ -10,6 +10,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
+import { MARS_TERRAIN_SITE } from '../../src/scenes/marsSite.ts';
 import {
   attribute,
   mergeAttributions,
@@ -48,9 +49,13 @@ async function framesRendered(page: import('playwright').Page): Promise<number> 
   return page.evaluate(() => window.__stats?.frames ?? 0);
 }
 
-// Extra query parameters for the page, e.g. `npm run alloc -- orbit=7` to measure orbit mode.
-const extraQuery = process.argv
-  .slice(2)
+// Extra query parameters for the page, e.g. `npm run alloc -- orbit=7` to measure orbit mode, and
+// `world=mars` for Mars's page (docs/stories/SS-14.md, W7); the Moon's otherwise.
+const args = process.argv.slice(2);
+const world = args.find((a) => a.startsWith('world='))?.slice('world='.length) ?? 'moon';
+if (world !== 'moon' && world !== 'mars') throw new Error(`no world ${world}: moon or mars`);
+const extraQuery = args
+  .filter((a) => !a.startsWith('world='))
   .map((p) => `&${p}`)
   .join('');
 const reportName =
@@ -67,7 +72,13 @@ async function main(): Promise<number> {
   const server = await createServer({
     root,
     logLevel: 'silent',
-    server: { port: 0, strictPort: false },
+    // Caches and the pipeline hold thousands of files nobody edits during a measurement; watching
+    // them can exhaust the system's file watchers.
+    server: {
+      port: 0,
+      strictPort: false,
+      watch: { ignored: ['**/.cache/**', '**/pipeline/**', '**/public/terrain/**'] },
+    },
   });
   await server.listen();
   const base = server.resolvedUrls?.local[0];
@@ -76,9 +87,21 @@ async function main(): Promise<number> {
   const browser = await chromium.launch({ args: SWIFTSHADER_FLAGS });
   try {
     const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
+    // Behind an HTTPS proxy (a sandbox), Node fetches Mars's data site for the page, as the
+    // capture harness does (tools/capture/run.ts); in CI the browser fetches it directly.
+    if (process.env['HTTPS_PROXY'] !== undefined) {
+      await page.route(`${MARS_TERRAIN_SITE}**`, async (route) => {
+        const response = await fetch(route.request().url());
+        await route.fulfill({
+          status: response.status,
+          headers: Object.fromEntries(response.headers),
+          body: Buffer.from(await response.arrayBuffer()),
+        });
+      });
+    }
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}moon/?software${extraQuery}`);
+    await page.goto(`${base}${world}/?software${extraQuery}`);
     await page.waitForFunction(() => document.documentElement.dataset['ready'] === 'true', null, {
       timeout: 180_000,
     });

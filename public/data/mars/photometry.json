@@ -1,0 +1,362 @@
+{
+ "story": "docs/stories/SS-14.md (W7)",
+ "law": {
+  "form": "Hapke (core/hapke.ts): single-lobed Henyey-Greenstein (c = 1) with a shadow-hiding opposition surge",
+  "w": 0.49982,
+  "b": 0.01,
+  "c": 1,
+  "bs0": 1.13406,
+  "hs": 0.13523,
+  "thetaBarDeg": 0.014
+ },
+ "normalisation": {
+  "incidenceDeg": 30,
+  "emissionDeg": 0,
+  "phaseDeg": 30,
+  "why": "OMEGA albedo = I/F / cos(i), near nadir (e < 15 deg), i < 75 deg (Ody et al. 2012, §2.2, §3.1); the incidence within that range is a choice, its effect measured in `normalisationTried`"
+ },
+ "fittedTo": {
+  "source": "Mallama & Hilton (2018), \"Computing apparent planetary magnitudes for The Astronomical Almanac\", Astronomy and Computing 25, doi:10.1016/j.ascom.2018.08.002, arXiv:1808.01973, Eq. 6",
+  "formula": "V = 5 log10(r d) - 1.601 + 0.02267 a - 0.0001302 a^2 + L(lambda_e) + L(Ls), a <= 50 deg",
+  "v10": -1.601,
+  "linear": 0.02267,
+  "quadratic": -0.0001302,
+  "validToDeg": 50,
+  "leftOut": "L(lambda_e), \"RMS variation over longitude ... about 0.035 magnitude with excursions as large as 0.060\", and L(Ls): their tables are in Mallama (2007), not read"
+ },
+ "albedoAreaMean": 0.13131,
+ "shapeRmsMag": 0.0181,
+ "zeroPhaseMagnitudeUncalibrated": {
+  "built": -1.563,
+  "mallamaHilton": -1.601
+ },
+ "calibration": [
+  {
+   "nm": 440,
+   "band": "Johnson B",
+   "target": 0.0825,
+   "built": 0.09087,
+   "factor": 0.90792
+  },
+  {
+   "nm": 530,
+   "band": "Johnson V",
+   "target": 0.15937,
+   "built": 0.16582,
+   "factor": 0.96114
+  },
+  {
+   "nm": 750,
+   "band": "Sloan i'",
+   "target": 0.27938,
+   "built": 0.31688,
+   "factor": 0.88166
+  },
+  {
+   "nm": 970,
+   "band": "Sloan z'",
+   "target": 0.30469,
+   "built": 0.26671,
+   "factor": 1.14242
+  }
+ ],
+ "calibrationSource": "Mallama, Krobusek & Pavlov (2017), \"Comprehensive wide-band magnitudes and albedos for the planets\", Icarus 282, 19-33, doi:10.1016/j.icarus.2016.09.023, arXiv:1609.05048, Table 7",
+ "lightCurve": {
+  "what": "the drawn disc's V against central meridian (west), seen from the equator at full phase, against Mallama's L1 (Mallama 2007 Table 6), both about their means",
+  "rmsMag": 0.0258,
+  "rangeMag": 0.1559,
+  "l1RangeMag": 0.11,
+  "points": [
+   {
+    "westDeg": 0,
+    "drawn": 0.0481,
+    "l1": 0.036
+   },
+   {
+    "westDeg": 10,
+    "drawn": 0.0443,
+    "l1": 0.045
+   },
+   {
+    "westDeg": 20,
+    "drawn": 0.0384,
+    "l1": 0.038
+   },
+   {
+    "westDeg": 30,
+    "drawn": 0.0307,
+    "l1": 0.023
+   },
+   {
+    "westDeg": 40,
+    "drawn": 0.0201,
+    "l1": 0.015
+   },
+   {
+    "westDeg": 50,
+    "drawn": 0.0059,
+    "l1": 0.011
+   },
+   {
+    "westDeg": 60,
+    "drawn": -0.0109,
+    "l1": 0
+   },
+   {
+    "westDeg": 70,
+    "drawn": -0.0289,
+    "l1": -0.012
+   },
+   {
+    "westDeg": 80,
+    "drawn": -0.047,
+    "l1": -0.018
+   },
+   {
+    "westDeg": 90,
+    "drawn": -0.0639,
+    "l1": -0.036
+   },
+   {
+    "westDeg": 100,
+    "drawn": -0.0784,
+    "l1": -0.044
+   },
+   {
+    "westDeg": 110,
+    "drawn": -0.0892,
+    "l1": -0.059
+   },
+   {
+    "westDeg": 120,
+    "drawn": -0.0955,
+    "l1": -0.06
+   },
+   {
+    "westDeg": 130,
+    "drawn": -0.0969,
+    "l1": -0.055
+   },
+   {
+    "westDeg": 140,
+    "drawn": -0.0939,
+    "l1": -0.043
+   },
+   {
+    "westDeg": 150,
+    "drawn": -0.0864,
+    "l1": -0.041
+   },
+   {
+    "westDeg": 160,
+    "drawn": -0.0749,
+    "l1": -0.041
+   },
+   {
+    "westDeg": 170,
+    "drawn": -0.0608,
+    "l1": -0.036
+   },
+   {
+    "westDeg": 180,
+    "drawn": -0.0445,
+    "l1": -0.036
+   },
+   {
+    "westDeg": 190,
+    "drawn": -0.027,
+    "l1": -0.018
+   },
+   {
+    "westDeg": 200,
+    "drawn": -0.0093,
+    "l1": -0.038
+   },
+   {
+    "westDeg": 210,
+    "drawn": 0.0085,
+    "l1": -0.011
+   },
+   {
+    "westDeg": 220,
+    "drawn": 0.0249,
+    "l1": 0.002
+   },
+   {
+    "westDeg": 230,
+    "drawn": 0.038,
+    "l1": 0.004
+   },
+   {
+    "westDeg": 240,
+    "drawn": 0.0476,
+    "l1": 0.018
+   },
+   {
+    "westDeg": 250,
+    "drawn": 0.0542,
+    "l1": 0.019
+   },
+   {
+    "westDeg": 260,
+    "drawn": 0.0578,
+    "l1": 0.035
+   },
+   {
+    "westDeg": 270,
+    "drawn": 0.059,
+    "l1": 0.05
+   },
+   {
+    "westDeg": 280,
+    "drawn": 0.0584,
+    "l1": 0.035
+   },
+   {
+    "westDeg": 290,
+    "drawn": 0.0567,
+    "l1": 0.027
+   },
+   {
+    "westDeg": 300,
+    "drawn": 0.0551,
+    "l1": 0.037
+   },
+   {
+    "westDeg": 310,
+    "drawn": 0.0536,
+    "l1": 0.048
+   },
+   {
+    "westDeg": 320,
+    "drawn": 0.0525,
+    "l1": 0.025
+   },
+   {
+    "westDeg": 330,
+    "drawn": 0.0519,
+    "l1": 0.022
+   },
+   {
+    "westDeg": 340,
+    "drawn": 0.0515,
+    "l1": 0.024
+   },
+   {
+    "westDeg": 350,
+    "drawn": 0.0503,
+    "l1": 0.034
+   }
+  ]
+ },
+ "luminance": {
+  "weights": [
+   0.06916,
+   0.78361,
+   0.14723,
+   0
+  ],
+  "withEachBandAtItsTarget": 0.18503,
+  "v": 0.17172,
+  "commonFactor": 0.92809,
+  "why": "CIE Y of the drawn colour (Rec. 709 luminance of linear sRGB) is brought to the V geometric albedo: the colour model joins the bands with straight lines, and Mars's spectrum curves up past 550 nm"
+ },
+ "curve": [
+  {
+   "alphaDeg": 0,
+   "built": -1.601,
+   "mallamaHilton": -1.601
+  },
+  {
+   "alphaDeg": 5,
+   "built": -1.4701,
+   "mallamaHilton": -1.4909
+  },
+  {
+   "alphaDeg": 10,
+   "built": -1.3697,
+   "mallamaHilton": -1.3873
+  },
+  {
+   "alphaDeg": 15,
+   "built": -1.2844,
+   "mallamaHilton": -1.2902
+  },
+  {
+   "alphaDeg": 20,
+   "built": -1.2069,
+   "mallamaHilton": -1.1997
+  },
+  {
+   "alphaDeg": 25,
+   "built": -1.1331,
+   "mallamaHilton": -1.1156
+  },
+  {
+   "alphaDeg": 30,
+   "built": -1.0605,
+   "mallamaHilton": -1.0381
+  },
+  {
+   "alphaDeg": 35,
+   "built": -0.9874,
+   "mallamaHilton": -0.967
+  },
+  {
+   "alphaDeg": 40,
+   "built": -0.9128,
+   "mallamaHilton": -0.9025
+  },
+  {
+   "alphaDeg": 45,
+   "built": -0.8357,
+   "mallamaHilton": -0.8445
+  },
+  {
+   "alphaDeg": 50,
+   "built": -0.7558,
+   "mallamaHilton": -0.793
+  }
+ ],
+ "normalisationTried": [
+  {
+   "incidenceDeg": 15,
+   "b": 0.01,
+   "thetaBarDeg": 0,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.5084
+  },
+  {
+   "incidenceDeg": 30,
+   "b": 0.01,
+   "thetaBarDeg": 0.014,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.563
+  },
+  {
+   "incidenceDeg": 45,
+   "b": 0.01,
+   "thetaBarDeg": 0,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.5437
+  },
+  {
+   "incidenceDeg": 60,
+   "b": 0.01,
+   "thetaBarDeg": 0.176,
+   "shapeRmsMag": 0.0181,
+   "zeroPhaseMagnitudeUncalibrated": -1.4733
+  }
+ ],
+ "method": {
+  "grid": "albedo.webp in 64 x 64 pixel block means (128 x 64)",
+  "longitudesAveraged": 12,
+  "viewer": "on the equator; the Sun in the equatorial plane",
+  "radiiKm": [
+   3396.19,
+   3376.2
+  ],
+  "sunVMagnitude": -26.74,
+  "band": "the map is reflectance at 530 nm; Eq. 6 is Johnson V (about 550 nm)"
+ }
+}

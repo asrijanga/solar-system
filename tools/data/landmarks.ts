@@ -1,13 +1,21 @@
-// npm run pipeline:landmarks
+// npm run pipeline:landmarks          (the Moon)
+// npm run pipeline:landmarks:mars     (Mars, docs/stories/SS-14.md W7)
 //
-// The Moon's popular landmarks for labels (docs/stories/SS-15.md), taken from the IAU Gazetteer
+// A world's popular landmarks for labels (docs/stories/SS-15.md), taken from the IAU Gazetteer
 // of Planetary Nomenclature: names, centres and diameters exactly as the Gazetteer gives them.
 // Nothing here is typed in by hand except which features to show and, for landing sites, which
 // mission to name; the script checks every mission against the Gazetteer's own "origin" note.
 //
-// Conventions, from the file's own metadata (metadata_nomenclature_points_MOON.xml and .prj):
-// planetocentric latitude, longitude positive east 0 to 360, sphere of radius 1737400 m,
-// datum "Moon 2000". The output converts longitude to -180 to 180, as the texture uses.
+// Conventions, from each file's own metadata (metadata_nomenclature_points_<WORLD>.xml and .prj):
+// - The Moon: planetocentric latitude, longitude positive east 0 to 360, sphere of radius
+//   1737400 m, datum "Moon 2000".
+// - Mars: "<lattype>Planetocentric", "<londir>Positive East", 0 to 360; the .prj names
+//   GCS_Mars_2000 on the Mars_2000_IAU_IAG spheroid, 3396190 m.
+// The output converts longitude to -180 to 180, as the textures use.
+//
+// Mars's Gazetteer has no landing-site features, and none of its origin notes names a mission
+// (searched 2026-10-03). So Mars's labels name the features the landers came down in under their
+// Gazetteer names, and no mission: a mission name would be typed in by hand, unchecked.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -15,19 +23,13 @@ import { inflateRawSync } from 'node:zlib';
 import { fetchPinned } from './download.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
-const OUT = join(ROOT, 'public', 'data', 'moon', 'landmarks.json');
-const URL =
-  'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip';
-// Pinned 2026-09-26. The Gazetteer is updated in place; test/fixtures/iau-gazetteer-moon.json
-// pinned an earlier release (2026-09-24), and test/landmarks.test.ts checks the two agree on
-// every feature they share.
-const SHA256 = '404a951d514821590f244c1858d9dc15e64f9e93e2cde45e35e9cf413fc60fea';
-const DBF = 'MOON_nomenclature_center_pts.dbf';
 
 type Kind = 'crater' | 'mare' | 'mountains' | 'valley' | 'landing';
 
 /** Which features to label: the Gazetteer name, what kind it is, and for a landing site the mission. */
-const CHOSEN: readonly (readonly [string, Kind, string?])[] = [
+type Chosen = readonly (readonly [string, Kind, string?])[];
+
+const MOON_CHOSEN: Chosen = [
   // Maria.
   ['Oceanus Procellarum', 'mare'],
   ['Mare Imbrium', 'mare'],
@@ -94,6 +96,111 @@ const CHOSEN: readonly (readonly [string, Kind, string?])[] = [
   ['Statio Tianhe', 'landing', 'Chang’e-4'],
   ['Statio Tianchuan', 'landing', 'Chang’e-5'],
 ];
+
+/**
+ * Mars. Kinds reuse the Moon's label styles: 'mare' (italic) for the great plains, plateaus and
+ * highlands, 'mountains' for volcanoes, 'valley' for canyons and channels.
+ */
+const MARS_CHOSEN: Chosen = [
+  // Volcanoes.
+  ['Olympus Mons', 'mountains'],
+  ['Arsia Mons', 'mountains'],
+  ['Pavonis Mons', 'mountains'],
+  ['Ascraeus Mons', 'mountains'],
+  ['Alba Mons', 'mountains'],
+  ['Elysium Mons', 'mountains'],
+  ['Hecates Tholus', 'mountains'],
+  ['Apollinaris Mons', 'mountains'],
+  ['Hadriacus Mons', 'mountains'],
+  ['Tharsis Montes', 'mountains'],
+  ['Aeolis Mons', 'mountains'],
+  // Canyons and channels.
+  ['Valles Marineris', 'valley'],
+  ['Noctis Labyrinthus', 'valley'],
+  ['Candor Chasma', 'valley'],
+  ['Ophir Chasma', 'valley'],
+  ['Melas Chasma', 'valley'],
+  ['Coprates Chasma', 'valley'],
+  ['Ius Chasma', 'valley'],
+  ['Kasei Valles', 'valley'],
+  ['Ares Vallis', 'valley'],
+  ['Mawrth Vallis', 'valley'],
+  // Plains, plateaus and highlands.
+  ['Hellas Planitia', 'mare'],
+  ['Argyre Planitia', 'mare'],
+  ['Isidis Planitia', 'mare'],
+  ['Utopia Planitia', 'mare'],
+  ['Chryse Planitia', 'mare'],
+  ['Acidalia Planitia', 'mare'],
+  ['Amazonis Planitia', 'mare'],
+  ['Arcadia Planitia', 'mare'],
+  ['Elysium Planitia', 'mare'],
+  ['Vastitas Borealis', 'mare'],
+  ['Syrtis Major Planum', 'mare'],
+  ['Meridiani Planum', 'mare'],
+  ['Lunae Planum', 'mare'],
+  ['Solis Planum', 'mare'],
+  ['Syria Planum', 'mare'],
+  ['Hesperia Planum', 'mare'],
+  ['Malea Planum', 'mare'],
+  ['Planum Boreum', 'mare'],
+  ['Planum Australe', 'mare'],
+  ['Arabia Terra', 'mare'],
+  ['Noachis Terra', 'mare'],
+  ['Terra Cimmeria', 'mare'],
+  ['Terra Sirenum', 'mare'],
+  ['Tempe Terra', 'mare'],
+  ['Promethei Terra', 'mare'],
+  // Craters, among them the ones Curiosity (Gale), Perseverance (Jezero) and Spirit (Gusev) came
+  // down in, and Endeavour, which Opportunity explored. Labelled by Gazetteer name only (above).
+  ['Gale', 'crater'],
+  ['Jezero', 'crater'],
+  ['Gusev', 'crater'],
+  ['Endeavour', 'crater'],
+  ['Eberswalde', 'crater'],
+  ['Holden', 'crater'],
+  ['Huygens', 'crater'],
+  ['Schiaparelli', 'crater'],
+  ['Cassini', 'crater'],
+  ['Antoniadi', 'crater'],
+  ['Herschel', 'crater'],
+  ['Newton', 'crater'],
+  ['Lyot', 'crater'],
+  ['Korolev', 'crater'],
+  // Near the terminator on 26 January 2026: the relief check's crater (src/capture/viewpoints.ts).
+  ['Teisserenc de Bort', 'crater'],
+];
+
+/** Where each world's Gazetteer file is, pinned, and what to label. */
+const WORLDS = {
+  moon: {
+    url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip',
+    // Pinned 2026-09-26. The Gazetteer is updated in place; test/fixtures/iau-gazetteer-moon.json
+    // pinned an earlier release (2026-09-24), and test/landmarks.test.ts checks the two agree on
+    // every feature they share.
+    sha256: '404a951d514821590f244c1858d9dc15e64f9e93e2cde45e35e9cf413fc60fea',
+    retrieved: '2026-09-26',
+    dbf: 'MOON_nomenclature_center_pts.dbf',
+    cacheName: 'moon-nomenclature.zip',
+    chosen: MOON_CHOSEN,
+    source: 'Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MOON_nomenclature_center_pts',
+    conventions:
+      'planetocentric latitude; longitude east-positive, converted from 0-360 to -180-180; sphere R = 1737.4 km; datum Moon 2000 (the file metadata)',
+  },
+  mars: {
+    url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MARS_nomenclature_center_pts.zip',
+    // Pinned 2026-10-03. test/fixtures/iau-gazetteer-mars.json pinned an earlier release
+    // (2026-09-29); test/landmarks.test.ts checks the two agree on every feature they share.
+    sha256: '5faab9136a1e55f0e544286271c9cbff36677e35ea84368ed5cb858f335bce9c',
+    retrieved: '2026-10-03',
+    dbf: 'MARS_nomenclature_center_pts.dbf',
+    cacheName: 'mars-nomenclature-2026-10-03.zip',
+    chosen: MARS_CHOSEN,
+    source: 'Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MARS_nomenclature_center_pts',
+    conventions:
+      'planetocentric latitude; longitude east-positive, converted from 0-360 to -180-180; GCS_Mars_2000, Mars_2000_IAU_IAG spheroid, 3396.19 km (the file metadata and .prj). No mission names: the Mars Gazetteer has no landing-site features and its notes name no mission',
+  },
+} as const;
 
 /** The bytes of one file inside a zip archive (stored or deflated). */
 export function unzipEntry(zip: Uint8Array, name: string): Uint8Array {
@@ -167,9 +274,12 @@ export interface Landmark {
   readonly gazetteer: string;
 }
 
-export function choose(records: readonly Record<string, string>[]): Landmark[] {
+export function choose(
+  records: readonly Record<string, string>[],
+  chosen: Chosen = MOON_CHOSEN,
+): Landmark[] {
   const byName = new Map(records.map((r) => [r['name'] ?? '', r]));
-  return CHOSEN.map(([name, kind, mission]) => {
+  return chosen.map(([name, kind, mission]) => {
     const r = byName.get(name);
     if (r === undefined) throw new Error(`${name} is not in the Gazetteer`);
     // The Gazetteer writes Chang’e with a curly or straight apostrophe; compare without either.
@@ -197,20 +307,24 @@ export function choose(records: readonly Record<string, string>[]): Landmark[] {
 }
 
 if (import.meta.main) {
-  const zip = new Uint8Array(readFileSync(await fetchPinned(URL, SHA256, 'moon-nomenclature.zip')));
-  const landmarks = choose(readDbf(unzipEntry(zip, DBF)));
-  mkdirSync(dirname(OUT), { recursive: true });
+  const name = process.argv[2] ?? 'moon';
+  if (name !== 'moon' && name !== 'mars') throw new Error(`no world ${name}: moon or mars`);
+  const world = WORLDS[name];
+  const out = join(ROOT, 'public', 'data', name, 'landmarks.json');
+  const zip = new Uint8Array(
+    readFileSync(await fetchPinned(world.url, world.sha256, world.cacheName)),
+  );
+  const landmarks = choose(readDbf(unzipEntry(zip, world.dbf)), world.chosen);
+  mkdirSync(dirname(out), { recursive: true });
   writeFileSync(
-    OUT,
+    out,
     `${JSON.stringify(
       {
-        source:
-          'Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MOON_nomenclature_center_pts',
-        url: URL,
-        sha256: SHA256,
-        retrieved: '2026-09-26',
-        conventions:
-          'planetocentric latitude; longitude east-positive, converted from 0-360 to -180-180; sphere R = 1737.4 km; datum Moon 2000 (the file metadata)',
+        source: world.source,
+        url: world.url,
+        sha256: world.sha256,
+        retrieved: world.retrieved,
+        conventions: world.conventions,
         script: 'tools/data/landmarks.ts',
         landmarks,
       },
@@ -218,5 +332,5 @@ if (import.meta.main) {
       1,
     )}\n`,
   );
-  console.log(`${landmarks.length} landmarks written to ${OUT}`);
+  console.log(`${landmarks.length} landmarks written to ${out}`);
 }

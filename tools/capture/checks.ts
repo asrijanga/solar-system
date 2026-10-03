@@ -118,12 +118,12 @@ export function judge(
   ephemeris: EphemerisFile | null = null,
 ): ViewpointVerdict {
   const moonResults: CheckResult[] = [];
-  if (viewpoint.moonChecks.length > 0) {
-    if (viewpoint.moon === null || ephemeris === null) {
+  if (viewpoint.bodyChecks.length > 0) {
+    if (viewpoint.body === null || ephemeris === null) {
       throw new Error(`${viewpoint.id} has Moon checks but no Moon setup or ephemeris`);
     }
-    const pixels = castMoonRays(viewpoint.moon, ephemeris, png.width, png.height);
-    for (const check of viewpoint.moonChecks) moonResults.push(runMoonCheck(png, pixels, check));
+    const pixels = castMoonRays(viewpoint.body, ephemeris, png.width, png.height);
+    for (const check of viewpoint.bodyChecks) moonResults.push(runMoonCheck(png, pixels, check));
   }
   const results = [
     ...viewpoint.checks.map((check) => runCheck(png, check)),

@@ -84,6 +84,114 @@
       }
     }
   },
+  "hubble": {
+    "source": "HST WFPC2 observations of Mars, Bell III, J.F. (2004), HST-M-WFPC2-3-V1.0, NASA PDS, doi:10.17189/1519478",
+    "filter": "F547M, 546.78 nm, 48.32 nm wide",
+    "days": [
+      {
+        "day": "990427",
+        "phaseAngleDeg": 2.744,
+        "subEarth": {
+          "lonWestDeg": 26.19,
+          "latDeg": 18.96
+        },
+        "subSolar": {
+          "lonWestDeg": 23.29,
+          "latDeg": 18.88
+        },
+        "pixelsUsed": 141065,
+        "medianAtMapGeometry": 0.1363
+      },
+      {
+        "day": "990428",
+        "phaseAngleDeg": 2.946,
+        "subEarth": {
+          "lonWestDeg": 120.57,
+          "latDeg": 19.0
+        },
+        "subSolar": {
+          "lonWestDeg": 117.46,
+          "latDeg": 18.85
+        },
+        "pixelsUsed": 140748,
+        "medianAtMapGeometry": 0.1525
+      },
+      {
+        "day": "990501",
+        "phaseAngleDeg": 5.904,
+        "subEarth": {
+          "lonWestDeg": 290.68,
+          "latDeg": 19.54
+        },
+        "subSolar": {
+          "lonWestDeg": 284.57,
+          "latDeg": 18.33
+        },
+        "pixelsUsed": 136383,
+        "medianAtMapGeometry": 0.1287
+      },
+      {
+        "day": "990506",
+        "phaseAngleDeg": 10.024,
+        "subEarth": {
+          "lonWestDeg": 212.74,
+          "latDeg": 20.26
+        },
+        "subSolar": {
+          "lonWestDeg": 202.52,
+          "latDeg": 17.6
+        },
+        "pixelsUsed": 130205,
+        "medianAtMapGeometry": 0.1356
+      }
+    ],
+    "maxAngleDeg": 60.0,
+    "law": {
+      "note": "The scattering law the cubes are normalised with: W7's fit (public/data/mars/photometry.json, 2026-10-03) to Mallama & Hilton (2018) Eq. 6 with the W3 part 2 map. Pinned here so the map and the fit that follows it are not circular; the refit on the corrected map is reported in the story.",
+      "w": 0.60653,
+      "b": 0.01,
+      "c": 1,
+      "bs0": 1.27266,
+      "hs": 0.13499,
+      "thetaBarDeg": 0.233,
+      "normalisation": {
+        "incidenceDeg": 30,
+        "emissionDeg": 0,
+        "phaseDeg": 30
+      }
+    },
+    "sigmaDeg": 2.0,
+    "fade": "to the median as the smoothed weight falls below COVERED of full, over the same Gaussian",
+    "coveredFraction": 0.273,
+    "coveredFractionByLatitude": {
+      "90..60": 0.0,
+      "60..30": 0.54,
+      "30..0": 0.848,
+      "0..-30": 0.25,
+      "-30..-60": 0.0,
+      "-60..-90": 0.0
+    },
+    "medianRatioHubbleOverMap": 0.7371,
+    "correlationWithMap": 0.8047,
+    "contrast": {
+      "hubble": 0.1666,
+      "mapBefore": 0.2515
+    },
+    "factor": {
+      "p1": 0.5947,
+      "median": 0.7371,
+      "p99": 0.9804
+    },
+    "agreement": {
+      "cellsDeg": 2.0,
+      "cells": 9775,
+      "medianAbsoluteDifference": 0.0227,
+      "p95AbsoluteDifference": 0.197
+    },
+    "file": "albedo-hst.png",
+    "values": "255 where Hubble sets the large-scale level, fading to 0 where the map keeps its own contrast scaled by the median ratio (SS-14 W3 part 3)",
+    "chosen": "owner, 2026-10-03: 'Fix W3 from HST first', '1999 only, fade south'"
+  },
   "blend": {
     "method": "guided filter (He, Sun and Tang 2013, IEEE TPAMI 35, 1397): guide HRSC 970 nm, target OMEGA 1.08 um with TES's fill",
     "radiusPixels": 23,
@@ -147,26 +255,26 @@
       "instrument": "OMEGA 1.08 um Lambert albedo (SS-14 W3 part 1)",
       "withinLatitude60": {
         "cells": 2631677,
-        "correlation": 0.9387,
-        "textureOverItThroughZero": 0.6147
+        "correlation": 0.9103,
+        "textureOverItThroughZero": 0.4379
       },
       "withinLatitude90": {
         "cells": 3982225,
-        "correlation": 0.8315,
-        "textureOverItThroughZero": 0.666
+        "correlation": 0.7746,
+        "textureOverItThroughZero": 0.4816
       }
     },
     {
       "instrument": "TES bolometric albedo",
       "withinLatitude60": {
         "cells": 2764800,
-        "correlation": 0.919,
-        "textureOverItThroughZero": 0.8691
+        "correlation": 0.9062,
+        "textureOverItThroughZero": 0.6195
       },
       "withinLatitude90": {
         "cells": 4147200,
-        "correlation": 0.3465,
-        "textureOverItThroughZero": 0.9255
+        "correlation": 0.267,
+        "textureOverItThroughZero": 0.6681
       }
     }
   ],
@@ -188,10 +296,11 @@
       "maxReflectance": 1.2
     },
     "clippedPixels": 0,
-    "medianReflectance": 0.1834,
-    "meanReflectance": 0.1931,
+    "medianReflectance": 0.1357,
+    "meanReflectance": 0.1409,
+    "decodedMean": 86.2728,
     "kmPerPixelAtEquator": 2.605,
-    "sha256": "def51da9f791eb2655cbe8cd4105ed8bc82db3767d3d35a20b0a5f5044945357",
+    "sha256": "51550e6d70c95a8be0edfb774427e876089909d68a6f212026d60a7cd57376b8",
     "gpuBytesR8WithMips": 44739242
   },
   "source": {
@@ -237,7 +346,7 @@
   },
   "format": {
     "albedo": "lossless WebP, checked by decoding",
-    "bytes": 6255044,
+    "bytes": 5816126,
     "maxBytes": 6815744,
     "decision": "owner, 2026-10-02: 'Lossless, 6.25 MB', after lossy WebP smeared Valles Marineris even at q95 (docs/stories/ss14-encoding-valles.png)"
   }

@@ -1,0 +1,124 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "full-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 135847.6,
+      "fovDeg": 3.6,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false
+    },
+    "bodyChecks": [
+      {
+        "kind": "disc-magnitude",
+        "name": "whole-disc V magnitude",
+        "toleranceMag": 0.06
+      },
+      {
+        "kind": "feature",
+        "against": "disc-median",
+        "name": "Syrtis Major",
+        "lonDeg": 70,
+        "latDeg": 9.885,
+        "coreKm": 250,
+        "expect": "darker"
+      },
+      {
+        "kind": "feature",
+        "against": "disc-median",
+        "name": "Hellas",
+        "lonDeg": 70,
+        "latDeg": -39.6672,
+        "coreKm": 400,
+        "expect": "brighter"
+      },
+      {
+        "kind": "feature",
+        "against": "disc-median",
+        "name": "Arabia Terra",
+        "lonDeg": 5.7185,
+        "latDeg": 21.249,
+        "coreKm": 500,
+        "expect": "brighter"
+      }
+    ],
+    "negativeControl": false,
+    "id": "mars-from-earth",
+    "description": "Mars from Earth on 3 January 2026, near conjunction: the smooth ellipsoid with the W3 map, its whole-disc brightness against Mallama & Hilton (2018) Eq. 6, and the Gazetteer features Earth sees.",
+    "scene": "mars"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "whole-disc V magnitude: V(1, 1.2°) drawn -1.514, Mallama & Hilton -1.568 (+0.054 mag)",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Syrtis Major darker (2057 px): ratio 0.805",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Hellas brighter (4895 px): ratio 1.100",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Arabia Terra brighter (9031 px): ratio 1.167",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "d7c1effc0f6b0078e515ae7ab00c2c817eda5afe",
+    "dirty": false
+  }
+}

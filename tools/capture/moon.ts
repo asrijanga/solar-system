@@ -7,9 +7,16 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PNG } from 'pngjs';
-import type { MoonCheck, MoonSetup } from '../../src/capture/viewpoints.ts';
+import type { BodyCheck, BodySetup } from '../../src/capture/viewpoints.ts';
 import { hapke, type HapkeParameters } from '../../src/core/hapke.ts';
-import { displayValue, linearToSrgb } from '../../src/core/photometry.ts';
+import { mallamaHiltonV } from '../../src/core/marsPhotometry.ts';
+import {
+  AU_KM,
+  displayValue,
+  EXPOSURE,
+  linearToSrgb,
+  SUN_V_MAGNITUDE,
+} from '../../src/core/photometry.ts';
 import type { CheckResult } from './checks.ts';
 
 type V3 = [number, number, number];
@@ -43,8 +50,14 @@ export interface MoonPixels {
   readonly height: number;
   /** 1 where the pixel's ray meets the sphere. */
   readonly hit: Uint8Array;
-  /** Body-fixed unit normal at the hit, 3 per pixel. */
+  /**
+   * Body-fixed unit vector to the hit, 3 per pixel: the surface normal on a sphere, and the
+   * planetocentric direction, which distances along the surface are measured with, on an
+   * ellipsoid.
+   */
   readonly normal: Float64Array;
+  /** Each pixel's solid angle, steradians. */
+  readonly solidAngle: Float64Array;
   readonly lonDeg: Float64Array;
   readonly mu0: Float64Array;
   readonly mu: Float64Array;
@@ -52,10 +65,14 @@ export interface MoonPixels {
   readonly cosG: Float64Array;
   readonly radiusKm: number;
   readonly sunDistanceKm: number;
+  /** Sun-body-camera angle at the body's centre, degrees. */
+  readonly phaseAngleDeg: number;
+  /** The area the body's outline encloses seen from the camera's direction, km² (a sphere: πR²). */
+  readonly projectedAreaKm2: number;
 }
 
 export function castMoonRays(
-  setup: MoonSetup,
+  setup: BodySetup,
   ephemeris: EphemerisFile,
   width: number,
   height: number,
@@ -63,6 +80,8 @@ export function castMoonRays(
   const epoch = ephemeris.epochs.find((e) => e.id === setup.epoch);
   if (epoch === undefined) throw new Error(`ephemeris.json has no epoch ${setup.epoch}`);
   const radius = ephemeris.body.radiiKm[0] ?? Number.NaN;
+  // An oblate world (Mars): equatorial a, polar c (pck00011). The Moon is a sphere.
+  const polar = ephemeris.body.radiiKm[2] ?? radius;
   const m = epoch.j2000ToBodyFixed;
   const row = (i: number): readonly number[] => m[i] ?? [];
   // body = M · j2000; j2000 = Mᵀ · body.
@@ -108,11 +127,21 @@ export function castMoonRays(
   const sun = epoch.sunDirectionJ2000;
 
   const n = width * height;
+  const fromBody = toBody(from);
+  // The outline of a spheroid seen from latitude φ is an ellipse of semi-axes a and
+  // sqrt(a² sin²φ + c² cos²φ).
+  const sinPhi = fromBody[2];
   const out: MoonPixels = {
     width,
     height,
     hit: new Uint8Array(n),
     normal: new Float64Array(n * 3),
+    solidAngle: new Float64Array(n),
+    phaseAngleDeg: (Math.acos(Math.max(-1, Math.min(1, dot(from, sun)))) * 180) / Math.PI,
+    projectedAreaKm2:
+      Math.PI *
+      radius *
+      Math.sqrt(radius * radius * sinPhi * sinPhi + polar * polar * (1 - sinPhi * sinPhi)),
     lonDeg: new Float64Array(n),
     mu0: new Float64Array(n),
     mu: new Float64Array(n),
@@ -121,6 +150,12 @@ export function castMoonRays(
     sunDistanceKm: epoch.sunDistanceKm,
   };
   const cc = dot(camera, camera) - radius * radius;
+  // Square pixels: (2 tan(fov/2) / height)² cos³θ, θ the ray's angle from the view axis.
+  const pixelTan = (2 * tanHalf) / height;
+  // On an ellipsoid the ray is met in the body frame, z stretched by a / c to make a sphere.
+  const stretch = radius / polar;
+  const cameraBody = toBody(camera);
+  const sunBody = toBody(sun);
   for (let y = 0; y < height; y++) {
     const sy = (1 - ((y + 0.5) / height) * 2) * tanHalf;
     for (let x = 0; x < width; x++) {
@@ -130,6 +165,35 @@ export function castMoonRays(
         forward[1] + sx * right[1] + sy * up[1],
         forward[2] + sx * right[2] + sy * up[2],
       ]);
+      out.solidAngle[y * width + x] = pixelTan * pixelTan * (1 / (1 + sx * sx + sy * sy)) ** 1.5;
+      if (polar !== radius) {
+        const db = toBody(d);
+        const o: V3 = [cameraBody[0], cameraBody[1], cameraBody[2] * stretch];
+        const v: V3 = [db[0], db[1], db[2] * stretch];
+        const vv = dot(v, v);
+        const bb = dot(o, v) / vv;
+        const disc2 = bb * bb - (dot(o, o) - radius * radius) / vv;
+        if (disc2 < 0) continue;
+        const t = -bb - Math.sqrt(disc2);
+        const pb: V3 = [
+          cameraBody[0] + t * db[0],
+          cameraBody[1] + t * db[1],
+          cameraBody[2] + t * db[2],
+        ];
+        const nb = unit([
+          pb[0] / (radius * radius),
+          pb[1] / (radius * radius),
+          pb[2] / (polar * polar),
+        ]);
+        const i = y * width + x;
+        out.hit[i] = 1;
+        out.normal.set(unit(pb), i * 3);
+        out.lonDeg[i] = (Math.atan2(pb[1], pb[0]) * 180) / Math.PI;
+        out.mu0[i] = dot(nb, sunBody);
+        out.mu[i] = -dot(nb, db);
+        out.cosG[i] = -dot(sun, d);
+        continue;
+      }
       const b = dot(camera, d);
       const disc = b * b - cc;
       if (disc < 0) continue;
@@ -209,7 +273,7 @@ function median(values: number[]): number {
   return sorted[Math.floor(sorted.length / 2)] ?? Number.NaN;
 }
 
-export function runMoonCheck(png: PNG, pixels: MoonPixels, check: MoonCheck): CheckResult {
+export function runMoonCheck(png: PNG, pixels: MoonPixels, check: BodyCheck): CheckResult {
   const n = pixels.width * pixels.height;
   switch (check.kind) {
     case 'photometry': {
@@ -263,6 +327,40 @@ export function runMoonCheck(png: PNG, pixels: MoonPixels, check: MoonCheck): Ch
       const pass = enough && (check.expect === 'brighter' ? ratio > 1 : ratio < 1);
       return {
         name: `${check.name} ${check.expect} (${core.length} px): ratio ${enough ? ratio.toFixed(3) : 'not visible'}`,
+        pass,
+        fraction: pass ? 1 : 0,
+      };
+    }
+    case 'disc-magnitude': {
+      // The disc's luminance, CIE Y of the linear drawn colour (Johnson V follows it), as I/F:
+      // display = EXPOSURE · I/F / r² (core/photometry.ts). Its mean over the disc's solid angle
+      // is p Φ(α), and with the outline's area the V magnitude at 1 AU from the Sun and viewer.
+      const r = pixels.sunDistanceKm / AU_KM;
+      const linear = (v: number): number => {
+        const c = v / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      let flux = 0;
+      let omega = 0;
+      for (let i = 0; i < n; i++) {
+        if (pixels.hit[i] === 0) continue;
+        const y =
+          0.2126 * linear(channel(png, i, 0)) +
+          0.7152 * linear(channel(png, i, 1)) +
+          0.0722 * linear(channel(png, i, 2));
+        const w = pixels.solidAngle[i] ?? 0;
+        flux += ((y * r * r) / EXPOSURE) * w;
+        omega += w;
+      }
+      const pPhi = flux / omega;
+      const measured =
+        SUN_V_MAGNITUDE -
+        2.5 * Math.log10((pPhi * pixels.projectedAreaKm2) / (Math.PI * AU_KM * AU_KM));
+      const expected = mallamaHiltonV(pixels.phaseAngleDeg);
+      const off = measured - expected;
+      const pass = omega > 0 && Math.abs(off) <= check.toleranceMag;
+      return {
+        name: `${check.name}: V(1, ${pixels.phaseAngleDeg.toFixed(1)}°) drawn ${measured.toFixed(3)}, Mallama & Hilton ${expected.toFixed(3)} (${off >= 0 ? '+' : ''}${off.toFixed(3)} mag)`,
         pass,
         fraction: pass ? 1 : 0,
       };

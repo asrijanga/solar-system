@@ -18,7 +18,7 @@ const hapke = JSON.parse(readFileSync(join(root, 'public/data/moon/hapke.json'),
 
 describe('Moon viewpoint checks', () => {
   it('use exactly the Gazetteer fixture coordinates', () => {
-    const checks = findViewpoint('moon-full')?.moonChecks ?? [];
+    const checks = findViewpoint('moon-full')?.bodyChecks ?? [];
     const features = checks.filter((c) => c.kind === 'feature');
     expect(features.map((f) => f.name).sort()).toEqual(
       ['Aristarchus', 'Copernicus', 'Mare Crisium', 'Statio Tranquillitatis', 'Tycho'].sort(),
@@ -33,20 +33,20 @@ describe('Moon viewpoint checks', () => {
 
   it('give the uniform Moon the median tile’s reflectance', () => {
     for (const v of viewpoints) {
-      for (const c of v.moonChecks) {
+      for (const c of v.bodyChecks) {
         if (c.kind === 'photometry') expect(c.albedo).toBeCloseTo(hapke.medianAtStandard, 3);
       }
-      if (v.moon !== null && v.moon.albedo !== 'map') {
-        expect(v.moon.albedo.uniform).toBeCloseTo(hapke.medianAtStandard, 3);
+      if (v.body !== null && v.body.albedo !== 'map') {
+        expect(v.body.albedo.uniform).toBeCloseTo(hapke.medianAtStandard, 3);
       }
     }
   });
 
   it('pair every Moon negative control with a viewpoint that runs the same checks', () => {
-    for (const control of viewpoints.filter((v) => v.negativeControl && v.moon !== null)) {
+    for (const control of viewpoints.filter((v) => v.negativeControl && v.body !== null)) {
       const twin = viewpoints.find(
         (v) =>
-          !v.negativeControl && JSON.stringify(v.moonChecks) === JSON.stringify(control.moonChecks),
+          !v.negativeControl && JSON.stringify(v.bodyChecks) === JSON.stringify(control.bodyChecks),
       );
       expect(twin, control.id).toBeDefined();
     }

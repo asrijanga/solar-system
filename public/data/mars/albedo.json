@@ -190,6 +190,7 @@
     "clippedPixels": 0,
     "medianReflectance": 0.1834,
     "meanReflectance": 0.1931,
+    "decodedMean": 100.7911,
     "kmPerPixelAtEquator": 2.605,
     "sha256": "def51da9f791eb2655cbe8cd4105ed8bc82db3767d3d35a20b0a5f5044945357",
     "gpuBytesR8WithMips": 44739242

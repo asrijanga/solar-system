@@ -40,9 +40,12 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { hapke, type HapkeParameters } from '../../src/core/hapke.ts';
+import { colourWeights } from '../../src/core/moonColour.ts';
 import { AU_KM, SUN_V_MAGNITUDE } from '../../src/core/photometry.ts';
 import {
   ALPHA_MAX_DEG,
+  MALLAMA_L1,
+  mallamaCorrection,
   MALLAMA_2017,
   MARS_GEOMETRIC_ALBEDO,
   MALLAMA_HILTON_2018,
@@ -144,7 +147,8 @@ for (let r = 0; r < grid.rows; r++) {
   const band = (Math.sin(lat0 * RAD) - Math.sin(lat1 * RAD)) / 2 / grid.cols;
   for (let c = 0; c < grid.cols; c++) {
     const k = r * grid.cols + c;
-    const lon = ((360 * (c + 0.5)) / grid.cols) * RAD;
+    // Column 0 starts at -180° (albedo.json conventions).
+    const lon = ((360 * (c + 0.5)) / grid.cols - 180) * RAD;
     nx[k] = Math.cos(lat) * Math.cos(lon);
     ny[k] = Math.cos(lat) * Math.sin(lon);
     nz[k] = Math.sin(lat);
@@ -220,6 +224,42 @@ function discAlbedo(
     views++;
   }
   return total / views;
+}
+
+/**
+ * p Φ for one geometry: the viewer and the Sun as body-fixed unit vectors, the drawn luminance
+ * (each band by its factor and luminance weight). For the captures' records.
+ */
+function drawnAt(
+  law: HapkeParameters & { t: number },
+  normDeg: number,
+  viewer: readonly [number, number, number],
+  sun: readonly [number, number, number],
+  factors: readonly number[],
+  weights: readonly number[],
+): number {
+  const mu0s = Math.cos(normDeg * RAD);
+  const standard = hapkeRough(mu0s, 1, mu0s, law, law.t);
+  const cosG = viewer[0] * sun[0] + viewer[1] * sun[1] + viewer[2] * sun[2];
+  let sum = 0;
+  let projected = 0;
+  for (let k = 0; k < cells; k++) {
+    const x = nx[k] ?? 0;
+    const y = ny[k] ?? 0;
+    const z = nz[k] ?? 0;
+    const mu = x * viewer[0] + y * viewer[1] + z * viewer[2];
+    if (mu <= 0) continue;
+    projected += mu * 4 * (area[k] ?? 0);
+    const mu0 = x * sun[0] + y * sun[1] + z * sun[2];
+    if (mu0 <= 0) continue;
+    let value = 0;
+    grid.bands.forEach((band, b) => {
+      value += (weights[b] ?? 0) * (factors[b] ?? 0) * (band[k] ?? 0);
+    });
+    sum +=
+      value * mu0s * (hapkeRough(mu0, mu, cosG, law, law.t) / standard) * mu * 4 * (area[k] ?? 0);
+  }
+  return sum / projected;
 }
 
 function magnitude(pPhi: number): number {
@@ -331,32 +371,120 @@ const law = lawFor(chosen, NORMALISATION_DEG);
 // bands keep Mallama et al.'s (2017) ratios to their V albedo (0.170, against Eq. 6's 0.1717 with
 // these radii: the two papers' zero points differ by 0.011 mag).
 const pV = (AU_KM * AU_KM * 10 ** (-0.4 * (mallamaHiltonV(0) - SUN_V_MAGNITUDE))) / (aKm * cKm);
-const calibration = BANDS_NM.map((nm, k) => {
+const perBand = BANDS_NM.map((nm, k) => {
   const published = MARS_GEOMETRIC_ALBEDO[nm];
   const target = {
     band: published.band,
     p: Number(((published.p / MARS_GEOMETRIC_ALBEDO[530].p) * pV).toFixed(5)),
   };
   const built = discAlbedo(law, 0, NORMALISATION_DEG, grid.bands[k]);
-  return {
-    nm,
-    band: target.band,
-    target: target.p,
-    built: Number(built.toFixed(5)),
-    factor: Number((target.p / built).toFixed(5)),
-  };
+  return { nm, band: target.band, target: target.p, built, factor: target.p / built };
 });
+// The brightness a viewer sees is the drawn colour's luminance, CIE Y, which Johnson V was made
+// to follow. The app's colour joins the bands with straight lines (core/moonColour.ts), and Mars's
+// spectrum curves up past 550 nm, so with each band at its own target Y comes out brighter than
+// V. One common factor brings Y to V; the bands keep Mallama et al.'s ratios to one another.
+const weights = colourWeights(BANDS_NM);
+const luminance = BANDS_NM.map(
+  (_, k) =>
+    0.2126 * (weights[0]?.[k] ?? 0) +
+    0.7152 * (weights[1]?.[k] ?? 0) +
+    0.0722 * (weights[2]?.[k] ?? 0),
+);
+const pY = perBand.reduce((s, c, k) => s + (luminance[k] ?? 0) * c.target, 0);
+const toV = pV / pY;
+console.log(
+  `luminance Y with each band at its target: p ${pY.toFixed(4)}, V ${pV.toFixed(4)}: x${toV.toFixed(4)}`,
+);
+const calibration = perBand.map((c) => ({
+  nm: c.nm,
+  band: c.band,
+  target: Number((c.target * toV).toFixed(5)),
+  built: Number(c.built.toFixed(5)),
+  factor: Number(((c.target * toV) / c.built).toFixed(5)),
+}));
 for (const c of calibration) {
   console.log(
     `${c.nm} nm (${c.band}): built p ${c.built.toFixed(4)}, Mars ${c.target}, factor ${c.factor.toFixed(4)}`,
   );
 }
-const greenFactor = calibration[1]?.factor ?? 1;
+/** The drawn disc's luminance at phase α, as a geometric-albedo-like p Φ(α): what V measures. */
+const drawn = (alphaDeg: number): number =>
+  calibration.reduce(
+    (sum, c, k) =>
+      sum +
+      (luminance[k] ?? 0) * c.factor * discAlbedo(law, alphaDeg, NORMALISATION_DEG, grid.bands[k]),
+    0,
+  );
 const curve = Array.from({ length: ALPHA_MAX_DEG / 5 + 1 }, (_, k) => 5 * k).map((a) => ({
   alphaDeg: a,
-  built: Number(magnitude(greenFactor * discAlbedo(law, a, NORMALISATION_DEG)).toFixed(4)),
+  built: Number(magnitude(drawn(a)).toFixed(4)),
   mallamaHilton: Number(mallamaHiltonV(a).toFixed(4)),
 }));
+
+// The captures' geometries (src/capture/viewpoints.ts), body-fixed, from public/data/mars/
+// ephemeris.json: what the fit predicts there, longitude effect included.
+const unitAt = (lonDeg: number, latDeg: number): [number, number, number] => [
+  Math.cos(latDeg * RAD) * Math.cos(lonDeg * RAD),
+  Math.cos(latDeg * RAD) * Math.sin(lonDeg * RAD),
+  Math.sin(latDeg * RAD),
+];
+const DIAGNOSTIC = [
+  { id: 'mars-from-earth', viewer: [29.8, -8.6], sun: [31.1, -8.5] },
+  { id: 'mars-phase-40', viewer: [-8.9, -8.5], sun: [31.1, -8.5] },
+] as const;
+for (const d of DIAGNOSTIC) {
+  const viewer = unitAt(d.viewer[0], d.viewer[1]);
+  const sun = unitAt(d.sun[0], d.sun[1]);
+  const alpha = Math.acos(viewer[0] * sun[0] + viewer[1] * sun[1] + viewer[2] * sun[2]) / RAD;
+  const p = drawnAt(
+    law,
+    NORMALISATION_DEG,
+    viewer,
+    sun,
+    calibration.map((c) => c.factor),
+    luminance,
+  );
+  console.log(
+    `${d.id}: alpha ${alpha.toFixed(1)}, predicted V ${magnitude(p).toFixed(3)}, Eq. 6 ${mallamaHiltonV(alpha).toFixed(3)}`,
+  );
+}
+
+// The map's brightness against central meridian, seen from the equator at full phase, against
+// Mallama's L1 (core/marsPhotometry.ts): both about their own mean.
+const lightCurve = Array.from({ length: 36 }, (_, k) => {
+  const westDeg = 10 * k;
+  const at = unitAt(-westDeg, 0);
+  return {
+    westDeg,
+    drawn: magnitude(
+      drawnAt(
+        law,
+        NORMALISATION_DEG,
+        at,
+        at,
+        calibration.map((c) => c.factor),
+        luminance,
+      ),
+    ),
+    mallama: mallamaCorrection(MALLAMA_L1, westDeg),
+  };
+});
+const meanOf = (v: readonly number[]): number => v.reduce((a, b) => a + b, 0) / v.length;
+const drawnMean = meanOf(lightCurve.map((p) => p.drawn));
+const mallamaMean = meanOf(lightCurve.map((p) => p.mallama));
+const curveRms = Math.sqrt(
+  meanOf(lightCurve.map((p) => (p.drawn - drawnMean - (p.mallama - mallamaMean)) ** 2)),
+);
+const range = (v: readonly number[]): number => Math.max(...v) - Math.min(...v);
+console.log(
+  `light curve: map range ${range(lightCurve.map((p) => p.drawn)).toFixed(3)} mag, Mallama L1 ${range(lightCurve.map((p) => p.mallama)).toFixed(3)}, RMS difference ${curveRms.toFixed(3)}`,
+);
+for (const p of lightCurve) {
+  console.log(
+    `  ${p.westDeg} W: map ${(p.drawn - drawnMean).toFixed(3)}  L1 ${(p.mallama - mallamaMean).toFixed(3)}`,
+  );
+}
 
 const result: MarsPhotometry = {
   story: 'docs/stories/SS-14.md (W7)',
@@ -384,6 +512,13 @@ const result: MarsPhotometry = {
   },
   calibration,
   calibrationSource: MALLAMA_2017.source,
+  luminance: {
+    weights: luminance.map((w) => Number(w.toFixed(5))),
+    withEachBandAtItsTarget: Number(pY.toFixed(5)),
+    v: Number(pV.toFixed(5)),
+    commonFactor: Number(toV.toFixed(5)),
+    why: "CIE Y of the drawn colour (Rec. 709 luminance of linear sRGB) is brought to the V geometric albedo: the colour model joins the bands with straight lines, and Mars's spectrum curves up past 550 nm",
+  },
   curve,
   normalisationTried: results.map((r) => ({
     incidenceDeg: r.normDeg,

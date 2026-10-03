@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mallamaHiltonV, type MarsPhotometry } from './marsPhotometry';
+import {
+  MALLAMA_L1,
+  MALLAMA_L2,
+  mallamaCorrection,
+  mallamaHiltonFullV,
+  mallamaHiltonV,
+  type MarsPhotometry,
+} from './marsPhotometry';
 import { AU_KM, SUN_V_MAGNITUDE } from './photometry';
 
 const photometry = JSON.parse(
@@ -39,5 +46,23 @@ describe("Mars's brightness", () => {
     for (const c of photometry.calibration) {
       expect(c.built * c.factor).toBeCloseTo(c.target, 3);
     }
+  });
+});
+
+describe("Mallama & Hilton's longitude and season corrections", () => {
+  it('interpolates their tables through every tabulated point', () => {
+    for (let k = 0; k <= 35; k++) {
+      expect(mallamaCorrection(MALLAMA_L1, 10 * k)).toBeCloseTo(MALLAMA_L1[k + 2] ?? 0, 12);
+      expect(mallamaCorrection(MALLAMA_L2, 10 * k)).toBeCloseTo(MALLAMA_L2[k + 2] ?? 0, 12);
+    }
+  });
+
+  it("reproduces their code's Mars test magnitude (Ap_Mag_Input_V3.txt, 2003-08-28)", () => {
+    // Horizons row: Ob-lon 329.27, Sl-lon 330.76 (west), hEcl-Lon 334.4996, r 1.381191244505,
+    // delta 0.37274381097911, S-T-O 4.8948; their computed new_ap_mag -2.862. Ls = hEcl-Lon - 85.
+    const r = 1.381191244505;
+    const d = 0.37274381097911;
+    const v = 5 * Math.log10(r * d) + mallamaHiltonFullV(4.8948, -329.27, -330.76, 334.4996 - 85);
+    expect(v).toBeCloseTo(-2.862, 2);
   });
 });

@@ -34,33 +34,45 @@
   {
    "nm": 440,
    "band": "Johnson B",
-   "target": 0.08889,
+   "target": 0.0825,
    "built": 0.12387,
-   "factor": 0.71759
+   "factor": 0.66599
   },
   {
    "nm": 530,
    "band": "Johnson V",
-   "target": 0.17172,
+   "target": 0.15937,
    "built": 0.22622,
-   "factor": 0.75908
+   "factor": 0.7045
   },
   {
    "nm": 750,
    "band": "Sloan i'",
-   "target": 0.30102,
+   "target": 0.27938,
    "built": 0.43267,
-   "factor": 0.69573
+   "factor": 0.64571
   },
   {
    "nm": 970,
    "band": "Sloan z'",
-   "target": 0.3283,
+   "target": 0.30469,
    "built": 0.36408,
-   "factor": 0.90174
+   "factor": 0.8369
   }
  ],
  "calibrationSource": "Mallama, Krobusek & Pavlov (2017), \"Comprehensive wide-band magnitudes and albedos for the planets\", Icarus 282, 19-33, doi:10.1016/j.icarus.2016.09.023, arXiv:1609.05048, Table 7",
+ "luminance": {
+  "weights": [
+   0.06916,
+   0.78361,
+   0.14723,
+   0
+  ],
+  "withEachBandAtItsTarget": 0.18503,
+  "v": 0.17172,
+  "commonFactor": 0.92809,
+  "why": "CIE Y of the drawn colour (Rec. 709 luminance of linear sRGB) is brought to the V geometric albedo: the colour model joins the bands with straight lines, and Mars's spectrum curves up past 550 nm"
+ },
  "curve": [
   {
    "alphaDeg": 0,
@@ -69,7 +81,7 @@
   },
   {
    "alphaDeg": 5,
-   "built": -1.4698,
+   "built": -1.4699,
    "mallamaHilton": -1.4909
   },
   {
@@ -79,42 +91,42 @@
   },
   {
    "alphaDeg": 15,
-   "built": -1.2843,
+   "built": -1.2844,
    "mallamaHilton": -1.2902
   },
   {
    "alphaDeg": 20,
-   "built": -1.2069,
+   "built": -1.207,
    "mallamaHilton": -1.1997
   },
   {
    "alphaDeg": 25,
-   "built": -1.1331,
+   "built": -1.1332,
    "mallamaHilton": -1.1156
   },
   {
    "alphaDeg": 30,
-   "built": -1.0605,
+   "built": -1.0606,
    "mallamaHilton": -1.0381
   },
   {
    "alphaDeg": 35,
-   "built": -0.9873,
+   "built": -0.9874,
    "mallamaHilton": -0.967
   },
   {
    "alphaDeg": 40,
-   "built": -0.9124,
+   "built": -0.9125,
    "mallamaHilton": -0.9025
   },
   {
    "alphaDeg": 45,
-   "built": -0.8351,
+   "built": -0.8352,
    "mallamaHilton": -0.8445
   },
   {
    "alphaDeg": 50,
-   "built": -0.7547,
+   "built": -0.7548,
    "mallamaHilton": -0.793
   }
  ],

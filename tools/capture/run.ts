@@ -27,15 +27,28 @@ const SWIFTSHADER_FLAGS = [
 /** The Moon's 8192 x 4096 map is decoded and mipmapped on the CPU under SwiftShader. */
 const READY_TIMEOUT_MS = 180_000;
 
-const moonData = join(root, 'public', 'data', 'moon');
-const ephemeris = JSON.parse(
-  readFileSync(join(moonData, 'ephemeris.json'), 'utf8'),
-) as EphemerisFile;
-const albedoDecodedMean = (
-  JSON.parse(readFileSync(join(moonData, 'albedo.json'), 'utf8')) as {
-    calibration: { decodedMean: number };
-  }
-).calibration.decodedMean;
+/** Each world's ephemeris and the albedo bytes' mean its pipeline recorded. */
+function worldData(world: 'moon' | 'mars'): {
+  ephemeris: EphemerisFile;
+  albedoDecodedMean: number;
+} {
+  const dir = join(root, 'public', 'data', world);
+  const albedo = JSON.parse(readFileSync(join(dir, 'albedo.json'), 'utf8')) as {
+    calibration?: { decodedMean: number };
+    texture: { decodedMean?: number };
+  };
+  const mean = albedo.calibration?.decodedMean ?? albedo.texture.decodedMean;
+  if (mean === undefined) throw new Error(`${world}'s albedo.json records no decoded mean`);
+  return {
+    ephemeris: JSON.parse(readFileSync(join(dir, 'ephemeris.json'), 'utf8')) as EphemerisFile,
+    albedoDecodedMean: mean,
+  };
+}
+const WORLDS = { moon: worldData('moon'), mars: worldData('mars') };
+/** The page a viewpoint is rendered on: Mars's for Mars, the Moon's for everything else. */
+const worldOf = (viewpoint: Viewpoint): 'moon' | 'mars' =>
+  viewpoint.scene === 'mars' ? 'mars' : 'moon';
+
 function git(...args: string[]): string {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 }
@@ -62,7 +75,7 @@ async function render(
     page.on('console', (message) => {
       if (message.type() === 'error') errors.push(message.text());
     });
-    await page.goto(`${baseUrl}moon/?capture=${encodeURIComponent(viewpoint.id)}`);
+    await page.goto(`${baseUrl}${worldOf(viewpoint)}/?capture=${encodeURIComponent(viewpoint.id)}`);
     await page.waitForFunction(() => window.__capture !== undefined, null, {
       timeout: READY_TIMEOUT_MS,
     });
@@ -71,7 +84,7 @@ async function render(
       throw new Error(`${viewpoint.id}: app refused: ${report.reason}`);
     }
     if (errors.length > 0) throw new Error(`${viewpoint.id}: page errors: ${errors.join(' | ')}`);
-    const problems = verifyReport(report, viewpoint, albedoDecodedMean);
+    const problems = verifyReport(report, viewpoint, WORLDS[worldOf(viewpoint)].albedoDecodedMean);
     if (problems.length > 0) {
       throw new Error(`refusing to write ${viewpoint.id}: ${problems.join('; ')}`);
     }
@@ -116,7 +129,7 @@ async function main(): Promise<void> {
         : compareImages(a, b, { threshold: 0, maxDiffRatio: 0, maxMeanChannelDelta: 0 });
 
       writeFileSync(pngPath(capturesDir, viewpoint.id), first.png);
-      const verdict = judge(a, viewpoint, ephemeris);
+      const verdict = judge(a, viewpoint, WORLDS[worldOf(viewpoint)].ephemeris);
       const sidecar = {
         viewpoint,
         environment: {

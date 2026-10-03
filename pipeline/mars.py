@@ -369,6 +369,8 @@ def build() -> dict:
     green = hrsc["green"] * (blended / infrared)
 
     master = encode(green)
+    # The bytes' mean, for the capture harness to check the app decoded them unchanged (W7).
+    decoded_mean = round(float(master.mean(dtype=np.float64)), 4)
     webp = lossless_webp(master)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     albedo_out = OUT_DIR / "albedo.webp"
@@ -434,6 +436,7 @@ def build() -> dict:
             "clippedPixels": int(np.sum(green > MAX_REFLECTANCE)),
             "medianReflectance": round(float(np.median(green)), 4),
             "meanReflectance": round(float(green.mean()), 4),
+            "decodedMean": decoded_mean,
             "kmPerPixelAtEquator": round(2 * math.pi * 3396.19 / WIDTH, 3),
             "sha256": sha256(albedo_out),
             "gpuBytesR8WithMips": int(WIDTH * HEIGHT * 4 / 3),

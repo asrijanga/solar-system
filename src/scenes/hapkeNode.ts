@@ -22,8 +22,6 @@ export interface HapkeNodes {
 }
 
 const TINY = 1e-6;
-const TAN_T = Math.tan((HAPKE_ROUGHNESS_DEG * Math.PI) / 180);
-const CHI = 1 / Math.sqrt(1 + Math.PI * TAN_T * TAN_T);
 
 function hapkeH(x: FloatNode, w: FloatNode): FloatNode {
   const xs = max(x, TINY);
@@ -47,7 +45,11 @@ export function hapkeNode(
   muIn: FloatNode,
   cosGIn: FloatNode,
   p: HapkeNodes,
+  thetaBarDeg = HAPKE_ROUGHNESS_DEG,
 ): FloatNode {
+  // The mean slope is a constant of the world (the Moon's, or Mars's fitted one), not per texel.
+  const TAN_T = Math.tan((thetaBarDeg * Math.PI) / 180);
+  const CHI = 1 / Math.sqrt(1 + Math.PI * TAN_T * TAN_T);
   // Clamped into the lit, visible range so nothing below is undefined; the caller's zero
   // handles the rest.
   const mu0 = clamp(mu0In, TINY, 1);

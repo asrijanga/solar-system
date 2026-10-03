@@ -76,7 +76,7 @@ describe('Mars at any moment (timeline)', () => {
     }
   });
 
-  it("evaluates IAU_MARS exactly as SPICE does at the fixed epochs", () => {
+  it('evaluates IAU_MARS exactly as SPICE does at the fixed epochs', () => {
     for (const e of EPHEMERIS.epochs) {
       const r = marsRotation(MANIFEST.rotation, e.tdbSecondsPastJ2000);
       // 1e-5 deg is 0.6 m on Mars's surface; measured 1.2e-6.

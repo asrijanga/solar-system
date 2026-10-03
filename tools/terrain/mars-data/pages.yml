@@ -51,6 +51,7 @@ jobs:
             app/pipeline/.cache/mars-terrain-64.img
             app/pipeline/.cache/mars-terrain-64-areoid.img
             app/pipeline/.cache/mars-terrain-64-source.img
+            app/pipeline/.cache/mars-terrain-64-hrsc-weight.u8.gz
           key: mars-composite-${{ hashFiles('app/pipeline/mars_terrain.py', 'app/pipeline/hrsc_dtm_sources.json', 'app/pipeline/mola64_sources.json') }}
       - if: steps.composite.outputs.cache-hit != 'true'
         run: npm run pipeline:mars:terrain
@@ -64,6 +65,7 @@ jobs:
       - run: |
           cp data/README.md site/
           cp app/public/data/mars/terrain.json app/public/data/mars/terrain-source.webp site/terrain/
+          cp app/pipeline/.cache/mars-terrain-64-hrsc-weight.u8.gz site/terrain/hrsc-weight.u8.gz
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

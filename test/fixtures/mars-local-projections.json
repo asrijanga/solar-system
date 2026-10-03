@@ -1,0 +1,197 @@
+{
+  "source": "Each file's own label keys, and points where GDAL (rasterio 1.4, its PDS driver) maps latitude and longitude on the 3396 km sphere to rows and columns, 0-based with pixel centres on whole numbers (generated 2026-10-03)",
+  "cases": {
+    "hrscSinusoidal": {
+      "file": "MEX HRSC h0010_0009_da4.img (PDS MEX-M-HRSC-5-REFDR-DTM-V1.0)",
+      "label": {
+        "MAP_PROJECTION_TYPE": "SINUSOIDAL",
+        "A_AXIS_RADIUS": "3396.0 <km>",
+        "CENTER_LATITUDE": "0.0",
+        "CENTER_LONGITUDE": "90.0",
+        "MAP_SCALE": "0.05 <km/pixel>",
+        "LINE_PROJECTION_OFFSET": "-1113.9",
+        "SAMPLE_PROJECTION_OFFSET": "-16.7",
+        "LINES": "4054",
+        "LINE_SAMPLES": "1112"
+      },
+      "points": [
+        {
+          "latDeg": -4.007587336,
+          "lonDeg": 90.601512643,
+          "row": 3636.804749131,
+          "col": 694.606158864
+        },
+        {
+          "latDeg": -1.709416839,
+          "lonDeg": 90.741634256,
+          "row": 912.489948222,
+          "col": 862.062487553
+        },
+        {
+          "latDeg": -3.926672163,
+          "lonDeg": 90.295934075,
+          "row": 3540.885667636,
+          "col": 333.284908821
+        },
+        {
+          "latDeg": -3.747727743,
+          "lonDeg": 90.018644988,
+          "row": 3328.760008124,
+          "col": 5.355018677
+        },
+        {
+          "latDeg": -2.539512517,
+          "lonDeg": 90.762111864,
+          "row": 1896.508298828,
+          "col": 885.841204772
+        },
+        {
+          "latDeg": -1.891416548,
+          "lonDeg": 90.298090388,
+          "row": 1128.237431457,
+          "col": 336.472058623
+        },
+        {
+          "latDeg": -2.461339077,
+          "lonDeg": 90.252981832,
+          "row": 1803.839344048,
+          "col": 282.914981471
+        },
+        {
+          "latDeg": -2.832124194,
+          "lonDeg": 90.487557047,
+          "row": 2243.37826531,
+          "col": 560.557663961
+        }
+      ]
+    },
+    "hrscPolar": {
+      "file": "MEX HRSC h1154_0000_da4.img (PDS MEX-M-HRSC-5-REFDR-DTM-V1.0)",
+      "label": {
+        "MAP_PROJECTION_TYPE": "STEREOGRAPHIC",
+        "A_AXIS_RADIUS": "3396.0 <km>",
+        "CENTER_LATITUDE": "90.0",
+        "CENTER_LONGITUDE": "0.0",
+        "MAP_SCALE": "0.25 <km/pixel>",
+        "LINE_PROJECTION_OFFSET": "-1010.1",
+        "SAMPLE_PROJECTION_OFFSET": "2133.2",
+        "LINES": "831",
+        "LINE_SAMPLES": "1800"
+      },
+      "points": [
+        {
+          "latDeg": 81.477467283,
+          "lonDeg": -29.881651816,
+          "row": 745.084668606,
+          "col": 1124.671839888
+        },
+        {
+          "latDeg": 84.076098154,
+          "lonDeg": -31.642421723,
+          "row": 186.647174882,
+          "col": 1395.734242441
+        },
+        {
+          "latDeg": 80.087252668,
+          "lonDeg": -42.555347412,
+          "row": 725.422913124,
+          "col": 539.79931284
+        },
+        {
+          "latDeg": 78.583179387,
+          "lonDeg": -51.46106707,
+          "row": 681.940815676,
+          "col": 8.977548218
+        },
+        {
+          "latDeg": 83.412992849,
+          "lonDeg": -26.556792682,
+          "row": 388.353945813,
+          "col": 1434.224971754
+        },
+        {
+          "latDeg": 81.514099447,
+          "lonDeg": -51.997730265,
+          "row": 230.871683656,
+          "col": 544.958368275
+        },
+        {
+          "latDeg": 80.867142838,
+          "lonDeg": -50.52549396,
+          "row": 369.358410188,
+          "col": 458.265257777
+        },
+        {
+          "latDeg": 81.942383551,
+          "lonDeg": -39.825879904,
+          "row": 459.456299574,
+          "col": 907.686866124
+        }
+      ]
+    },
+    "hirise": {
+      "file": "MRO HiRISE DTEEC_001336_1560_001534_1560_U01.IMG (Eberswalde)",
+      "label": {
+        "MAP_PROJECTION_TYPE": "\"EQUIRECTANGULAR\"",
+        "A_AXIS_RADIUS": "3393.8332607584 <KM>",
+        "CENTER_LATITUDE": "-20.0 <DEG>",
+        "CENTER_LONGITUDE": "326.38 <DEG>",
+        "MAP_SCALE": "1.0082077197663 <METERS/PIXEL>",
+        "LINE_PROJECTION_OFFSET": "-1393082.5000001 <PIXEL>",
+        "SAMPLE_PROJECTION_OFFSET": "3143.5000000001 <PIXEL>",
+        "LINES": "15166",
+        "LINE_SAMPLES": "6789"
+      },
+      "points": [
+        {
+          "latDeg": -23.943094812,
+          "lonDeg": -33.600079537,
+          "row": 13606.644505505,
+          "col": 4243.273122779
+        },
+        {
+          "latDeg": -23.769623866,
+          "lonDeg": -33.58156133,
+          "row": 3414.992243397,
+          "col": 5265.630151075
+        },
+        {
+          "latDeg": -23.936987157,
+          "lonDeg": -33.640036351,
+          "row": 13247.81155288,
+          "col": 2037.328908262
+        },
+        {
+          "latDeg": -23.92348004,
+          "lonDeg": -33.676300573,
+          "row": 12454.250193193,
+          "col": 35.246152696
+        },
+        {
+          "latDeg": -23.832281307,
+          "lonDeg": -33.578931754,
+          "row": 7096.201494828,
+          "col": 5410.804351798
+        },
+        {
+          "latDeg": -23.783361603,
+          "lonDeg": -33.639683899,
+          "row": 4222.10283312,
+          "col": 2056.787145676
+        },
+        {
+          "latDeg": -23.826380605,
+          "lonDeg": -33.645606524,
+          "row": 6749.527255016,
+          "col": 1729.809630584
+        },
+        {
+          "latDeg": -23.854368278,
+          "lonDeg": -33.614903328,
+          "row": 8393.840841562,
+          "col": 3424.878130066
+        }
+      ]
+    }
+  }
+}

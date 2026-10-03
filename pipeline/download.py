@@ -62,8 +62,9 @@ def fetch(
         raise ValueError(f"{name}: a byte range has no publisher checksum; pin its sha256")
     if expected_sha256 is None and md5 is None:
         raise ValueError(f"{name}: refusing an unpinned download with no publisher checksum")
-    CACHE.mkdir(exist_ok=True)
     target = CACHE / name
+    # A name may sit in a folder of its own (mola64/, hrscdtm/), which a fresh cache lacks.
+    target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():
         ok, _ = _verified(target, expected_sha256, md5)
         if ok:

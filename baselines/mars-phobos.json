@@ -1,0 +1,107 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "full-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 135847.6,
+      "fovDeg": 30,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false,
+      "utc": "2026-01-26T08:00:00Z",
+      "neighbour": {
+        "moon": "phobos",
+        "lonDeg": -49,
+        "latDeg": 1,
+        "distanceKm": 60,
+        "mirrored": false
+      }
+    },
+    "bodyChecks": [
+      {
+        "kind": "neighbour-brightness",
+        "name": "Phobos’s summed brightness",
+        "tolerance": 0.02
+      },
+      {
+        "kind": "neighbour-walls",
+        "name": "Stickney’s sunward wall",
+        "lonDeg": -49,
+        "latDeg": 1,
+        "diameterKm": 9,
+        "inner": [
+          0.35,
+          0.6
+        ],
+        "brighter": "east"
+      }
+    ],
+    "negativeControl": false,
+    "id": "mars-phobos",
+    "description": "Phobos from 60 km over Stickney (1°N 49°W, the Gazetteer) on 26 January 2026 at 08:00 UTC, the Sun 24° up in Stickney’s west: Willner et al.’s shape lit by Fornasier et al.’s law. Its summed brightness against the law over its facets, and Stickney’s sunward (east) inner wall the brighter.",
+    "scene": "mars"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Phobos’s summed brightness: drawn 9.1395e-4, the law 9.2153e-4 (-0.82%)",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Stickney’s sunward wall: east 0.0152 (45 points), west 0.0083 (45), east expected brighter",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "f5a61fb9387577e3ff1568479ba58449fad2050b",
+    "dirty": false
+  }
+}

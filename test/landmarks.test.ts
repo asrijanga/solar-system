@@ -40,6 +40,45 @@ describe('landmarks', () => {
   });
 });
 
+describe('Mars landmarks', () => {
+  const mars = JSON.parse(
+    readFileSync(join(root, 'public/data/mars/landmarks.json'), 'utf8'),
+  ) as typeof landmarks;
+  const pinned = ['iau-gazetteer-mars.json', 'iau-gazetteer-mars-relief.json'].flatMap(
+    (file) =>
+      (
+        JSON.parse(readFileSync(join(root, 'test/fixtures', file), 'utf8')) as {
+          features: { name: string; lonDeg: number; latDeg: number }[];
+        }
+      ).features,
+  );
+
+  it('agree with the Gazetteer releases pinned for W3 and W4 on every feature they share', () => {
+    const shared = pinned.filter((f) => mars.landmarks.some((l) => l.name === f.name));
+    expect(shared.map((f) => f.name).sort()).toEqual([
+      'Arabia Terra',
+      'Hellas Planitia',
+      'Olympus Mons',
+    ]);
+    for (const f of shared) {
+      const l = mars.landmarks.find((x) => x.name === f.name);
+      expect(l?.lonDeg).toBeCloseTo(f.lonDeg, 3);
+      expect(l?.latDeg).toBeCloseTo(f.latDeg, 3);
+    }
+  });
+
+  it('are unique, with longitude from -180 to 180, and name no mission', () => {
+    expect(new Set(mars.landmarks.map((l) => l.name)).size).toBe(mars.landmarks.length);
+    for (const l of mars.landmarks) {
+      expect(l.lonDeg).toBeGreaterThanOrEqual(-180);
+      expect(l.lonDeg).toBeLessThanOrEqual(180);
+      expect(Math.abs(l.latDeg)).toBeLessThanOrEqual(90);
+      expect(l.label).toBe(l.name);
+      expect(l.kind).not.toBe('landing');
+    }
+  });
+});
+
 describe('Gazetteer readers', () => {
   it('reads a deflated zip entry and a dBASE table', () => {
     // A two-field, two-record table: C(6) name, N(8) lon; the second record deleted.

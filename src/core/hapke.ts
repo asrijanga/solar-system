@@ -131,11 +131,18 @@ export function cosAzimuth(mu0: number, mu: number, cosG: number): number {
 /**
  * Hapke radiance factor I/F for a surface with these parameters, lit from a direction at cosine
  * μ0 to the normal and seen at cosine μ, with phase angle g between the two directions. Zero
- * where the Sun is below the local horizon or the surface faces away.
+ * where the Sun is below the local horizon or the surface faces away. The mean slope θ̄ is the
+ * Moon's unless given (Mars's is fitted: core/marsPhotometry.ts).
  */
-export function hapke(mu0: number, mu: number, cosG: number, p: HapkeParameters): number {
+export function hapke(
+  mu0: number,
+  mu: number,
+  cosG: number,
+  p: HapkeParameters,
+  thetaBarDeg = HAPKE_ROUGHNESS_DEG,
+): number {
   if (mu0 <= 0 || mu <= 0) return 0;
-  const { mu0e, mue, s } = roughness(mu0, mu, cosAzimuth(mu0, mu, cosG));
+  const { mu0e, mue, s } = roughness(mu0, mu, cosAzimuth(mu0, mu, cosG), thetaBarDeg);
   const single = doubleHenyeyGreenstein(cosG, p.b, p.c) * shadowHiding(cosG, p.bs0, p.hs);
   const multiple = hapkeH(mu0e, p.w) * hapkeH(mue, p.w) - 1;
   return (p.w / 4) * (mu0e / (mu0e + mue)) * (single + multiple) * s;

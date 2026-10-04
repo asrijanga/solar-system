@@ -45,8 +45,11 @@ export function lonLatToBodyFixed(lonDeg: number, latDeg: number): [number, numb
   return [Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat)];
 }
 
+/** What the frame helpers need of an epoch: any world's (core/mars.ts MarsEpoch too). */
+export type Oriented = Pick<MoonEpoch, 'j2000ToBodyFixed'>;
+
 /** j2000 = Mᵀ · body. */
-export function bodyFixedToJ2000(epoch: MoonEpoch, v: Vec3): [number, number, number] {
+export function bodyFixedToJ2000(epoch: Oriented, v: Vec3): [number, number, number] {
   const m = epoch.j2000ToBodyFixed;
   return [
     m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
@@ -68,7 +71,7 @@ export function j2000ToScene(v: Vec3): [number, number, number] {
  * Row-major 3x3 rotation taking body-fixed vectors to scene vectors: S · Mᵀ. The Moon mesh's
  * object space is the body-fixed frame, so this is its model matrix.
  */
-export function bodyFixedToSceneMatrix(epoch: MoonEpoch): number[] {
+export function bodyFixedToSceneMatrix(epoch: Oriented): number[] {
   const out: number[] = [];
   const columns = [
     j2000ToScene(bodyFixedToJ2000(epoch, [1, 0, 0])),
@@ -94,7 +97,7 @@ export interface MoonViewPose {
 }
 
 export function moonViewPose(
-  epoch: MoonEpoch,
+  epoch: Oriented & Pick<MoonEpoch, 'earthDirectionJ2000'>,
   vantage: MoonVantage,
   distanceKm: number,
 ): MoonViewPose {

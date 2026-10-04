@@ -18,7 +18,7 @@ const hapke = JSON.parse(readFileSync(join(root, 'public/data/moon/hapke.json'),
 
 describe('Moon viewpoint checks', () => {
   it('use exactly the Gazetteer fixture coordinates', () => {
-    const checks = findViewpoint('moon-full')?.moonChecks ?? [];
+    const checks = findViewpoint('moon-full')?.bodyChecks ?? [];
     const features = checks.filter((c) => c.kind === 'feature');
     expect(features.map((f) => f.name).sort()).toEqual(
       ['Aristarchus', 'Copernicus', 'Mare Crisium', 'Statio Tranquillitatis', 'Tycho'].sort(),
@@ -33,20 +33,20 @@ describe('Moon viewpoint checks', () => {
 
   it('give the uniform Moon the median tile’s reflectance', () => {
     for (const v of viewpoints) {
-      for (const c of v.moonChecks) {
+      for (const c of v.bodyChecks) {
         if (c.kind === 'photometry') expect(c.albedo).toBeCloseTo(hapke.medianAtStandard, 3);
       }
-      if (v.moon !== null && v.moon.albedo !== 'map') {
-        expect(v.moon.albedo.uniform).toBeCloseTo(hapke.medianAtStandard, 3);
+      if (v.body !== null && v.body.albedo !== 'map') {
+        expect(v.body.albedo.uniform).toBeCloseTo(hapke.medianAtStandard, 3);
       }
     }
   });
 
   it('pair every Moon negative control with a viewpoint that runs the same checks', () => {
-    for (const control of viewpoints.filter((v) => v.negativeControl && v.moon !== null)) {
+    for (const control of viewpoints.filter((v) => v.negativeControl && v.body !== null)) {
       const twin = viewpoints.find(
         (v) =>
-          !v.negativeControl && JSON.stringify(v.moonChecks) === JSON.stringify(control.moonChecks),
+          !v.negativeControl && JSON.stringify(v.bodyChecks) === JSON.stringify(control.bodyChecks),
       );
       expect(twin, control.id).toBeDefined();
     }
@@ -56,5 +56,43 @@ describe('Moon viewpoint checks', () => {
 describe('albedo map against the Hapke parameter maps', () => {
   it('is recorded over every measured tile', () => {
     expect(albedo.calibration.consistency.tiles).toBe(360 * 140);
+  });
+});
+
+describe('Mars viewpoint checks', () => {
+  const landmarks = (
+    JSON.parse(
+      readFileSync(join(import.meta.dirname, '../public/data/mars/landmarks.json'), 'utf8'),
+    ) as {
+      landmarks: { name: string; lonDeg: number; latDeg: number; diameterKm: number }[];
+    }
+  ).landmarks;
+  const fixture = (
+    JSON.parse(
+      readFileSync(join(import.meta.dirname, 'fixtures/iau-gazetteer-mars.json'), 'utf8'),
+    ) as {
+      features: { name: string; lonDeg: number; latDeg: number; expect: string }[];
+    }
+  ).features;
+
+  it('take their features where the Gazetteer puts them', () => {
+    for (const v of viewpoints.filter((x) => x.scene === 'mars')) {
+      for (const check of v.bodyChecks) {
+        if (check.kind === 'feature') {
+          const f = fixture.find((x) => x.name === check.name);
+          expect(f, check.name).toBeDefined();
+          expect(check.lonDeg).toBeCloseTo(f?.lonDeg ?? NaN, 4);
+          expect(check.latDeg).toBeCloseTo(f?.latDeg ?? NaN, 4);
+          expect(check.expect).toBe(f?.expect === 'dark' ? 'darker' : 'brighter');
+        }
+        if (check.kind === 'walls') {
+          const l = landmarks.find((x) => check.name.startsWith(x.name));
+          expect(l, check.name).toBeDefined();
+          expect(check.lonDeg).toBeCloseTo(l?.lonDeg ?? NaN, 4);
+          expect(check.latDeg).toBeCloseTo(l?.latDeg ?? NaN, 4);
+          expect(check.diameterKm).toBeCloseTo(l?.diameterKm ?? NaN, 3);
+        }
+      }
+    }
   });
 });

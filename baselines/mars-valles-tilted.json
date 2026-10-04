@@ -1,0 +1,72 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": -72,
+        "latDeg": -15
+      },
+      "distanceKm": 3646.19,
+      "fovDeg": 60,
+      "tiltDeg": 50,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": true,
+      "reliefFlipped": false
+    },
+    "bodyChecks": [],
+    "negativeControl": false,
+    "id": "mars-valles-tilted",
+    "description": "Looking north across Valles Marineris (Melas and Coprates Chasmata) from over 15°S 72°W, 250 km up and tilted 50° towards the horizon, 26 January 2026. For eyes: the canyon’s walls and depth should read in true scale.",
+    "scene": "mars"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": []
+  },
+  "git": {
+    "sha": "d7c1effc0f6b0078e515ae7ab00c2c817eda5afe",
+    "dirty": false
+  }
+}

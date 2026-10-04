@@ -63,7 +63,7 @@ import {
   retryFailedTiles,
 } from './tileFetch';
 import { bodyFixedToSceneMatrix, j2000ToScene, type MoonEpoch } from '../core/moon';
-import type { HapkeParameters } from '../core/hapke';
+import { HAPKE_ROUGHNESS_DEG, type HapkeParameters } from '../core/hapke';
 import { colourWeights } from '../core/moonColour';
 import { EXPOSURE, AU_KM, SUNLIT_FADE } from '../core/photometry';
 import type Node from 'three/src/nodes/core/Node.js';
@@ -100,12 +100,31 @@ export interface AlbedoManifest {
 
 export interface MoonTextures {
   readonly albedo: DataTexture;
+  /**
+   * What the colour texture's channels hold, each byte linear over its range: a band's I/F over
+   * the reference band's. The Moon's are 643, 415 and 689 over 566 nm; Mars's 750, 440 and 970
+   * over 530 nm. Also the bytes' decoding: I/F at the reference band = maxIOverF · byte².
+   */
+  readonly bands: {
+    readonly maxIOverF: number;
+    readonly red: readonly [number, number];
+    readonly green: readonly [number, number];
+    readonly blue: readonly [number, number];
+    /** Display channel per band ratio, columns (green, reference, red, blue) (core/moonColour.ts). */
+    readonly weights: readonly (readonly number[])[];
+    /**
+     * Mars only (core/marsPhotometry.ts): the calibration factor per band, in the weights' column
+     * order, applied as the map is drawn. Absent for the Moon, whose map is calibrated already.
+     */
+    readonly factors?: readonly [number, number, number, number];
+  };
   /** The colour ratios, coarser than the albedo (AlbedoManifest.colour). */
   readonly colour: DataTexture;
   /** One bit per texel, 8 texels per byte along a row; bit set = never measured. Null when every
    * texel was measured. */
   readonly gaps: DataTexture | null;
-  readonly manifest: AlbedoManifest;
+  /** The Moon's albedo manifest; null for another world's map (its `bands` say what it holds). */
+  readonly manifest: AlbedoManifest | null;
   /** Mean of the decoded albedo bytes, 0-255, for the harness to compare with the pipeline. */
   readonly decodedMean: number;
 }
@@ -225,9 +244,17 @@ export async function loadMoonTextures(maxAnisotropy: number): Promise<MoonTextu
   colour.anisotropy = maxAnisotropy;
   colour.needsUpdate = true;
 
+  const ranges = manifest.colour.ranges;
   return {
     albedo,
     colour,
+    bands: {
+      maxIOverF: manifest.texture.encoding.maxIOverF,
+      red: ranges['643/566'],
+      green: ranges['415/566'],
+      blue: ranges['689/566'],
+      weights: COLOUR_WEIGHTS,
+    },
     gaps: maskBytes === null ? null : packGaps(maskBytes, width, height),
     manifest,
     decodedMean: sum / albedoBytes.length,
@@ -258,17 +285,38 @@ function packGaps(maskBytes: Uint8Array, width: number, height: number): DataTex
 
 export type MoonShading = 'hapke' | 'lambert' | 'albedo';
 
+/**
+ * One scattering law for a whole world, with its own mean slope, and its I/F at the geometry the
+ * albedo map's values are given for (Mars: core/marsPhotometry.ts). The map's value times
+ * Hapke here over `standard` is the I/F anywhere.
+ */
+export interface UniformHapke {
+  readonly kind: 'uniform';
+  readonly parameters: HapkeParameters;
+  readonly thetaBarDeg: number;
+  readonly standard: number;
+}
+
 export interface MoonOptions {
-  readonly epoch: MoonEpoch;
+  /** What the surface needs of the epoch: the Moon's, or any world's. */
+  readonly epoch: Pick<MoonEpoch, 'j2000ToBodyFixed' | 'sunDirectionJ2000' | 'sunDistanceKm'>;
+  /** The sphere: the Moon's, or the one a world's terrain tiles are heights above. */
   readonly radiusKm: number;
+  /**
+   * A flattened world's smooth surface: polar over equatorial radius (Mars 3376.2 / 3396.19).
+   * The smooth mesh is that ellipsoid, lit by its own normal. Absent for the Moon's sphere.
+   */
+  readonly polarRatio?: number;
+  /** The scene object's name. 'moon' unless given. */
+  readonly name?: string;
   /**
    * The mapped albedo, or for photometry checks a uniform one: I/F at the map's standard
    * geometry (core/hapke.ts MAP_STANDARD_DEG), scattered with the median tile's
    * parameters.
    */
   readonly albedo: MoonTextures | { readonly uniform: number };
-  /** How the surface scatters light with angle, per tile (docs/stories/SS-8b.md). */
-  readonly hapke: HapkeData;
+  /** How the surface scatters light with angle: per tile (the Moon, docs/stories/SS-8b.md), or one law. */
+  readonly hapke: HapkeData | UniformHapke;
   /**
    * 'hapke' is the Moon. 'lambert' exists only for a negative control. 'albedo' is unlit:
    * every point as it would look at zero phase, seen from straight above, for checking the map
@@ -318,7 +366,7 @@ const SUN_RADIUS_KM = 695_700;
 const GAP_COLOUR = [1, 0, 1] as const;
 
 /** The epoch's body-fixed (MOON_ME) to scene rotation, as a three.js matrix. */
-function bodyToSceneMatrix4(epoch: MoonEpoch): Matrix4 {
+function bodyToSceneMatrix4(epoch: MoonOptions['epoch']): Matrix4 {
   const m = bodyFixedToSceneMatrix(epoch);
   return new Matrix4().set(
     m[0] ?? 0,
@@ -406,56 +454,86 @@ function createMoonMaterial(
     // I/F at the map's standard geometry, and the tile's Hapke parameters with its own I/F at
     // that geometry: the map's value scales Hapke's angular behaviour (docs/stories/SS-8b.md).
     let albedo;
-    // Measured colour relative to 566 nm; white where none is drawn (a uniform Moon).
+    // Measured colour relative to the reference band; white where none is drawn (a uniform Moon).
     let tint: Node<'vec3'> = vec3(1, 1, 1);
     let gap = null;
     let hapke: HapkeNodes;
     let standard;
+    // One law for the whole world (Mars), or the Moon's per tile; its mean slope.
+    const law = 'kind' in options.hapke ? options.hapke : null;
+    const thetaBarDeg = law === null ? HAPKE_ROUGHNESS_DEG : law.thetaBarDeg;
+    const uniformHapke = (m: HapkeParameters): HapkeNodes => ({
+      w: float(m.w),
+      b: float(m.b),
+      c: float(m.c),
+      bs0: float(m.bs0),
+      hs: float(m.hs),
+    });
     if ('uniform' in options.albedo) {
       albedo = float(options.albedo.uniform);
-      const m = options.hapke.median;
-      hapke = { w: float(m.w), b: float(m.b), c: float(m.c), bs0: float(m.bs0), hs: float(m.hs) };
-      standard = float(options.hapke.medianAtStandard);
+      if (law === null) {
+        const tiles = options.hapke as HapkeData;
+        hapke = uniformHapke(tiles.median);
+        standard = float(tiles.medianAtStandard);
+      } else {
+        hapke = uniformHapke(law.parameters);
+        standard = float(law.standard);
+      }
     } else {
-      // Tile centres sit on whole-and-a-half degrees from 0°E; u = longitude / 360°. Level 0,
-      // no mipmaps, so no derivative is taken.
-      const tileUv = vec2(fract(signedLon.div(2 * Math.PI)), v);
-      const q = texture(options.hapke.parameters, tileUv, 0).toVar('moonHapke');
-      const x = texture(options.hapke.extra, tileUv, 0).toVar('moonHapkeExtra');
-      hapke = { w: q.r, b: q.g, c: q.b, bs0: q.a, hs: x.r };
-      standard = x.g;
+      if (law === null) {
+        const tiles = options.hapke as HapkeData;
+        // Tile centres sit on whole-and-a-half degrees from 0°E; u = longitude / 360°. Level 0,
+        // no mipmaps, so no derivative is taken.
+        const tileUv = vec2(fract(signedLon.div(2 * Math.PI)), v);
+        const q = texture(tiles.parameters, tileUv, 0).toVar('moonHapke');
+        const x = texture(tiles.extra, tileUv, 0).toVar('moonHapkeExtra');
+        hapke = { w: q.r, b: q.g, c: q.b, bs0: q.a, hs: x.r };
+        standard = x.g;
+      } else {
+        hapke = uniformHapke(law.parameters);
+        standard = float(law.standard);
+      }
       const maps = options.albedo;
+      const bands = maps.bands;
       const map = texture(maps.albedo, uv);
       const sample = (options.seamFix === false ? map : map.grad(gradX, gradY)).toVar(
         'moonAlbedoSample',
       );
-      // byte = 255 sqrt(I/F / maxIOverF) (pipeline/moon.py): square it back.
-      albedo = sample.r.mul(sample.r).mul(maps.manifest.texture.encoding.maxIOverF);
+      // byte = 255 sqrt(I/F / maxIOverF) (pipeline/moon.py, pipeline/mars.py): square it back.
+      albedo = sample.r.mul(sample.r).mul(bands.maxIOverF);
       const c = texture(maps.colour, uv);
       const colourSample = (options.seamFix === false ? c : c.grad(gradX, gradY)).toVar(
         'moonColourSample',
       );
-      const ranges = maps.manifest.colour.ranges;
       const ratio = (byte: typeof colourSample.r, [lo, hi]: readonly [number, number]) =>
         byte.mul(hi - lo).add(lo);
-      // Band ratios at 415, 643 and 689 nm (566 nm is 1), then the display colour: each
-      // channel a fixed weighted sum of them (core/moonColour.ts).
-      const r415 = ratio(colourSample.g, ranges['415/566']);
-      const r643 = ratio(colourSample.r, ranges['643/566']);
-      const r689 = ratio(colourSample.b, ranges['689/566']);
+      // Band ratios to the reference band (the Moon: 415, 643 and 689 over 566 nm; Mars: 440,
+      // 750 and 970 over 530 nm), then the display colour: each channel a fixed weighted sum of
+      // them (core/moonColour.ts).
+      let rShort = ratio(colourSample.g, bands.green);
+      let rMid = ratio(colourSample.r, bands.red);
+      let rLong = ratio(colourSample.b, bands.blue);
+      const factors = bands.factors;
+      if (factors !== undefined) {
+        // Mars's calibration (core/marsPhotometry.ts): each band by its own factor, so the
+        // reference band's I/F by its factor and each ratio by its band's over the reference's;
+        // the reference band's own ratio stays 1.
+        const [fShort, fReference, fMid, fLong] = factors;
+        albedo = albedo.mul(fReference);
+        rShort = rShort.mul(fShort / fReference);
+        rMid = rMid.mul(fMid / fReference);
+        rLong = rLong.mul(fLong / fReference);
+      }
+      const weights = bands.weights;
       const channel = (row: readonly number[]) =>
-        r415
+        rShort
           .mul(row[0] ?? 0)
           .add(row[1] ?? 0)
-          .add(r643.mul(row[2] ?? 0))
-          .add(r689.mul(row[3] ?? 0));
-      tint = vec3(
-        channel(COLOUR_WEIGHTS[0] ?? []),
-        channel(COLOUR_WEIGHTS[1] ?? []),
-        channel(COLOUR_WEIGHTS[2] ?? []),
-      );
+          .add(rMid.mul(row[2] ?? 0))
+          .add(rLong.mul(row[3] ?? 0));
+      tint = vec3(channel(weights[0] ?? []), channel(weights[1] ?? []), channel(weights[2] ?? []));
 
-      if (maps.gaps !== null) {
+      if (maps.gaps !== null && maps.manifest !== null) {
         const { width, height } = maps.manifest.texture;
         const column = int(clamp(floor(fract(u).mul(width)), 0, width - 1));
         const row = int(clamp(floor(v.mul(height)), 0, height - 1));
@@ -474,9 +552,10 @@ function createMoonMaterial(
     }
 
     // The Moon is at the origin with a rotation-only placement, so the direction of the
-    // world position is the smooth sphere's normal.
+    // world position is the smooth sphere's normal. An ellipsoid is lit by its own normal.
     const sphereNormal = normalize(positionWorld);
-    let normal = sphereNormal;
+    let normal =
+      !terrain && options.polarRatio !== undefined ? normalize(normalWorld) : sphereNormal;
     let sunVisible = null;
     let earthVisible = null;
     if (terrain) {
@@ -522,11 +601,11 @@ function createMoonMaterial(
     // (core/hapke.ts); step keeps that without branching.
     const lit = (cosLight: typeof mu0, cosG: typeof mu0) =>
       ratio
-        .mul(hapkeNode(cosLight, mu, cosG, hapke))
+        .mul(hapkeNode(cosLight, mu, cosG, hapke, thetaBarDeg))
         .mul(step(1e-6, cosLight))
         .mul(step(1e-6, mu));
     // Zero phase, seen from straight above: the map's own brightness.
-    const zeroPhaseNormal = ratio.mul(hapkeNode(float(1), float(1), float(1), hapke));
+    const zeroPhaseNormal = ratio.mul(hapkeNode(float(1), float(1), float(1), hapke, thetaBarDeg));
     let radianceFactor;
     switch (options.shading) {
       case 'hapke': {
@@ -580,8 +659,10 @@ export function createMoonMesh(options: MoonOptions): Mesh {
   // SphereGeometry is Y-up; turn it so its poles sit on the body frame's +z. Only the
   // tessellation cares: shading and texturing use the direction alone.
   const geometry = new SphereGeometry(options.radiusKm, 256, 128).rotateX(Math.PI / 2);
+  // A flattened world: the same sphere squashed along its axis, normals with it.
+  if (options.polarRatio !== undefined) geometry.scale(1, 1, options.polarRatio);
   const mesh = new Mesh(geometry, createMoonMaterial(options, 'sphere'));
-  mesh.name = 'moon';
+  mesh.name = options.name ?? 'moon';
   mesh.matrixAutoUpdate = false;
   mesh.matrix.copy(bodyToSceneMatrix4(options.epoch));
   mesh.matrixWorldNeedsUpdate = true;
@@ -635,7 +716,7 @@ export function createMoonTerrain(options: MoonOptions, base = terrainBase): Til
 
   // Tiles are body-fixed metres; the scene is km.
   const group = tiles.group;
-  group.name = 'moon';
+  group.name = options.name ?? 'moon';
   group.matrixAutoUpdate = false;
   group.matrix
     .copy(bodyToSceneMatrix4(options.epoch))

@@ -1,0 +1,91 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": 45.0726,
+        "latDeg": 0.4335
+      },
+      "distanceKm": 3796.19,
+      "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": true,
+      "reliefFlipped": false
+    },
+    "bodyChecks": [
+      {
+        "kind": "walls",
+        "name": "Teisserenc de Bort’s sunward wall",
+        "lonDeg": 45.0726,
+        "latDeg": 0.4335,
+        "diameterKm": 114.888,
+        "inner": [
+          0.35,
+          0.5
+        ],
+        "brighter": "east"
+      }
+    ],
+    "negativeControl": false,
+    "id": "mars-teisserenc-de-bort",
+    "description": "Teisserenc de Bort crater (115 km, 0.4°N 45.1°E) on 26 January 2026, the Sun 11° up in the west: Mars’s terrain from its data site, lit by the fitted law. Its eastern inner wall faces the Sun and must be the brighter.",
+    "scene": "mars"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Teisserenc de Bort’s sunward wall: east wall 73.5 vs 56.9 (16283 / 16305 px)",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "d7c1effc0f6b0078e515ae7ab00c2c817eda5afe",
+    "dirty": false
+  }
+}

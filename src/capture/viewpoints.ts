@@ -4,9 +4,9 @@ import { raDecToScene } from '../core/frames.ts';
 import type { MoonVantage } from '../core/moon.ts';
 
 export type SceneId =
-  'empty' | 'depth-test-10m' | 'depth-test-coplanar' | 'stars' | 'stars-mirrored' | 'moon';
+  'empty' | 'depth-test-10m' | 'depth-test-coplanar' | 'stars' | 'stars-mirrored' | 'moon' | 'mars';
 
-/** Epoch ids in public/data/moon/ephemeris.json. */
+/** Epoch ids in public/data/moon/ephemeris.json, and in Mars's (docs/stories/SS-14.md W2). */
 export type MoonEpochId = 'full-2026-01' | 'first-quarter-2026-01';
 
 /**
@@ -14,7 +14,7 @@ export type MoonEpochId = 'full-2026-01' | 'first-quarter-2026-01';
  * harness rebuilds the same camera from these values in J2000, without the app's axis
  * mapping or three.js, to predict what each pixel must show.
  */
-export interface MoonSetup {
+export interface BodySetup {
   readonly epoch: MoonEpochId;
   readonly vantage: MoonVantage;
   /** From the Moon's centre, km. */
@@ -64,7 +64,7 @@ export interface MoonSetup {
  * Checks on a Moon capture. The harness casts a ray through every pixel onto the sphere
  * itself, from ephemeris.json in J2000, and knows each pixel's longitude, latitude, μ0 and μ.
  */
-export type MoonCheck =
+export type BodyCheck =
   | {
       /**
        * Every pixel of the disc, more than `limbInsetPx` inside the limb, within `tolerance`
@@ -95,6 +95,17 @@ export type MoonCheck =
       readonly coreKm: number;
       readonly against: readonly [number, number] | 'disc-median';
       readonly expect: 'brighter' | 'darker';
+    }
+  | {
+      /**
+       * The whole disc's brightness as a V magnitude at 1 AU, against Mars's measured one,
+       * Mallama & Hilton (2018) Eq. 6 with its longitude and season terms
+       * (core/marsPhotometry.ts), at the capture's geometry.
+       * The harness sums the drawn colour's luminance over the disc's solid angle.
+       */
+      readonly kind: 'disc-magnitude';
+      readonly name: string;
+      readonly toleranceMag: number;
     }
   | {
       /** Where the sun is below the horizon by more than `minDepthDeg`, pixels are black. */
@@ -212,8 +223,8 @@ export interface Viewpoint {
   readonly checks: readonly PixelCheck[];
   readonly starChecks: readonly StarCheck[];
   /** For Moon scenes: what, and seen how. */
-  readonly moon: MoonSetup | null;
-  readonly moonChecks: readonly MoonCheck[];
+  readonly body: BodySetup | null;
+  readonly bodyChecks: readonly BodyCheck[];
   /**
    * A negative control: its checks are expected to FAIL, proving they can detect the fault.
    * If they pass, the harness errors. Never baselined.
@@ -282,7 +293,7 @@ const ORION_STARS: readonly StarCheck[] = [
 const MOON_RADIUS_KM = 1737.4;
 
 /** Four radii from the centre with a 40° field: the disc fills about 70% of the frame height. */
-const MOON_SETUP: MoonSetup = {
+const MOON_SETUP: BodySetup = {
   epoch: 'full-2026-01',
   vantage: { kind: 'earth' },
   distanceKm: 4 * MOON_RADIUS_KM,
@@ -315,7 +326,7 @@ const UNIFORM_ALBEDO = 0.0389;
  * The Apollo 11 site is compared with the median of the lit disc, as SS-5 compared it with
  * the map's median.
  */
-const GAZETTEER_CHECKS: readonly MoonCheck[] = (
+const GAZETTEER_CHECKS: readonly BodyCheck[] = (
   [
     {
       name: 'Tycho',
@@ -365,7 +376,7 @@ const photometry = (
   model: 'hapke' | 'even' = 'hapke',
   minFraction = 0.99,
   limbInsetPx = 2,
-): MoonCheck => ({
+): BodyCheck => ({
   kind: 'photometry',
   name,
   model,
@@ -387,7 +398,56 @@ const NIGHT_DEPTH_WITH_RELIEF_DEG = 6.5;
 const ALBATEGNIUS = { lonDeg: 4.0092, latDeg: -11.24, diameterKm: 130.84 } as const;
 
 /** Natural detail varies; a seam doubles the step or worse. */
-const SEAM_CHECK: MoonCheck = { kind: 'seam', name: 'no line at ±180°', maxRatio: 1.5 };
+const SEAM_CHECK: BodyCheck = { kind: 'seam', name: 'no line at ±180°', maxRatio: 1.5 };
+
+/** Mars's equatorial radius from the PCK (public/data/mars/ephemeris.json), for choosing distances. */
+const MARS_RADIUS_KM = 3396.19;
+
+/**
+ * Teisserenc de Bort, as public/data/mars/landmarks.json has it from the Gazetteer; a test asserts
+ * it. Chosen for a fresh 115 km crater with the Sun 11° up on 26 January 2026: Cassini (408 km), the
+ * first choice, is old and gentle, and across it the Sun's own height changes by 7°, which
+ * outweighed its walls (east 71.4 against west 78.5, 2026-10-03).
+ */
+const TEISSERENC_DE_BORT = { lonDeg: 45.0726, latDeg: 0.4335, diameterKm: 114.888 } as const;
+
+/**
+ * Mars far away, as a disc: 40 radii out the visible cap is all but a hemisphere (87.1° from
+ * the centre), so the disc's mean brightness is its geometric-albedo-like p Φ(α). A 3.6° field
+ * makes the disc 80% of the frame. The smooth ellipsoid: the photometry checks are written for it.
+ */
+const MARS_DISC: BodySetup = {
+  ...MOON_SETUP,
+  epoch: 'full-2026-01',
+  vantage: { kind: 'earth' },
+  distanceKm: 40 * MARS_RADIUS_KM,
+  fovDeg: 3.6,
+  relief: false,
+};
+
+/**
+ * Mars's whole-disc brightness against its measured one, within the owner's 0.06 mag (2026-10-03,
+ * the W7 spec): Eq. 6 with Mallama's longitude and season corrections, read from his published
+ * code (core/marsPhotometry.ts) after the spec was approved.
+ */
+const MARS_DISC_MAGNITUDE: BodyCheck = {
+  kind: 'disc-magnitude',
+  name: 'whole-disc V magnitude',
+  toleranceMag: 0.06,
+};
+
+/**
+ * IAU Gazetteer features Earth sees on 3 January 2026 (sub-Earth point 29.8°E, 8.6°S), copied
+ * from test/fixtures/iau-gazetteer-mars.json with its expectations (SS-14 W3); a test asserts
+ * they still match. Each against the median of the lit disc.
+ */
+const MARS_GAZETTEER_CHECKS: readonly BodyCheck[] = (
+  [
+    { name: 'Syrtis Major', lonDeg: 70, latDeg: 9.885, coreKm: 250, expect: 'darker' },
+    { name: 'Hellas', lonDeg: 70, latDeg: -39.6672, coreKm: 400, expect: 'brighter' },
+    { name: 'Arabia Terra', lonDeg: 5.7185, latDeg: 21.249, coreKm: 500, expect: 'brighter' },
+  ] as const
+).map((f) => ({ kind: 'feature', against: 'disc-median', ...f }));
 
 const SPACE = {
   width: 1024,
@@ -399,8 +459,8 @@ const SPACE = {
   sky: null,
   checks: [],
   starChecks: [],
-  moon: null,
-  moonChecks: [],
+  body: null,
+  bodyChecks: [],
   negativeControl: false,
 } as const;
 
@@ -472,8 +532,8 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The full Moon of 2026-01-03 seen from Earth, lunar north up. Tycho, Copernicus and Aristarchus must be bright, Mare Crisium and the Apollo 11 site dark, each where the IAU Gazetteer puts it.',
     scene: 'moon',
-    moon: MOON_SETUP,
-    moonChecks: GAZETTEER_CHECKS,
+    body: MOON_SETUP,
+    bodyChecks: GAZETTEER_CHECKS,
   },
   {
     ...SPACE,
@@ -481,8 +541,8 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Negative control: the same view with the map mirrored east–west. The Gazetteer checks must fail, proving moon-full can see a mirrored Moon.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, relief: false, mirrored: true },
-    moonChecks: GAZETTEER_CHECKS,
+    body: { ...MOON_SETUP, relief: false, mirrored: true },
+    bodyChecks: GAZETTEER_CHECKS,
     negativeControl: true,
   },
   {
@@ -491,8 +551,8 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The first-quarter Moon of 2026-01-26 seen from Earth. The terminator runs north–south near the centre, the lit half to the right, and the night side is black: no ambient light.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01' },
-    moonChecks: [
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01' },
+    bodyChecks: [
       {
         kind: 'night',
         name: 'night side is black',
@@ -507,8 +567,8 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'A uniform Moon (the median tile\u2019s reflectance and Hapke parameters) at the full-Moon geometry. Every pixel must match Hapke from core/hapke.ts: nearly flat to the limb, with the opposition surge.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO } },
-    moonChecks: [photometry('Hapke per pixel')],
+    body: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO } },
+    bodyChecks: [photometry('Hapke per pixel')],
   },
   {
     ...SPACE,
@@ -516,8 +576,8 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Negative control: the uniform Moon shaded by Lambert, equal to Hapke at the disc centre at zero phase. The photometry check must fail, proving it can tell the two apart.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO }, shading: 'lambert' },
-    moonChecks: [photometry('Hapke per pixel')],
+    body: { ...MOON_SETUP, relief: false, albedo: { uniform: UNIFORM_ALBEDO }, shading: 'lambert' },
+    bodyChecks: [photometry('Hapke per pixel')],
     negativeControl: true,
   },
   {
@@ -526,13 +586,13 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The uniform Moon at first quarter. Every pixel must match Hapke, which puts the terminator exactly 90° from the sub-solar point and darkens the limb as the real Moon does at this phase.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       relief: false,
       epoch: 'first-quarter-2026-01',
       albedo: { uniform: UNIFORM_ALBEDO },
     },
-    moonChecks: [photometry('Hapke per pixel')],
+    bodyChecks: [photometry('Hapke per pixel')],
   },
   {
     ...SPACE,
@@ -540,7 +600,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The uniform Moon from over the far side at first quarter, where the sun has set, with the labelled even lighting on. Every pixel must be its zero-phase Hapke value, lit from behind the viewer: the far side is fully visible.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       relief: false,
       epoch: 'first-quarter-2026-01',
@@ -548,7 +608,7 @@ export const viewpoints: readonly Viewpoint[] = [
       albedo: { uniform: UNIFORM_ALBEDO },
       lighting: 'even',
     },
-    moonChecks: [photometry('even lighting per pixel', 'even')],
+    bodyChecks: [photometry('even lighting per pixel', 'even')],
   },
   {
     ...SPACE,
@@ -556,14 +616,14 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Negative control: the same far-side view under real sunlight, where the sun has set. The even-lighting check must fail, proving the switch changes what is drawn.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       relief: false,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
       albedo: { uniform: UNIFORM_ALBEDO },
     },
-    moonChecks: [photometry('even lighting per pixel', 'even')],
+    bodyChecks: [photometry('even lighting per pixel', 'even')],
     negativeControl: true,
   },
   {
@@ -572,7 +632,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The far side at first quarter with even lighting on: the whole hemisphere visible at its zero-phase brightness. For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: 180, latDeg: 0 },
@@ -585,8 +645,8 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The uniform Moon with LOLA relief at full phase. Hapke with sun and view almost aligned barely depends on the surface normal, so the relief must nearly vanish: the smooth-sphere prediction still holds within 2 levels on 95% of the disc.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, albedo: { uniform: UNIFORM_ALBEDO } },
-    moonChecks: [photometry('relief vanishes at full phase', 'hapke', 0.95, 8)],
+    body: { ...MOON_SETUP, albedo: { uniform: UNIFORM_ALBEDO } },
+    bodyChecks: [photometry('relief vanishes at full phase', 'hapke', 0.95, 8)],
   },
   {
     ...SPACE,
@@ -594,7 +654,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The uniform Moon with relief, looking down on Albategnius at first quarter, the Sun 7° up in the east. Its west inner wall faces the Sun and must be brighter than its east wall.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
@@ -602,7 +662,7 @@ export const viewpoints: readonly Viewpoint[] = [
       fovDeg: 20,
       albedo: { uniform: UNIFORM_ALBEDO },
     },
-    moonChecks: [
+    bodyChecks: [
       {
         kind: 'walls',
         name: 'Albategnius sunward wall brighter',
@@ -618,7 +678,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Negative control: the same view with east-west flipped normals, the classic sign error. The wall check must fail.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
@@ -627,7 +687,7 @@ export const viewpoints: readonly Viewpoint[] = [
       albedo: { uniform: UNIFORM_ALBEDO },
       reliefFlipped: true,
     },
-    moonChecks: [
+    bodyChecks: [
       {
         kind: 'walls',
         name: 'Albategnius sunward wall brighter',
@@ -644,7 +704,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Albategnius and its neighbours near the first-quarter terminator, textured, with relief. For eyes: crater walls and rims should read as three-dimensional.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
@@ -658,7 +718,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       "Straight down on Albategnius from 60 km at first quarter, the closest view here: the crater's floor and central peak as LOLA 59 m polygons (docs/stories/SS-10.md). For eyes: small craters should be bowls lit from the east.",
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: ALBATEGNIUS.latDeg },
@@ -672,7 +732,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       "From 6 km over Albategnius's floor, 12°S, looking north across the crater towards the horizon, tilted 80° from straight down, at first quarter. The central peak and the north rim stand up against black sky, lit from the east (right). For eyes.",
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: ALBATEGNIUS.lonDeg, latDeg: -12.0 },
@@ -687,7 +747,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       "Albategnius's central peak from 12 km south of it, 1.5 km above the 1737.4 km sphere (about 3 km above the crater floor), looking north, tilted 80°, at first quarter. The peak and the floor around it are SELENE Terrain Camera heights at 10 m vertex spacing (docs/stories/SS-10.md). For eyes.",
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: 3.77, latDeg: -11.7 },
@@ -702,7 +762,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Theophilus (IAU Gazetteer: 26.2847 E, 11.4524 S, 98.6 km) from 25 km south of its centre, 2.2 km above the crater floor (2.5 km below the 1737.4 km sphere; the floor is 4.7 km below it in SLDEM2015), looking north across the crater, tilted 78°, at first quarter. On the website this is the global 2.7 km terrain; through `npm run local` it is SLDEM2015 and Kaguya down to 10 m (docs/stories/SS-10c.md). For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: 26.2847, latDeg: -12.277 },
@@ -717,7 +777,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Orbit mode (?orbit=7) at its start, first quarter: a random orbit at the lowest height the website\u2019s terrain stays sharp from for this 1024-pixel view, looking ahead with the horizon above the centre. For eyes.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', orbitSeed: 7 },
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', orbitSeed: 7 },
   },
   {
     ...SPACE,
@@ -725,7 +785,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The Orbit button\u2019s orbit (docs/stories/SS-15.md) at its start over Albategnius, heading north along the 3.8\u00b0E meridian at the lowest sharp height, first quarter, with landmark labels on. Labels rise over the horizon ahead; small features wait until they are close. For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       orbitFrom: { landmark: 'Albategnius', angleDeg: 0 },
@@ -738,7 +798,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The same orbit 252\u00b0 on, over the far side heading for the south pole, first quarter: Earth, sunlit, 4\u00b0 above the horizon ahead (docs/stories/SS-13b.md). For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       orbitFrom: { landmark: 'Albategnius', angleDeg: 252 },
@@ -750,7 +810,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Earth from the Moon at first quarter, through a 2.4\u00b0 field so it fills the view: its face as Himawari-9 and GOES-18 measured it at 2026-01-26 05:00 UTC, half lit, Asia and Australia in the afternoon (docs/stories/SS-13c.md). For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       fovDeg: 2.4,
@@ -765,7 +825,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'First quarter from over Oceanus Procellarum, with the labelled earthshine boost: the night side in Earth\u2019s light, measured by the weather satellites, beside the sunlit side as it always is (docs/stories/SS-13e.md). For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       vantage: { kind: 'over', lonDeg: -45, latDeg: 10 },
@@ -778,7 +838,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The same orbit 266\u00b0 on, where Earth has climbed past the top of the plain view: the camera tilts up to keep it in frame, with the horizon still in view (docs/stories/SS-11e.md). For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       epoch: 'first-quarter-2026-01',
       orbitFrom: { landmark: 'Albategnius', angleDeg: 266 },
@@ -790,8 +850,8 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'The ±180° meridian from over 165°E 25°N, unlit albedo, so the wrap crosses 2x2 pixel quads the way it does for anyone orbiting. The texture wrap must leave no line.',
     scene: 'moon',
-    moon: { ...MOON_SETUP, vantage: { kind: 'over', lonDeg: 165, latDeg: 25 }, shading: 'albedo' },
-    moonChecks: [SEAM_CHECK],
+    body: { ...MOON_SETUP, vantage: { kind: 'over', lonDeg: 165, latDeg: 25 }, shading: 'albedo' },
+    bodyChecks: [SEAM_CHECK],
   },
   {
     ...SPACE,
@@ -799,13 +859,13 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Negative control: the same view with plain texture sampling at the wrap. The seam check must fail, proving moon-seam can see a seam.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       vantage: { kind: 'over', lonDeg: 165, latDeg: 25 },
       shading: 'albedo',
       seamFix: false,
     },
-    moonChecks: [SEAM_CHECK],
+    bodyChecks: [SEAM_CHECK],
     negativeControl: true,
   },
   {
@@ -814,7 +874,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'From 1.5 radii with a 90° field, unlit albedo, over Mare Imbrium: the closest the app allows. Towards the limb the surface is seen edge-on, where anisotropic filtering keeps detail that isotropic filtering blurs. For eyes: no automated check.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       vantage: { kind: 'over', lonDeg: -16, latDeg: 33 },
       distanceKm: 1.5 * MOON_RADIUS_KM,
@@ -828,7 +888,7 @@ export const viewpoints: readonly Viewpoint[] = [
     description:
       'Over 80°S, 0°E, unlit albedo, so the south pole sits just below the centre. Poleward of 70° the albedo is LOLA laser albedo, blended into the LRO WAC mosaic across 62–70° (docs/stories/SS-6b.md, SS-5b.md): no gaps, no step at the blend. For eyes.',
     scene: 'moon',
-    moon: {
+    body: {
       ...MOON_SETUP,
       vantage: { kind: 'over', lonDeg: 0, latDeg: -80 },
       shading: 'albedo',
@@ -836,11 +896,113 @@ export const viewpoints: readonly Viewpoint[] = [
   },
   {
     ...SPACE,
+    id: 'mars-teisserenc-de-bort',
+    description:
+      'Teisserenc de Bort crater (115 km, 0.4\u00b0N 45.1\u00b0E) on 26 January 2026, the Sun 11\u00b0 up in the west: Mars\u2019s terrain from its data site, lit by the fitted law. Its eastern inner wall faces the Sun and must be the brighter.',
+    scene: 'mars',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: {
+        kind: 'over',
+        lonDeg: TEISSERENC_DE_BORT.lonDeg,
+        latDeg: TEISSERENC_DE_BORT.latDeg,
+      },
+      distanceKm: MARS_RADIUS_KM + 400,
+      fovDeg: 40,
+    },
+    bodyChecks: [
+      {
+        kind: 'walls',
+        name: 'Teisserenc de Bort\u2019s sunward wall',
+        ...TEISSERENC_DE_BORT,
+        inner: [0.35, 0.5],
+        brighter: 'east',
+      },
+    ],
+  },
+  {
+    ...SPACE,
+    id: 'mars-valles-tilted',
+    description:
+      'Looking north across Valles Marineris (Melas and Coprates Chasmata) from over 15\u00b0S 72\u00b0W, 250 km up and tilted 50\u00b0 towards the horizon, 26 January 2026. For eyes: the canyon\u2019s walls and depth should read in true scale.',
+    scene: 'mars',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: -72, latDeg: -15 },
+      distanceKm: MARS_RADIUS_KM + 250,
+      fovDeg: 60,
+      tiltDeg: 50,
+    },
+  },
+  {
+    ...SPACE,
+    id: 'mars-orbit',
+    description:
+      'Orbit mode (?orbit=7) at its start, 26 January 2026: a random orbit around Mars at the lowest height its website terrain stays sharp from for this 1024-pixel view. For eyes.',
+    scene: 'mars',
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', orbitSeed: 7 },
+  },
+  {
+    ...SPACE,
+    id: 'mars-orbit-labels',
+    description:
+      'The orbit from over Valles Marineris heading north at the lowest sharp height, 26 January 2026, with the Gazetteer labels on. (Olympus Mons, the first choice, is on the night side then.) For eyes.',
+    scene: 'mars',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      orbitFrom: { landmark: 'Valles Marineris', angleDeg: 0 },
+      labels: true,
+    },
+  },
+  {
+    ...SPACE,
+    id: 'mars-from-earth',
+    description:
+      'Mars from Earth on 3 January 2026, near conjunction: the smooth ellipsoid with the W3 map, its whole-disc brightness against Mallama & Hilton (2018) Eq. 6, and the Gazetteer features Earth sees.',
+    scene: 'mars',
+    body: MARS_DISC,
+    bodyChecks: [MARS_DISC_MAGNITUDE, ...MARS_GAZETTEER_CHECKS],
+  },
+  {
+    ...SPACE,
+    id: 'mars-from-earth-mirrored',
+    description:
+      'Negative control: the same view with the map mirrored east–west. The Gazetteer checks must fail, proving mars-from-earth can see a mirrored Mars.',
+    scene: 'mars',
+    body: { ...MARS_DISC, mirrored: true },
+    bodyChecks: [MARS_DISC_MAGNITUDE, ...MARS_GAZETTEER_CHECKS],
+    negativeControl: true,
+  },
+  {
+    ...SPACE,
+    id: 'mars-phase-40',
+    description:
+      'Mars at 40° phase, seen from over 8.9°W 8.5°S on 3 January 2026: the scattering law fitted to Eq. 6 where it is steep, the whole-disc brightness checked again, and the night side black.',
+    scene: 'mars',
+    body: { ...MARS_DISC, vantage: { kind: 'over', lonDeg: -8.9, latDeg: -8.5 } },
+    bodyChecks: [
+      MARS_DISC_MAGNITUDE,
+      { kind: 'night', name: 'night side black', minDepthDeg: 1, minFraction: 0.99 },
+    ],
+  },
+  {
+    ...SPACE,
     id: 'app',
     description:
       'What the interactive app shows on load: the first-quarter Moon from Earth, lunar north up, stars at physical exposure (so none show).',
     scene: 'moon',
-    moon: { ...MOON_SETUP, epoch: 'first-quarter-2026-01' },
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01' },
+  },
+  {
+    ...SPACE,
+    id: 'mars-app',
+    description:
+      'What the Mars page shows on load: Mars from Earth at the first-quarter date, its terrain from Mars\u2019s data site, north up, stars at physical exposure.',
+    scene: 'mars',
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', distanceKm: 4 * MARS_RADIUS_KM },
   },
 ];
 

@@ -37,7 +37,7 @@ export function verifyReport(
       `canvas is ${report.canvas.width}x${report.canvas.height}, expected ${viewpoint.width}x${viewpoint.height}`,
     );
   }
-  if (viewpoint.moon?.albedo === 'map') {
+  if (viewpoint.body?.albedo === 'map') {
     if (report.albedoDecodedMean === null || albedoDecodedMean === null) {
       problems.push('Moon map viewpoint without a decoded albedo mean to compare');
     } else if (Math.abs(report.albedoDecodedMean - albedoDecodedMean) > ALBEDO_DECODE_TOLERANCE) {
@@ -47,7 +47,7 @@ export function verifyReport(
       );
     }
   }
-  if (viewpoint.moon?.relief === true && (report.terrainTiles ?? 0) === 0) {
+  if (viewpoint.body?.relief === true && (report.terrainTiles ?? 0) === 0) {
     // A relief view drawn before its terrain arrived shows nothing, or a coarser Moon.
     problems.push(`relief viewpoint drew ${String(report.terrainTiles)} terrain tiles`);
   }

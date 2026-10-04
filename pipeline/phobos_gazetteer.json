@@ -1,0 +1,12 @@
+{
+  "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/PHOBOS_nomenclature_center_pts.zip",
+  "retrieved": "2026-10-04",
+  "zipSha256": "c9e514e19291de89175a554ea03cdac0a941d34b26be8076729183b631e140fa",
+  "stickney": {
+    "name": "Stickney",
+    "latDeg": 1.0,
+    "lonEastDeg": -49.0,
+    "diameterKm": 9.0,
+    "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5707"
+  }
+}

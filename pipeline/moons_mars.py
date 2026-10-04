@@ -19,7 +19,8 @@ checking the size against the server's Content-Length (NAIF) or the PDS4 label's
   same author's Phobos table (`m1phobos.tab`, same bundle) matches Willner's east-positive model
   with 0.31 km RMS read as west longitude and 0.57 km read as east (800 points, 2026-10-04). So
   the tables are west-positive, and east = -west.
-- Stickney, the orientation test's named point: the IAU Gazetteer's Phobos file. Its metadata
+- Stickney, the orientation test's named point: the IAU Gazetteer's Phobos file, read once and
+  kept in pipeline/phobos_gazetteer.json (the zip is rebuilt in place, so it cannot be pinned). Its metadata
   says "Positive West", but its attribute notes say "Using a positive East longitude system", and
   its 311 deg is Stickney's 49 deg W: read as east, Willner's surface there lies 1.28 km below
   the mean of a ring 20 deg out; read as west, 0.08 km. So 311 is east-positive.
@@ -51,18 +52,22 @@ Outputs:
 from __future__ import annotations
 
 import gzip
+import hashlib
+import io
 import json
 import math
 import struct
+import sys
+import urllib.request
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import spiceypy as spice
 from PIL import Image
 
-from download import fetch, sha256
+from download import USER_AGENT, fetch, sha256
 from ephemeris import KERNELS as MOON_KERNELS, NAIF
 from ephemeris_mars import ABCORR, load_kernels
 from hapke import hapke
@@ -80,10 +85,11 @@ PHOBOS_DSK = (
 THOMAS = "https://sbnarchive.psi.edu/pds4/non_mission/ast-sat.thomas.shape-models_V1_0/data/"
 DEIMOS_TAB = (THOMAS + "m2deimos.tab", "9a4dbc132c7546acb2ef26a386d306f155519f0988c8052acb2276ddeb7ca2fd")
 PHOBOS_TAB = (THOMAS + "m1phobos.tab", "e19d7f585d710747fa4350c078c558003a7e2122162e908d5fdd33b1970f0b1b")
-GAZETTEER = (
-    "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/PHOBOS_nomenclature_center_pts.zip",
-    "c9e514e19291de89175a554ea03cdac0a941d34b26be8076729183b631e140fa",
-)
+GAZETTEER_URL = "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/PHOBOS_nomenclature_center_pts.zip"
+# The Gazetteer's zip is rebuilt in place (its .dbf changed on 2026-10-04 with no change to
+# Stickney), so a pinned checksum cannot hold. Stickney's record is kept, as read, in this file;
+# `--refresh-gazetteer` reads the current zip again and rewrites it.
+GAZETTEER_RECORD = Path(__file__).resolve().parent / "phobos_gazetteer.json"
 
 # Sampling, measured 2026-10-04 for 4-point Lagrange (docs/data/mars.md) and re-measured below.
 PHOBOS_STEP_MIN = 15
@@ -268,8 +274,22 @@ def shape_record(name: str, vertices: np.ndarray, triangles: np.ndarray, path: P
     }
 
 
-def stickney(zip_path: Path) -> dict:
-    with zipfile.ZipFile(zip_path) as z:
+def refresh_gazetteer() -> None:
+    """Reads Stickney from the Gazetteer's current zip and records it with the zip's SHA-256."""
+    request = urllib.request.Request(GAZETTEER_URL, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=120) as response:
+        data = response.read()
+    record = {
+        "url": GAZETTEER_URL,
+        "retrieved": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "zipSha256": hashlib.sha256(data).hexdigest(),
+        "stickney": stickney(data),
+    }
+    GAZETTEER_RECORD.write_text(json.dumps(record, indent=2) + "\n")
+
+
+def stickney(zip_bytes: bytes) -> dict:
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
         b = z.read("PHOBOS_nomenclature_center_pts.dbf")
     count, header, length = struct.unpack("<IHH", b[4:12])
     fields, o = [], 32
@@ -362,11 +382,11 @@ def build() -> dict:
     dsk = fetch(PHOBOS_DSK[0], PHOBOS_DSK[1], "phobos_2014_09_22.bds")
     deimos_tab = fetch(DEIMOS_TAB[0], DEIMOS_TAB[1], "m2deimos.tab")
     phobos_tab = fetch(PHOBOS_TAB[0], PHOBOS_TAB[1], "m1phobos.tab")
-    gazetteer = fetch(GAZETTEER[0], GAZETTEER[1], "phobos-nomenclature-2026-10-04.zip")
+    gazetteer = json.loads(GAZETTEER_RECORD.read_text())
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     try:
         sign = thomas_sign_test(dsk, phobos_tab)
-        named = stickney(gazetteer)
+        named = dict(gazetteer["stickney"])
         named["check"] = stickney_check(dsk, named)
 
         shapes = {}
@@ -481,7 +501,7 @@ def build() -> dict:
         "rotation": rotations,
         "pck00011RadiiKm": radii,
         "stickney": named,
-        "gazetteer": {"url": GAZETTEER[0], "sha256": GAZETTEER[1], "retrieved": "2026-10-04"},
+        "gazetteer": {k: gazetteer[k] for k in ("url", "retrieved", "zipSha256")},
         "kernels": kernels,
     }
     OUT_JSON.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
@@ -492,6 +512,8 @@ def build() -> dict:
 
 
 if __name__ == "__main__":
+    if "--refresh-gazetteer" in sys.argv:
+        refresh_gazetteer()
     m = build()
     for name, s in m["shapes"].items():
         print(f"{name}: {s['vertices']} vertices, {s['triangles']} triangles, mean radius {s['meanRadiusKm']} km, {s['sha256'][:12]}")

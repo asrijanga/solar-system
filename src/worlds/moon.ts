@@ -192,7 +192,6 @@ export async function createMoonStage(context: StageContext): Promise<Stage> {
         number,
       ],
     },
-    frame: null,
     ui: moonUi({
       caption,
       fixedEpoch,

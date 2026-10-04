@@ -21,7 +21,7 @@ Five bodies. Everything the terrain pipeline was designed for, and the entire ea
 | --- | --- | --- | --- | --- |
 | Earth | Seen from the Moon only: its real face at 2026-01-26 05:00 UTC (SS-13c); inventory started | Planet | 6,371 | Copernicus, Sentinel, GEBCO; Himawari-9 and GOES-18 for clouds |
 | Moon | Live: website and local mode, orbit mode, labels, Earth in the sky | Moon of Earth | 1,737 | LRO, LOLA, Clementine, Kaguya |
-| Mars | Page built (W1–W5, W7; docs/stories/SS-14.md), W8 next | Planet | 3,390 | MOLA, HRSC, CTX, HiRISE |
+| Mars | Page built (W1–W5, W7, W8; docs/stories/SS-14.md), W6 deferred | Planet | 3,390 | MOLA, HRSC, CTX, HiRISE |
 | Mercury | Not started | Planet | 2,440 | MESSENGER |
 | Venus | Not started | Planet | 6,052 | Magellan radar |
 
@@ -69,8 +69,8 @@ Imaged, but not well. Renderable with visible gaps, which under this project's p
 | Janus | Not started | Moon of Saturn | 90 | Cassini | Swaps orbits with Epimetheus |
 | Amalthea | Not started | Moon of Jupiter | 83 | Galileo | Irregular, reddest object in the system |
 | Puck | Not started | Moon of Uranus | 81 | Voyager 2 | Low resolution only |
-| Phobos | Not started | Moon of Mars | 11 | Mars Express, MRO | Well imaged; irregular shape |
-| Deimos | Not started | Moon of Mars | 6 | MRO | Smaller, less covered |
+| Phobos | In Mars's sky: shape and law (SS-14 W8); own round not started | Moon of Mars | 11 | Mars Express, MRO | Well imaged; irregular shape |
+| Deimos | In Mars's sky: shape and law (SS-14 W8); own round not started | Moon of Mars | 6 | MRO | Smaller, less covered |
 
 The Uranian and Neptunian moons share one fact worth surfacing in the interface: everything we know about them came from two flybys in 1986 and 1989, and some hemispheres have never been photographed. That is the clearest possible illustration of how partial our picture of the outer system still is.
 

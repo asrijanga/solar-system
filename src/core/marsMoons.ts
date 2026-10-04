@@ -278,10 +278,12 @@ export function lookupDisc(table: DiscTable, x: number, y: number, z: number): n
   const dr = fr - r;
   const dc = fc - c;
   const v = table.values;
-  const at = (rr: number, cc: number): number => v[rr * table.cols + cc] ?? 0;
+  // No closure here: this runs every frame and must allocate nothing.
+  const i00 = r * table.cols + c;
+  const i10 = i00 + table.cols;
   return (
-    (1 - dr) * ((1 - dc) * at(r, c) + dc * at(r, c + 1)) +
-    dr * ((1 - dc) * at(r + 1, c) + dc * at(r + 1, c + 1))
+    (1 - dr) * ((1 - dc) * (v[i00] ?? 0) + dc * (v[i00 + 1] ?? 0)) +
+    dr * ((1 - dc) * (v[i10] ?? 0) + dc * (v[i10 + 1] ?? 0))
   );
 }
 

@@ -160,7 +160,6 @@ async function createStage(context: StageContext): Promise<Stage> {
     landmarks: [],
     bodyToScene: null,
     ui: null,
-    frame: null,
   });
   switch (viewpoint.scene) {
     case 'empty':
@@ -250,9 +249,6 @@ async function start(): Promise<void> {
     params,
   });
   const { scene, camera, starExposure, terrain } = stage;
-  const stageFrame = stage.frame;
-  /** The canvas's height in CSS pixels, for the stage's per-frame hook. */
-  const viewHeight = new Float64Array([1]);
   terrain?.setCamera(camera);
   /** 1 at physical exposure, STAR_BOOST with the labelled boost on. */
   const starBoost = new Float64Array([viewpoint.body?.stars === 'boosted' ? STAR_BOOST : 1]);
@@ -275,7 +271,6 @@ async function start(): Promise<void> {
     // Terrain refines against drawing-buffer pixels, the ones the screen shows.
     terrain?.setResolution(camera, canvas.width, canvas.height);
     stage.labels?.setViewport(height, camera.fov);
-    viewHeight[0] = height;
     if (starExposure !== null) {
       starExposure.value =
         physicalStarExposure(pixelSolidAngle(camera.fov, height)) * (starBoost[0] ?? 1);
@@ -307,8 +302,6 @@ async function start(): Promise<void> {
       report({ status: 'refused', reason: 'terrain did not finish loading' });
       return;
     }
-    camera.updateMatrixWorld();
-    if (stageFrame !== null) stageFrame(camera, viewHeight[0] ?? 1);
     pipeline.render();
     await device.queue.onSubmittedWorkDone();
     await new Promise(requestAnimationFrame);
@@ -520,7 +513,6 @@ async function start(): Promise<void> {
       camera.updateMatrixWorld();
       terrain.update();
     }
-    if (stageFrame !== null) stageFrame(camera, viewHeight[0] ?? 1);
     if (overlay === null) {
       pipeline.render();
     } else {

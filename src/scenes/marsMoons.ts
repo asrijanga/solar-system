@@ -7,17 +7,23 @@ import {
   BufferAttribute,
   BufferGeometry,
   Group,
+  ClampToEdgeWrapping,
+  DataTexture,
+  DataUtils,
+  HalfFloatType,
+  LinearFilter,
+  Matrix3,
   Matrix4,
+  RedFormat,
   Mesh,
   MeshBasicNodeMaterial,
-  PerspectiveCamera,
   PlaneGeometry,
   Vector3,
-  type UniformNode,
 } from 'three/webgpu';
 import {
   acos,
   asin,
+  atan,
   cameraPosition,
   cameraProjectionMatrix,
   cameraViewMatrix,
@@ -30,7 +36,6 @@ import {
   max,
   min,
   mix,
-  modelWorldMatrix,
   normalize,
   normalWorld,
   positionGeometry,
@@ -39,8 +44,10 @@ import {
   screenSize,
   sin,
   step,
+  texture,
   uniform,
   varying,
+  vec2,
   vec3,
   vec4,
 } from 'three/tsl';
@@ -51,7 +58,6 @@ import {
   discTable,
   earthMagnitudeV,
   facetBins,
-  lookupDisc,
   magnitudeFromSum,
   monthFor,
   moonsAt,
@@ -65,7 +71,7 @@ import {
   type MoonsManifest,
 } from '../core/marsMoons';
 import { j2000ToScene, type Mat3Rows, type Vec3 } from '../core/moon';
-import { AU_KM, EXPOSURE, pixelSolidAngle } from '../core/photometry';
+import { AU_KM, EXPOSURE } from '../core/photometry';
 import { fluxOfMagnitude, type StarField } from '../core/stars';
 import { siteUrl } from '../site';
 import { hapkeNode } from './hapkeNode';
@@ -241,19 +247,73 @@ function moonMesh(shape: MoonShape, material: MeshBasicNodeMaterial, matrix: Mat
   return mesh;
 }
 
+/** What a moon's point of light needs: where it is, how big, and its brightness table. */
+interface PointSource {
+  readonly positionScene: Vec3;
+  readonly meanRadiusKm: number;
+  readonly table: DiscTable;
+  /** Scene to the moon's frame. */
+  readonly sceneToBody: Matrix3;
+  /** EXPOSURE / r² times the share of the Sun the moon's centre sees. */
+  readonly scale: number;
+}
+
 /**
- * A point of light at a place in the scene, carrying `integrated` (display units times CSS
- * pixels²), spread as the stars are. Drawn where the place is visible: behind Mars it is hidden
- * by the depth test.
+ * A moon as a point of light, spread as the stars are, carrying its whole brightness from where
+ * the camera is. Everything is worked out in the vertex shader, so the frame loop does nothing
+ * for it: the moon's summed law for the camera's direction from its table (core/marsMoons.ts,
+ * bilinear like lookupDisc, half floats over the table's maximum), divided by the distance
+ * squared and a CSS pixel's solid angle, faded in as the drawn shape falls from POINT_FROM_PX to
+ * POINT_FULL_PX across. Behind Mars it is hidden by the depth test.
  */
-function pointMesh(positionScene: Vec3, integrated: UniformNode<'float', number>): Mesh {
+function pointMesh(source: PointSource): Mesh {
+  const { table } = source;
+  let peakValue = 0;
+  for (const v of table.values) peakValue = Math.max(peakValue, v);
+  const halves = new Uint16Array(table.values.length);
+  for (let i = 0; i < halves.length; i++) {
+    halves[i] = DataUtils.toHalfFloat((table.values[i] ?? 0) / Math.max(peakValue, 1e-30));
+  }
+  const map = new DataTexture(halves, table.cols, table.rows, RedFormat, HalfFloatType);
+  map.magFilter = LinearFilter;
+  map.minFilter = LinearFilter;
+  map.wrapS = ClampToEdgeWrapping;
+  map.wrapT = ClampToEdgeWrapping;
+  map.needsUpdate = true;
+
+  const centre = uniform(new Vector3(...source.positionScene));
+  const sceneToBody = uniform(source.sceneToBody);
   const corner = varying(positionGeometry.xy, 'vMoonPoint');
+  const integrated = varying(float(0), 'vMoonPointFlux');
   const material = new MeshBasicNodeMaterial();
   const sigma = float(PSF_SIGMA_CSS).mul(screenDPR);
   material.vertexNode = Fn(() => {
-    const clip = cameraProjectionMatrix
-      .mul(cameraViewMatrix)
-      .mul(modelWorldMatrix.mul(vec4(0, 0, 0, 1)));
+    const toCamera = cameraPosition.sub(centre);
+    const dist = length(toCamera);
+    const d = sceneToBody.mul(toCamera.div(dist));
+    const lat = asin(clamp(d.z, -1, 1)).mul(180 / Math.PI);
+    const lon = atan(d.y, d.x).mul(180 / Math.PI);
+    // Grid node k sits at the centre of texel k.
+    const u = lon.add(180).div(table.stepDeg).add(0.5).div(table.cols);
+    const v = lat.add(90).div(table.stepDeg).add(0.5).div(table.rows);
+    const sum = texture(map, vec2(u, v), 0).r.mul(peakValue).toVar();
+    // A CSS pixel's side, radians: 2 tan(fov / 2) over the height. The projection's [1][1],
+    // 1 / tan(fov / 2), is what it makes of a view-space direction one up and one ahead.
+    const heightCss = screenSize.y.div(screenDPR);
+    const cotHalf = cameraProjectionMatrix.mul(vec4(0, 1, -1, 0)).y;
+    const perPx = float(2).div(cotHalf.mul(heightCss));
+    const acrossPx = float(2 * source.meanRadiusKm)
+      .div(dist)
+      .div(perPx);
+    const weight = clamp(
+      float(POINT_FROM_PX)
+        .sub(acrossPx)
+        .div(POINT_FROM_PX - POINT_FULL_PX),
+      0,
+      1,
+    );
+    integrated.assign(weight.mul(source.scale).mul(sum).div(dist.mul(dist)).div(perPx.mul(perPx)));
+    const clip = cameraProjectionMatrix.mul(cameraViewMatrix).mul(vec4(centre, 1));
     const offset = positionGeometry.xy
       .mul(sigma.mul(QUAD_RADIUS_SIGMAS * 2))
       .div(screenSize)
@@ -267,20 +327,8 @@ function pointMesh(positionScene: Vec3, integrated: UniformNode<'float', number>
   material.blending = AdditiveBlending;
   material.depthWrite = false;
   const mesh = new Mesh(new PlaneGeometry(2, 2), material);
-  mesh.position.set(...positionScene);
   mesh.frustumCulled = false;
   return mesh;
-}
-
-interface Neighbour {
-  readonly positionScene: Vec3;
-  readonly meanRadiusKm: number;
-  readonly table: DiscTable;
-  /** Scene to the moon's frame, row-major. */
-  readonly sceneToBody: Float64Array;
-  /** EXPOSURE / r² times the share of the Sun the moon's centre sees. */
-  readonly scale: number;
-  readonly integrated: UniformNode<'float', number>;
 }
 
 export interface MarsMoons {
@@ -291,8 +339,6 @@ export interface MarsMoons {
   readonly labelled: readonly { readonly name: string; readonly position: Vec3 }[];
   /** Phobos's and Deimos's magnitudes as seen from Mars's centre, for the caption and checks. */
   readonly describe: () => string;
-  /** Per frame: each moon's point carries its brightness from where the camera is. */
-  readonly frame: (camera: PerspectiveCamera, heightCssPx: number) => void;
 }
 
 const MEAN_RADIUS = (shape: MoonShape): number => {
@@ -325,7 +371,6 @@ export function createMarsMoons(
   const sunScene = j2000ToScene(sunJ2000);
   const [a, , c] = mars.radiiKm;
   const r = epoch.sunDistanceKm / AU_KM;
-  const neighbours: Neighbour[] = [];
 
   for (const [name, shape, law, positionJ2000, j2000ToBody] of [
     ['Phobos', data.phobos, PHOBOS_LAW, data.at.phobosJ2000Km, data.at.j2000ToPhobos],
@@ -344,9 +389,7 @@ export function createMarsMoons(
       m[1][0] * sunJ2000[0] + m[1][1] * sunJ2000[1] + m[1][2] * sunJ2000[2],
       m[2][0] * sunJ2000[0] + m[2][1] * sunJ2000[1] + m[2][2] * sunJ2000[2],
     ];
-    const inverse = new Matrix4().copy(matrix).invert();
-    const e = inverse.elements; // column-major
-    const sceneToBody = new Float64Array([e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]]);
+    const sceneToBody = new Matrix3().setFromMatrix4(matrix).transpose();
     const lit = sunlitFraction(
       positionScene,
       mars.poleScene,
@@ -355,16 +398,15 @@ export function createMarsMoons(
       sunScene,
       epoch.sunDistanceKm,
     );
-    const integrated = uniform(0);
-    group.add(pointMesh(positionScene, integrated));
-    neighbours.push({
-      positionScene,
-      meanRadiusKm: MEAN_RADIUS(shape),
-      table: discTable(facetBins(shape), law, sunBody),
-      sceneToBody,
-      scale: (EXPOSURE / (r * r)) * lit,
-      integrated,
-    });
+    group.add(
+      pointMesh({
+        positionScene,
+        meanRadiusKm: MEAN_RADIUS(shape),
+        table: discTable(facetBins(shape), law, sunBody),
+        sceneToBody,
+        scale: (EXPOSURE / (r * r)) * lit,
+      }),
+    );
   }
 
   // Earth and the Moon from Mars (core/marsMoons.ts).
@@ -422,10 +464,9 @@ export function createMarsMoons(
 
   // Far enough to sit behind everything near Mars, near enough for the depth buffer.
   const FAR_LABEL_KM = 5e6;
-  const [phobos, deimos] = neighbours;
   const labelled = [
-    { name: 'Phobos', position: phobos?.positionScene ?? [0, 0, 0] },
-    { name: 'Deimos', position: deimos?.positionScene ?? [0, 0, 0] },
+    { name: 'Phobos', position: j2000ToScene(data.at.phobosJ2000Km) },
+    { name: 'Deimos', position: j2000ToScene(data.at.deimosJ2000Km) },
     {
       name: 'Earth',
       position: [
@@ -449,31 +490,5 @@ export function createMarsMoons(
     sky,
     labelled,
     describe: () => `Earth V ${earthV.toFixed(2)}, Moon V ${moonV.toFixed(2)}`,
-    frame(camera, heightCssPx) {
-      const perPx = (2 * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, heightCssPx);
-      const omega = pixelSolidAngle(camera.fov, heightCssPx);
-      const cam = camera.position;
-      for (let i = 0; i < neighbours.length; i++) {
-        const n = neighbours[i];
-        if (n === undefined) continue;
-        const x = cam.x - n.positionScene[0];
-        const y = cam.y - n.positionScene[1];
-        const z = cam.z - n.positionScene[2];
-        const dist = Math.hypot(x, y, z);
-        const m = n.sceneToBody;
-        const bx = ((m[0] ?? 0) * x + (m[1] ?? 0) * y + (m[2] ?? 0) * z) / dist;
-        const by = ((m[3] ?? 0) * x + (m[4] ?? 0) * y + (m[5] ?? 0) * z) / dist;
-        const bz = ((m[6] ?? 0) * x + (m[7] ?? 0) * y + (m[8] ?? 0) * z) / dist;
-        const acrossPx = (2 * n.meanRadiusKm) / dist / perPx;
-        const weight =
-          acrossPx <= POINT_FULL_PX
-            ? 1
-            : acrossPx >= POINT_FROM_PX
-              ? 0
-              : (POINT_FROM_PX - acrossPx) / (POINT_FROM_PX - POINT_FULL_PX);
-        n.integrated.value =
-          (weight * n.scale * lookupDisc(n.table, bx, by, bz)) / (dist * dist) / omega;
-      }
-    },
   };
 }

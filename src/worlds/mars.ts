@@ -205,7 +205,6 @@ export async function createMarsStage(context: StageContext): Promise<Stage> {
       earth: null,
     },
     ui: marsUi(caption, fixedEpoch),
-    frame: moons === null ? null : moons.frame,
   };
 }
 

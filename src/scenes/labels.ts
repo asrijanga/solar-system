@@ -62,7 +62,14 @@ export async function loadLabelFont(url: (path: string) => string): Promise<void
   );
 }
 
-const KIND_COLOUR: Record<Landmark['kind'], string> = {
+/** A body in the sky, named at its place in the scene (km) or far along its direction. */
+export interface Neighbour {
+  readonly name: string;
+  readonly position: readonly [number, number, number];
+}
+
+const KIND_COLOUR: Record<Landmark['kind'] | 'neighbour', string> = {
+  neighbour: '#f0f0f0',
   mare: '#cfd8e8',
   crater: '#ffffff',
   mountains: '#e8e1cf',
@@ -96,6 +103,7 @@ export function createLabels(
   bodyToScene: readonly number[],
   radiusKm: number,
   sunScene: readonly [number, number, number],
+  neighbours: readonly Neighbour[] = [],
 ): Labels {
   const group = new Group();
   group.name = 'labels';
@@ -160,6 +168,39 @@ export function createLabels(
     sprites.push({ sprite, aspect });
   }
 
+  // Neighbours in the sky (docs/stories/SS-14.md, W8): named where they are, hidden while the
+  // world stands between them and the camera.
+  for (const neighbour of neighbours) {
+    const { canvas, aspect, anchorY } = drawLabel({ label: neighbour.name, kind: 'neighbour' });
+    const map = new CanvasTexture(canvas);
+    map.colorSpace = SRGBColorSpace;
+    map.minFilter = LinearFilter;
+    map.generateMipmaps = false;
+    const anchor = uniform(new Vector3(...neighbour.position));
+    const material = new SpriteNodeMaterial({
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    material.sizeAttenuation = false;
+    const sample = texture(map);
+    // The point of the line from the camera to the neighbour nearest the world's centre.
+    const along = anchor.sub(cameraPosition);
+    const t = clamp(dot(cameraPosition, along).negate().div(dot(along, along)), 0, 1);
+    const nearest = length(cameraPosition.add(along.mul(t)));
+    const clear = smoothstep(radiusKm, radiusKm * 1.02, nearest);
+    material.colorNode = vec4(sample.rgb, 1);
+    material.opacityNode = sample.a.mul(clear).mul(toggle);
+    const sprite = new Sprite(material);
+    sprite.name = `label ${neighbour.name}`;
+    sprite.position.set(...neighbour.position);
+    sprite.center.set(0.5, anchorY);
+    sprite.renderOrder = 10;
+    sprite.frustumCulled = false;
+    group.add(sprite);
+    sprites.push({ sprite, aspect });
+  }
+
   return {
     group,
     set(visible, nowSeconds) {
@@ -181,7 +222,10 @@ export function createLabels(
 /** Height of the whole label texture (text plus the dot beneath it), CSS pixels. */
 const LABEL_HEIGHT_PX = TEXT_PX * 2;
 
-function drawLabel(landmark: Landmark): {
+function drawLabel(landmark: {
+  readonly label: string;
+  readonly kind: Landmark['kind'] | 'neighbour';
+}): {
   canvas: HTMLCanvasElement;
   aspect: number;
   anchorY: number;

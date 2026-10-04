@@ -1,0 +1,90 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "full-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 135847.6,
+      "fovDeg": 30,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false,
+      "utc": "2026-01-26T08:00:00Z",
+      "neighbour": {
+        "moon": "deimos",
+        "lonDeg": -120,
+        "latDeg": 0,
+        "distanceKm": 45,
+        "mirrored": false
+      }
+    },
+    "bodyChecks": [
+      {
+        "kind": "neighbour-brightness",
+        "name": "Deimos’s summed brightness",
+        "tolerance": 0.02
+      }
+    ],
+    "negativeControl": false,
+    "id": "mars-deimos",
+    "description": "Deimos from 45 km over 0°N 120°W of its own frame on 26 January 2026 at 08:00 UTC, about 30° from the Sun: Thomas’s shape lit by Wargnier et al.’s law, its summed brightness against the law over its facets.",
+    "scene": "mars"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Deimos’s summed brightness: drawn 1.4203e-3, the law 1.4308e-3 (-0.73%)",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "f5a61fb9387577e3ff1568479ba58449fad2050b",
+    "dirty": false
+  }
+}

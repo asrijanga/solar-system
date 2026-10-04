@@ -133,6 +133,11 @@ export function cosAzimuth(mu0: number, mu: number, cosG: number): number {
  * μ0 to the normal and seen at cosine μ, with phase angle g between the two directions. Zero
  * where the Sun is below the local horizon or the surface faces away. The mean slope θ̄ is the
  * Moon's unless given (Mars's is fitted: core/marsPhotometry.ts).
+ *
+ * `porosityK` is Hapke's (2012) porosity factor K: it multiplies the whole and divides the
+ * cosines inside H, I/F = K (w/4) μ0e/(μ0e + μe) [p B_SH + H(μ0e/K) H(μe/K) − 1] S, as Phobos's
+ * and Deimos's laws were fitted (Fornasier et al. 2024, Eq. 6; Wargnier et al. 2025). 1, the
+ * Moon's and Mars's, leaves every value exactly as without it.
  */
 export function hapke(
   mu0: number,
@@ -140,12 +145,31 @@ export function hapke(
   cosG: number,
   p: HapkeParameters,
   thetaBarDeg = HAPKE_ROUGHNESS_DEG,
+  porosityK = 1,
 ): number {
   if (mu0 <= 0 || mu <= 0) return 0;
   const { mu0e, mue, s } = roughness(mu0, mu, cosAzimuth(mu0, mu, cosG), thetaBarDeg);
   const single = doubleHenyeyGreenstein(cosG, p.b, p.c) * shadowHiding(cosG, p.bs0, p.hs);
-  const multiple = hapkeH(mu0e, p.w) * hapkeH(mue, p.w) - 1;
-  return (p.w / 4) * (mu0e / (mu0e + mue)) * (single + multiple) * s;
+  const multiple = hapkeH(mu0e / porosityK, p.w) * hapkeH(mue / porosityK, p.w) - 1;
+  return porosityK * (p.w / 4) * (mu0e / (mu0e + mue)) * (single + multiple) * s;
+}
+
+/**
+ * Hapke's porosity factor K from the porosity, 1 − φ with φ the filling factor:
+ * K = −ln(1 − 1.209 φ^(2/3)) / (1.209 φ^(2/3)) (Hapke 2008; Fornasier et al. 2024, Eq. 5).
+ */
+export function porosityFactor(porosity: number): number {
+  const x = 1.209 * (1 - porosity) ** (2 / 3);
+  return -Math.log(1 - x) / x;
+}
+
+/**
+ * A single-lobe Henyey-Greenstein asymmetry ξ (negative backscatters, as the moons' papers give
+ * it: p(g) = (1 − ξ²) / (1 + 2ξ cos g + ξ²)^1.5) as this file's double form: b = |ξ|, and c = 1
+ * for backscatter, −1 for forward scatter.
+ */
+export function singleLobe(xi: number): { readonly b: number; readonly c: number } {
+  return { b: Math.abs(xi), c: xi <= 0 ? 1 : -1 };
 }
 
 /** I/F at the map's standard geometry: the denominator that turns its values into I/F anywhere. */

@@ -1,0 +1,1286 @@
+{
+  "story": "docs/stories/SS-14.md (W8)",
+  "positions": {
+    "encoding": "little-endian float32: Phobos (x, y, z) km every phobosStepMinutes, then Deimos every deimosStepMinutes, then the Moon's offset from Earth as seen from Mars every deimosStepMinutes, then the Moon's moonDisc (one value) every moonDiscStepMinutes; J2000, from one step before the month to two after",
+    "frame": "J2000, from Mars's centre. Phobos and Deimos geometric (no correction); the Moon's offset is Moon minus Earth, each with LT+S, as the timeline's Earth",
+    "moonDisc": "the Moon page's I/F (566 nm albedo map times per-tile Hapke over its value at the map's geometry) times area projected towards Mars, summed over 1 deg cells of the 1737.4 km sphere, km^2; MOON_ME at the light's departure",
+    "moonDiscSources": {
+      "albedo": {
+        "file": "public/data/moon/albedo.webp",
+        "sha256": "43332bd57ae3a040a9c665fb5c8ee15763cec4f6416a46f169905e832b71cf00"
+      },
+      "hapke": {
+        "file": "public/data/moon/hapke.bin",
+        "sha256": "5d3991e36ce6bb6da0d9e7ecf5417419cd4320b6f1490ed7b5a8f533af8b9568"
+      }
+    },
+    "phobosStepMinutes": 15,
+    "deimosStepMinutes": 60,
+    "moonDiscStepMinutes": 360,
+    "interpolation": "4-point Lagrange through the samples either side (core/marsMoons.ts)",
+    "measuredWorstError": {
+      "moments": 2000,
+      "seed": 2026,
+      "phobosKm": 0.438,
+      "deimosKm": 1.02,
+      "moonOffsetKm": 0.0203,
+      "moonDiscRelative": 0.00739
+    },
+    "months": [
+      {
+        "month": "2026-01",
+        "file": "2026-01.bin",
+        "sha256": "bca96a937e13eb99bb8d9b720a48db00826ffb728d010522d5498b62a47a30db",
+        "fromUtc": "2026-01-01T00:00:00Z",
+        "toUtc": "2026-02-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 820496769.18392,
+        "firstDeimosTdbSecondsPastJ2000": 820494069.18392,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 820476069.18392,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2026-02",
+        "file": "2026-02.bin",
+        "sha256": "0844688105e03b33dbcf8ac0405cdfb80728458dc74a8acac4ab18e9a7706256",
+        "fromUtc": "2026-02-01T00:00:00Z",
+        "toUtc": "2026-03-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 823175169.184785,
+        "firstDeimosTdbSecondsPastJ2000": 823172469.184785,
+        "phobosSamples": 2692,
+        "deimosSamples": 676,
+        "firstMoonDiscTdbSecondsPastJ2000": 823154469.184785,
+        "moonDiscSamples": 116
+      },
+      {
+        "month": "2026-03",
+        "file": "2026-03.bin",
+        "sha256": "6deb4115f3c308601b8dcddf71f6ed67aae3592725e065dc8b4c90b001cda8cf",
+        "fromUtc": "2026-03-01T00:00:00Z",
+        "toUtc": "2026-04-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 825594369.1853772,
+        "firstDeimosTdbSecondsPastJ2000": 825591669.1853772,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 825573669.1853772,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2026-04",
+        "file": "2026-04.bin",
+        "sha256": "dc78b3b13c516416a33cb4bb47fd79c145af4f4f70f2808a37991edd9687ab9a",
+        "fromUtc": "2026-04-01T00:00:00Z",
+        "toUtc": "2026-05-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 828272769.1856546,
+        "firstDeimosTdbSecondsPastJ2000": 828270069.1856546,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 828252069.1856546,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2026-05",
+        "file": "2026-05.bin",
+        "sha256": "3fda3d1fd34918728ad51897e33d386dae1c44506cdd1beff411756f60529b6b",
+        "fromUtc": "2026-05-01T00:00:00Z",
+        "toUtc": "2026-06-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 830864769.185484,
+        "firstDeimosTdbSecondsPastJ2000": 830862069.185484,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 830844069.185484,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2026-06",
+        "file": "2026-06.bin",
+        "sha256": "cb91410c9792ba9b35820e7fe8ca0a2e8077e2f28ccd9d8b22501bba2c33e248",
+        "fromUtc": "2026-06-01T00:00:00Z",
+        "toUtc": "2026-07-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 833543169.1849113,
+        "firstDeimosTdbSecondsPastJ2000": 833540469.1849113,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 833522469.1849113,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2026-07",
+        "file": "2026-07.bin",
+        "sha256": "715ef40be1cb1a71a3ac0028ab99e30954ce2b48d001863bb3a56d2a2cf52809",
+        "fromUtc": "2026-07-01T00:00:00Z",
+        "toUtc": "2026-08-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 836135169.1841229,
+        "firstDeimosTdbSecondsPastJ2000": 836132469.1841229,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 836114469.1841229,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2026-08",
+        "file": "2026-08.bin",
+        "sha256": "4c28bec2f1ab8cb804f91b612a2570c33d0c42375ad01235a66dd702fcf65876",
+        "fromUtc": "2026-08-01T00:00:00Z",
+        "toUtc": "2026-09-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 838813569.1832788,
+        "firstDeimosTdbSecondsPastJ2000": 838810869.1832788,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 838792869.1832788,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2026-09",
+        "file": "2026-09.bin",
+        "sha256": "30e9f3a728c6890abe079e4dca401db2540e35b9b5b0e0584f50d7878f9ae472",
+        "fromUtc": "2026-09-01T00:00:00Z",
+        "toUtc": "2026-10-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 841491969.1826266,
+        "firstDeimosTdbSecondsPastJ2000": 841489269.1826266,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 841471269.1826266,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2026-10",
+        "file": "2026-10.bin",
+        "sha256": "bb1c58a1dcaf14623c4ceac4fd077b460c60af3f7c14806ff7628496e9811ec9",
+        "fromUtc": "2026-10-01T00:00:00Z",
+        "toUtc": "2026-11-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 844083969.1823484,
+        "firstDeimosTdbSecondsPastJ2000": 844081269.1823484,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 844063269.1823484,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2026-11",
+        "file": "2026-11.bin",
+        "sha256": "650f98ec352ef0c0589f9ac9c220505440c8361d7667e12b93805563de96135c",
+        "fromUtc": "2026-11-01T00:00:00Z",
+        "toUtc": "2026-12-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 846762369.1825113,
+        "firstDeimosTdbSecondsPastJ2000": 846759669.1825113,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 846741669.1825113,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2026-12",
+        "file": "2026-12.bin",
+        "sha256": "a1ff7dc206a775da56caef210fd2b247132321a65f5b312841d39e29cdd1d41a",
+        "fromUtc": "2026-12-01T00:00:00Z",
+        "toUtc": "2027-01-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 849354369.183072,
+        "firstDeimosTdbSecondsPastJ2000": 849351669.183072,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 849333669.183072,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2027-01",
+        "file": "2027-01.bin",
+        "sha256": "57ee06440a7fe6d5fb08b00d20ea20923e3491ae4652268d996be0c828d68bd8",
+        "fromUtc": "2027-01-01T00:00:00Z",
+        "toUtc": "2027-02-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 852032769.1839125,
+        "firstDeimosTdbSecondsPastJ2000": 852030069.1839125,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 852012069.1839125,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2027-02",
+        "file": "2027-02.bin",
+        "sha256": "78b2fcfad8fb23065ceec695a0af1d7ded4b22bf815ba3d34f3f2709e047903a",
+        "fromUtc": "2027-02-01T00:00:00Z",
+        "toUtc": "2027-03-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 854711169.1847785,
+        "firstDeimosTdbSecondsPastJ2000": 854708469.1847785,
+        "phobosSamples": 2692,
+        "deimosSamples": 676,
+        "firstMoonDiscTdbSecondsPastJ2000": 854690469.1847785,
+        "moonDiscSamples": 116
+      },
+      {
+        "month": "2027-03",
+        "file": "2027-03.bin",
+        "sha256": "f08d4a986d3241b04d34cabce20f7d344af404722464de688469576d38edbd07",
+        "fromUtc": "2027-03-01T00:00:00Z",
+        "toUtc": "2027-04-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 857130369.1853731,
+        "firstDeimosTdbSecondsPastJ2000": 857127669.1853731,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 857109669.1853731,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2027-04",
+        "file": "2027-04.bin",
+        "sha256": "1e66417b47fdb58ee82c274419ba33dcf496826d392a41acaee0085e191abda2",
+        "fromUtc": "2027-04-01T00:00:00Z",
+        "toUtc": "2027-05-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 859808769.1856543,
+        "firstDeimosTdbSecondsPastJ2000": 859806069.1856543,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 859788069.1856543,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2027-05",
+        "file": "2027-05.bin",
+        "sha256": "14ae8895c5d7d87795d29104321e123932c59f99de9d03749d506c9783684c05",
+        "fromUtc": "2027-05-01T00:00:00Z",
+        "toUtc": "2027-06-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 862400769.1854873,
+        "firstDeimosTdbSecondsPastJ2000": 862398069.1854873,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 862380069.1854873,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2027-06",
+        "file": "2027-06.bin",
+        "sha256": "17711e97f36bd026632e077e633758c6e3e60b942b141b36ac39251c37299a46",
+        "fromUtc": "2027-06-01T00:00:00Z",
+        "toUtc": "2027-07-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 865079169.1849173,
+        "firstDeimosTdbSecondsPastJ2000": 865076469.1849173,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 865058469.1849173,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2027-07",
+        "file": "2027-07.bin",
+        "sha256": "d1b26b018aa8e9a42fea6893e74b0276ac67a4a6b02d2fd6958a258e73e10e99",
+        "fromUtc": "2027-07-01T00:00:00Z",
+        "toUtc": "2027-08-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 867671169.1841302,
+        "firstDeimosTdbSecondsPastJ2000": 867668469.1841302,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 867650469.1841302,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2027-08",
+        "file": "2027-08.bin",
+        "sha256": "95a607e91755c1321485556188fcf4d5d056523d728f01573b79443156a5696c",
+        "fromUtc": "2027-08-01T00:00:00Z",
+        "toUtc": "2027-09-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 870349569.1832854,
+        "firstDeimosTdbSecondsPastJ2000": 870346869.1832854,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 870328869.1832854,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2027-09",
+        "file": "2027-09.bin",
+        "sha256": "e4d4d8d634e77dd7ff396f4e0c01d03adbd9c876fd121a10ff63ab9b1e101b2e",
+        "fromUtc": "2027-09-01T00:00:00Z",
+        "toUtc": "2027-10-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 873027969.1826308,
+        "firstDeimosTdbSecondsPastJ2000": 873025269.1826308,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 873007269.1826308,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2027-10",
+        "file": "2027-10.bin",
+        "sha256": "d4b0fd654f898fdd7488a17b371d7fc8f2783b78276e8657b4804b7bde5b645e",
+        "fromUtc": "2027-10-01T00:00:00Z",
+        "toUtc": "2027-11-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 875619969.182349,
+        "firstDeimosTdbSecondsPastJ2000": 875617269.182349,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 875599269.182349,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2027-11",
+        "file": "2027-11.bin",
+        "sha256": "9098b27675ae0da97771c4c89ed524001c374242a35cae11b0080e1561347520",
+        "fromUtc": "2027-11-01T00:00:00Z",
+        "toUtc": "2027-12-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 878298369.1825081,
+        "firstDeimosTdbSecondsPastJ2000": 878295669.1825081,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 878277669.1825081,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2027-12",
+        "file": "2027-12.bin",
+        "sha256": "6296f3f697eff16cd2cb0bd41a5bcb9a8421930bacfdb1fa1e68c418fa335e35",
+        "fromUtc": "2027-12-01T00:00:00Z",
+        "toUtc": "2028-01-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 880890369.1830658,
+        "firstDeimosTdbSecondsPastJ2000": 880887669.1830658,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 880869669.1830658,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2028-01",
+        "file": "2028-01.bin",
+        "sha256": "2a1efb152f7c434bf4368d03d00cd2ac4d685ee74f987bf1c2cbba2bfca01b8d",
+        "fromUtc": "2028-01-01T00:00:00Z",
+        "toUtc": "2028-02-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 883568769.183905,
+        "firstDeimosTdbSecondsPastJ2000": 883566069.183905,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 883548069.183905,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2028-02",
+        "file": "2028-02.bin",
+        "sha256": "2ad0421d65ede272b82b753b222a6b293a6acbdb629fb6211295b824cc031746",
+        "fromUtc": "2028-02-01T00:00:00Z",
+        "toUtc": "2028-03-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 886247169.1847718,
+        "firstDeimosTdbSecondsPastJ2000": 886244469.1847718,
+        "phobosSamples": 2788,
+        "deimosSamples": 700,
+        "firstMoonDiscTdbSecondsPastJ2000": 886226469.1847718,
+        "moonDiscSamples": 120
+      },
+      {
+        "month": "2028-03",
+        "file": "2028-03.bin",
+        "sha256": "ecd088df70a0e3b8de64dd7bce35c457b6831a885ef7cb5cf30993f4dbfae470",
+        "fromUtc": "2028-03-01T00:00:00Z",
+        "toUtc": "2028-04-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 888752769.1853849,
+        "firstDeimosTdbSecondsPastJ2000": 888750069.1853849,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 888732069.1853849,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2028-04",
+        "file": "2028-04.bin",
+        "sha256": "da933cc25192ceac55367e8e64b22ae6c1d90e2723a9eedcd1362e9c9b0b28ef",
+        "fromUtc": "2028-04-01T00:00:00Z",
+        "toUtc": "2028-05-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 891431169.1856554,
+        "firstDeimosTdbSecondsPastJ2000": 891428469.1856554,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 891410469.1856554,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2028-05",
+        "file": "2028-05.bin",
+        "sha256": "4498b8a2edbc65de3de1a8871c629e8a82cea81b72b76ff8e45e3219fe91aeb8",
+        "fromUtc": "2028-05-01T00:00:00Z",
+        "toUtc": "2028-06-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 894023169.185478,
+        "firstDeimosTdbSecondsPastJ2000": 894020469.185478,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 894002469.185478,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2028-06",
+        "file": "2028-06.bin",
+        "sha256": "dd818db8b7e62a27d6491f5dba11340df6e1448603a13aa80d4a93d53dd8465b",
+        "fromUtc": "2028-06-01T00:00:00Z",
+        "toUtc": "2028-07-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 896701569.1848999,
+        "firstDeimosTdbSecondsPastJ2000": 896698869.1848999,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 896680869.1848999,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2028-07",
+        "file": "2028-07.bin",
+        "sha256": "ed89c304a53c891218a8800d035a40151b527c59ee919b5f2e39faec78b85aa6",
+        "fromUtc": "2028-07-01T00:00:00Z",
+        "toUtc": "2028-08-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 899293569.1841096,
+        "firstDeimosTdbSecondsPastJ2000": 899290869.1841096,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 899272869.1841096,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2028-08",
+        "file": "2028-08.bin",
+        "sha256": "fa3fd8f35d0a58c2a24725c64a46fc77a1d665a2a460078923730a66dbc1d41f",
+        "fromUtc": "2028-08-01T00:00:00Z",
+        "toUtc": "2028-09-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 901971969.1832666,
+        "firstDeimosTdbSecondsPastJ2000": 901969269.1832666,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 901951269.1832666,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2028-09",
+        "file": "2028-09.bin",
+        "sha256": "5c66d5a088d0801ba27f52ab641584d2f93a4474ac0ff728395ed0ed101d3808",
+        "fromUtc": "2028-09-01T00:00:00Z",
+        "toUtc": "2028-10-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 904650369.1826191,
+        "firstDeimosTdbSecondsPastJ2000": 904647669.1826191,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 904629669.1826191,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2028-10",
+        "file": "2028-10.bin",
+        "sha256": "1fdc3faacc6e7739c919936128a5c9f33aff9fa05277740966f89b038c81bba2",
+        "fromUtc": "2028-10-01T00:00:00Z",
+        "toUtc": "2028-11-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 907242369.1823473,
+        "firstDeimosTdbSecondsPastJ2000": 907239669.1823473,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 907221669.1823473,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2028-11",
+        "file": "2028-11.bin",
+        "sha256": "c61995e539892430b2e9be297e46440ae1a9bfe0ed33ea6c6fb8c9fc209c1fea",
+        "fromUtc": "2028-11-01T00:00:00Z",
+        "toUtc": "2028-12-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 909920769.1825174,
+        "firstDeimosTdbSecondsPastJ2000": 909918069.1825174,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 909900069.1825174,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2028-12",
+        "file": "2028-12.bin",
+        "sha256": "839a73564459729c62a761ccb657c618279d2e9d772d016ec1fa98c3d44f00c1",
+        "fromUtc": "2028-12-01T00:00:00Z",
+        "toUtc": "2029-01-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 912512769.1830835,
+        "firstDeimosTdbSecondsPastJ2000": 912510069.1830835,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 912492069.1830835,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2029-01",
+        "file": "2029-01.bin",
+        "sha256": "349d4ff26dd546e00c45a63c777d892d12102139b7d730c9c6f55becf33efd1f",
+        "fromUtc": "2029-01-01T00:00:00Z",
+        "toUtc": "2029-02-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 915191169.1839265,
+        "firstDeimosTdbSecondsPastJ2000": 915188469.1839265,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 915170469.1839265,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2029-02",
+        "file": "2029-02.bin",
+        "sha256": "26f79a84b7d8d1ca7f1382ab5abdc51be1a98fbff05bc467e978205da21e1027",
+        "fromUtc": "2029-02-01T00:00:00Z",
+        "toUtc": "2029-03-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 917869569.1847907,
+        "firstDeimosTdbSecondsPastJ2000": 917866869.1847907,
+        "phobosSamples": 2692,
+        "deimosSamples": 676,
+        "firstMoonDiscTdbSecondsPastJ2000": 917848869.1847907,
+        "moonDiscSamples": 116
+      },
+      {
+        "month": "2029-03",
+        "file": "2029-03.bin",
+        "sha256": "c578a781ba87af777bb997099d64848f916767a6969abc37b2132b6f026bac00",
+        "fromUtc": "2029-03-01T00:00:00Z",
+        "toUtc": "2029-04-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 920288769.1853808,
+        "firstDeimosTdbSecondsPastJ2000": 920286069.1853808,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 920268069.1853808,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2029-04",
+        "file": "2029-04.bin",
+        "sha256": "437f00173a043d25c4d702a18e52af1f962665b934ac0e8c4b61e8aedb259c07",
+        "fromUtc": "2029-04-01T00:00:00Z",
+        "toUtc": "2029-05-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 922967169.185655,
+        "firstDeimosTdbSecondsPastJ2000": 922964469.185655,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 922946469.185655,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2029-05",
+        "file": "2029-05.bin",
+        "sha256": "f92e212d20a1b9ef7d9e1aeeafe553b12411f49d806a1d2a0a8b35117c01b933",
+        "fromUtc": "2029-05-01T00:00:00Z",
+        "toUtc": "2029-06-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 925559169.1854812,
+        "firstDeimosTdbSecondsPastJ2000": 925556469.1854812,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 925538469.1854812,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2029-06",
+        "file": "2029-06.bin",
+        "sha256": "1fb101102e8ebabd4a9af51ec305ab7b3734abd8fc061d830c7ca1da2a73c371",
+        "fromUtc": "2029-06-01T00:00:00Z",
+        "toUtc": "2029-07-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 928237569.184906,
+        "firstDeimosTdbSecondsPastJ2000": 928234869.184906,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 928216869.184906,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2029-07",
+        "file": "2029-07.bin",
+        "sha256": "d0d3e4dad0dbbd670d3f2d7e53c6f41e44e9c76b208b5dc97a445efa2f632861",
+        "fromUtc": "2029-07-01T00:00:00Z",
+        "toUtc": "2029-08-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 930829569.1841167,
+        "firstDeimosTdbSecondsPastJ2000": 930826869.1841167,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 930808869.1841167,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2029-08",
+        "file": "2029-08.bin",
+        "sha256": "59bca3c755b16c6ccdd19e01a9762df8911eaca8f4a3506cd80113423511b85d",
+        "fromUtc": "2029-08-01T00:00:00Z",
+        "toUtc": "2029-09-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 933507969.1832732,
+        "firstDeimosTdbSecondsPastJ2000": 933505269.1832732,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 933487269.1832732,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2029-09",
+        "file": "2029-09.bin",
+        "sha256": "03c66e329b70537427ffa919d5ca65b0ea7a767b46db935af6af09d394d0cd0f",
+        "fromUtc": "2029-09-01T00:00:00Z",
+        "toUtc": "2029-10-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 936186369.1826231,
+        "firstDeimosTdbSecondsPastJ2000": 936183669.1826231,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 936165669.1826231,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2029-10",
+        "file": "2029-10.bin",
+        "sha256": "8de68f087b3f0ac300987aa2f65373515cadf5e6e75d44a95f1f4c4b92fe57ad",
+        "fromUtc": "2029-10-01T00:00:00Z",
+        "toUtc": "2029-11-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 938778369.1823479,
+        "firstDeimosTdbSecondsPastJ2000": 938775669.1823479,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 938757669.1823479,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2029-11",
+        "file": "2029-11.bin",
+        "sha256": "4b7810b55a81c358ba7433eec7d4b4f63db10c3a0b1c68b4e9c593a75347a627",
+        "fromUtc": "2029-11-01T00:00:00Z",
+        "toUtc": "2029-12-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 941456769.1825141,
+        "firstDeimosTdbSecondsPastJ2000": 941454069.1825141,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 941436069.1825141,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2029-12",
+        "file": "2029-12.bin",
+        "sha256": "ebcd50705a7e485d0629ecbd9600cabed8d249c10adc8561a23726e0c532ac25",
+        "fromUtc": "2029-12-01T00:00:00Z",
+        "toUtc": "2030-01-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 944048769.1830773,
+        "firstDeimosTdbSecondsPastJ2000": 944046069.1830773,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 944028069.1830773,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2030-01",
+        "file": "2030-01.bin",
+        "sha256": "625704140cad034d3733a2b9e079d51f2030ec9ac2ff903487bf4d455dfd9ffc",
+        "fromUtc": "2030-01-01T00:00:00Z",
+        "toUtc": "2030-02-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 946727169.183919,
+        "firstDeimosTdbSecondsPastJ2000": 946724469.183919,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 946706469.183919,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2030-02",
+        "file": "2030-02.bin",
+        "sha256": "6bb523da246cfbba76f025fdb32200c43b9d07f00984eea4ef2d636db858dc9d",
+        "fromUtc": "2030-02-01T00:00:00Z",
+        "toUtc": "2030-03-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 949405569.184784,
+        "firstDeimosTdbSecondsPastJ2000": 949402869.184784,
+        "phobosSamples": 2692,
+        "deimosSamples": 676,
+        "firstMoonDiscTdbSecondsPastJ2000": 949384869.184784,
+        "moonDiscSamples": 116
+      },
+      {
+        "month": "2030-03",
+        "file": "2030-03.bin",
+        "sha256": "52956477c30ec3834835b0ecc5d44e06e801624bea5ca249727439435455fe1a",
+        "fromUtc": "2030-03-01T00:00:00Z",
+        "toUtc": "2030-04-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 951824769.1853766,
+        "firstDeimosTdbSecondsPastJ2000": 951822069.1853766,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 951804069.1853766,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2030-04",
+        "file": "2030-04.bin",
+        "sha256": "41be300d8f54421ef16bc4b1d22071a20f3b74a658c0c05b70c8d27fabf441b3",
+        "fromUtc": "2030-04-01T00:00:00Z",
+        "toUtc": "2030-05-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 954503169.1856546,
+        "firstDeimosTdbSecondsPastJ2000": 954500469.1856546,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 954482469.1856546,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2030-05",
+        "file": "2030-05.bin",
+        "sha256": "f48381cae73f7859b9187189e54bc81f81da36bbf89d57743fff31e1231081bb",
+        "fromUtc": "2030-05-01T00:00:00Z",
+        "toUtc": "2030-06-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 957095169.1854845,
+        "firstDeimosTdbSecondsPastJ2000": 957092469.1854845,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 957074469.1854845,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2030-06",
+        "file": "2030-06.bin",
+        "sha256": "c14ddeaeac49eaebf746be3bf9bb4d30f8b86badf75aca7183af94bfdf2c00c7",
+        "fromUtc": "2030-06-01T00:00:00Z",
+        "toUtc": "2030-07-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 959773569.1849121,
+        "firstDeimosTdbSecondsPastJ2000": 959770869.1849121,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 959752869.1849121,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2030-07",
+        "file": "2030-07.bin",
+        "sha256": "f7fd3f624fd57714813a5a2f3b52d9aba6635f8d31e323b021093296d295bb54",
+        "fromUtc": "2030-07-01T00:00:00Z",
+        "toUtc": "2030-08-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 962365569.184124,
+        "firstDeimosTdbSecondsPastJ2000": 962362869.184124,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 962344869.184124,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2030-08",
+        "file": "2030-08.bin",
+        "sha256": "a7fadd018de13760d730fab116b18d146177b476792f6de9195235a8bf8ac130",
+        "fromUtc": "2030-08-01T00:00:00Z",
+        "toUtc": "2030-09-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 965043969.1832798,
+        "firstDeimosTdbSecondsPastJ2000": 965041269.1832798,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 965023269.1832798,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2030-09",
+        "file": "2030-09.bin",
+        "sha256": "1cef16ee4d996c21c34ecfa9468ce2c0387840c38b3895fdcf876c09955891a2",
+        "fromUtc": "2030-09-01T00:00:00Z",
+        "toUtc": "2030-10-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 967722369.1826272,
+        "firstDeimosTdbSecondsPastJ2000": 967719669.1826272,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 967701669.1826272,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2030-10",
+        "file": "2030-10.bin",
+        "sha256": "63cb579d47f4ce754cb97bdfd93d551405667adc04bcc78ceccafa20b4320a92",
+        "fromUtc": "2030-10-01T00:00:00Z",
+        "toUtc": "2030-11-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 970314369.1823485,
+        "firstDeimosTdbSecondsPastJ2000": 970311669.1823485,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 970293669.1823485,
+        "moonDiscSamples": 128
+      },
+      {
+        "month": "2030-11",
+        "file": "2030-11.bin",
+        "sha256": "2958a478b38163321550113e60e4d1b82ccfaf13a2d09a9b87dda8aebd7b73b8",
+        "fromUtc": "2030-11-01T00:00:00Z",
+        "toUtc": "2030-12-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 972992769.1825109,
+        "firstDeimosTdbSecondsPastJ2000": 972990069.1825109,
+        "phobosSamples": 2884,
+        "deimosSamples": 724,
+        "firstMoonDiscTdbSecondsPastJ2000": 972972069.1825109,
+        "moonDiscSamples": 124
+      },
+      {
+        "month": "2030-12",
+        "file": "2030-12.bin",
+        "sha256": "834c81ea3b1a8f9f30ef3467f45255a74295712323ddb8b22415e0e2d08d692b",
+        "fromUtc": "2030-12-01T00:00:00Z",
+        "toUtc": "2031-01-01T00:00:00Z",
+        "firstPhobosTdbSecondsPastJ2000": 975584769.1830711,
+        "firstDeimosTdbSecondsPastJ2000": 975582069.1830711,
+        "phobosSamples": 2980,
+        "deimosSamples": 748,
+        "firstMoonDiscTdbSecondsPastJ2000": 975564069.1830711,
+        "moonDiscSamples": 128
+      }
+    ]
+  },
+  "shapes": {
+    "phobos": {
+      "file": "phobos.bin.gz",
+      "sha256": "51ee5366e140c322f0409b8554158838b430d3396baaae747c0e7dd109826824",
+      "vertices": 137439,
+      "triangles": 274874,
+      "quantisationWorstM": 0.0,
+      "radiusRangeKm": [
+        8.001,
+        13.923
+      ],
+      "volumeKm3": 5741.18,
+      "meanRadiusKm": 11.108,
+      "areaKm2": 1639.72,
+      "source": "Willner, Shi & Oberst (2014), PSS 102, 51: NAIF phobos_2014_09_22.bds",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/dsk/satellites/phobos_2014_09_22.bds",
+      "sourceSha256": "8f8fe4ea2dc97355d37279ee8136a974015a0d1b5f1199f43678ba5ad03fd2b6",
+      "frame": "IAU_PHOBOS"
+    },
+    "deimos": {
+      "file": "deimos.bin.gz",
+      "sha256": "fd8a7a0288589ad6f7dd05b96649b682d650fb37e7a129564a315064b3893ea7",
+      "vertices": 2522,
+      "triangles": 5040,
+      "quantisationWorstM": 0.5,
+      "radiusRangeKm": [
+        3.582,
+        8.707
+      ],
+      "volumeKm3": 1013.64,
+      "meanRadiusKm": 6.2316,
+      "areaKm2": 518.59,
+      "source": "Thomas (1993), Icarus 105, 326: PDS SBN ast-sat.thomas.shape-models_V1_0 m2deimos.tab, Viking Orbiter only; '~400 m' uncertainty over longitudes 200-355 (its label)",
+      "url": "https://sbnarchive.psi.edu/pds4/non_mission/ast-sat.thomas.shape-models_V1_0/data/m2deimos.tab",
+      "sourceSha256": "9a4dbc132c7546acb2ef26a386d306f155519f0988c8052acb2276ddeb7ca2fd",
+      "frame": "IAU_DEIMOS (the label's pole and W are the IAU's)",
+      "longitude": "west-positive in the table, converted to east",
+      "longitudeSignTest": {
+        "points": 800,
+        "seed": 2026,
+        "rmsKm": {
+          "readAsWest": 0.297,
+          "readAsEast": 0.623
+        }
+      }
+    }
+  },
+  "rotation": {
+    "phobos": {
+      "frame": "IAU_PHOBOS",
+      "source": "pck00011.tpc: BODY401_POLE_RA, _POLE_DEC, _PM, _NUT_PREC_RA/DEC/PM, BODY4_NUT_PREC_ANGLES, evaluated as IAU_MARS is (core/mars.ts marsRotation)",
+      "poleRaDeg": [
+        317.67071657,
+        -0.10844326,
+        0.0
+      ],
+      "poleDecDeg": [
+        52.88627266,
+        -0.06134706,
+        0.0
+      ],
+      "primeMeridianDeg": [
+        35.1877444,
+        1128.84475928,
+        9.536137031212154e-09
+      ],
+      "nutPrecRaDeg": [
+        -1.78428399,
+        0.02212824,
+        -0.01028251,
+        -0.00475595
+      ],
+      "nutPrecDecDeg": [
+        -1.07516537,
+        0.00668626,
+        -0.0064874,
+        0.00281576
+      ],
+      "nutPrecPmDeg": [
+        1.4242176899999999,
+        -0.02273783,
+        0.00410711,
+        0.00631964,
+        -1.143
+      ],
+      "nutPrecAnglesDeg": [
+        [
+          190.72646643,
+          15917.10818695,
+          0.0
+        ],
+        [
+          21.4689247,
+          31834.27934054,
+          0.0
+        ],
+        [
+          332.86082793,
+          19139.89694742,
+          0.0
+        ],
+        [
+          394.93256437,
+          38280.79631835,
+          0.0
+        ],
+        [
+          189.6327156,
+          41215158.1842005,
+          12.711923222
+        ],
+        [
+          121.46893664,
+          660.22803474,
+          0.0
+        ],
+        [
+          231.05028581,
+          660.9912354,
+          0.0
+        ],
+        [
+          251.37314025,
+          1320.50145245,
+          0.0
+        ],
+        [
+          217.98635955,
+          38279.9612555,
+          0.0
+        ],
+        [
+          196.19729402,
+          19139.83628608,
+          0.0
+        ],
+        [
+          198.991226,
+          19139.4819985,
+          0.0
+        ],
+        [
+          226.292679,
+          38280.8511281,
+          0.0
+        ],
+        [
+          249.663391,
+          57420.7251593,
+          0.0
+        ],
+        [
+          266.18351,
+          76560.636795,
+          0.0
+        ],
+        [
+          79.398797,
+          0.5042615,
+          0.0
+        ],
+        [
+          122.433576,
+          19139.9407476,
+          0.0
+        ],
+        [
+          43.058401,
+          38280.8753272,
+          0.0
+        ],
+        [
+          57.663379,
+          57420.7517205,
+          0.0
+        ],
+        [
+          79.476401,
+          76560.6495004,
+          0.0
+        ],
+        [
+          166.325722,
+          0.5042615,
+          0.0
+        ],
+        [
+          129.071773,
+          19140.0328244,
+          0.0
+        ],
+        [
+          36.352167,
+          38281.0473591,
+          0.0
+        ],
+        [
+          56.668646,
+          57420.929536,
+          0.0
+        ],
+        [
+          67.364003,
+          76560.2552215,
+          0.0
+        ],
+        [
+          104.79268,
+          95700.4387578,
+          0.0
+        ],
+        [
+          95.391654,
+          0.5042615,
+          0.0
+        ]
+      ]
+    },
+    "deimos": {
+      "frame": "IAU_DEIMOS",
+      "source": "pck00011.tpc: BODY402_POLE_RA, _POLE_DEC, _PM, _NUT_PREC_RA/DEC/PM, BODY4_NUT_PREC_ANGLES, evaluated as IAU_MARS is (core/mars.ts marsRotation)",
+      "poleRaDeg": [
+        316.65705808,
+        -0.10518014,
+        0.0
+      ],
+      "poleDecDeg": [
+        53.50992033,
+        -0.05979094,
+        0.0
+      ],
+      "primeMeridianDeg": [
+        79.39932954,
+        285.16188899,
+        0.0
+      ],
+      "nutPrecRaDeg": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        3.09217726,
+        0.22980637,
+        0.06418655,
+        0.02533537,
+        0.00778695
+      ],
+      "nutPrecDecDeg": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.8393600399999999,
+        0.1432532,
+        0.01911409,
+        -0.0148259,
+        0.0019243
+      ],
+      "nutPrecPmDeg": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -2.73954829,
+        -0.39968606,
+        -0.06563259,
+        -0.0291294,
+        0.0169916
+      ],
+      "nutPrecAnglesDeg": [
+        [
+          190.72646643,
+          15917.10818695,
+          0.0
+        ],
+        [
+          21.4689247,
+          31834.27934054,
+          0.0
+        ],
+        [
+          332.86082793,
+          19139.89694742,
+          0.0
+        ],
+        [
+          394.93256437,
+          38280.79631835,
+          0.0
+        ],
+        [
+          189.6327156,
+          41215158.1842005,
+          12.711923222
+        ],
+        [
+          121.46893664,
+          660.22803474,
+          0.0
+        ],
+        [
+          231.05028581,
+          660.9912354,
+          0.0
+        ],
+        [
+          251.37314025,
+          1320.50145245,
+          0.0
+        ],
+        [
+          217.98635955,
+          38279.9612555,
+          0.0
+        ],
+        [
+          196.19729402,
+          19139.83628608,
+          0.0
+        ],
+        [
+          198.991226,
+          19139.4819985,
+          0.0
+        ],
+        [
+          226.292679,
+          38280.8511281,
+          0.0
+        ],
+        [
+          249.663391,
+          57420.7251593,
+          0.0
+        ],
+        [
+          266.18351,
+          76560.636795,
+          0.0
+        ],
+        [
+          79.398797,
+          0.5042615,
+          0.0
+        ],
+        [
+          122.433576,
+          19139.9407476,
+          0.0
+        ],
+        [
+          43.058401,
+          38280.8753272,
+          0.0
+        ],
+        [
+          57.663379,
+          57420.7517205,
+          0.0
+        ],
+        [
+          79.476401,
+          76560.6495004,
+          0.0
+        ],
+        [
+          166.325722,
+          0.5042615,
+          0.0
+        ],
+        [
+          129.071773,
+          19140.0328244,
+          0.0
+        ],
+        [
+          36.352167,
+          38281.0473591,
+          0.0
+        ],
+        [
+          56.668646,
+          57420.929536,
+          0.0
+        ],
+        [
+          67.364003,
+          76560.2552215,
+          0.0
+        ],
+        [
+          104.79268,
+          95700.4387578,
+          0.0
+        ],
+        [
+          95.391654,
+          0.5042615,
+          0.0
+        ]
+      ]
+    }
+  },
+  "pck00011RadiiKm": {
+    "PHOBOS": [
+      13.0,
+      11.4,
+      9.1
+    ],
+    "DEIMOS": [
+      7.8,
+      6.0,
+      5.1
+    ]
+  },
+  "stickney": {
+    "name": "Stickney",
+    "latDeg": 1.0,
+    "lonEastDeg": -49.0,
+    "diameterKm": 9.0,
+    "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5707",
+    "check": {
+      "centreBelowRingKm": {
+        "readAsEast": 1.278,
+        "readAsWest": 0.08
+      },
+      "ringDeg": 20
+    }
+  },
+  "gazetteer": {
+    "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/PHOBOS_nomenclature_center_pts.zip",
+    "retrieved": "2026-10-04",
+    "zipSha256": "c9e514e19291de89175a554ea03cdac0a941d34b26be8076729183b631e140fa"
+  },
+  "kernels": [
+    {
+      "file": "naif0012.tls",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
+      "sha256": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b"
+    },
+    {
+      "file": "de440s.bsp",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
+      "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2"
+    },
+    {
+      "file": "pck00011.tpc",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+      "sha256": "3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1"
+    },
+    {
+      "file": "gm_de440.tpc",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/gm_de440.tpc",
+      "sha256": "924ddf4fb9ead9fe8a1aa55780bcabde40b09d00065d58226e24b68d8092f140"
+    },
+    {
+      "file": "mar099s.bsp",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/mar099s.bsp",
+      "sha256": "997dc93ba640e476da7a494d2237dcdeb145e528db37be8ccee588c615e4e1ff"
+    },
+    {
+      "file": "moon_pa_de440_200625.bpc",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc",
+      "sha256": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f"
+    },
+    {
+      "file": "moon_de440_250416.tf",
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf",
+      "sha256": "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768"
+    }
+  ]
+}

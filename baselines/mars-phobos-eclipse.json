@@ -1,0 +1,90 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "full-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 135847.6,
+      "fovDeg": 30,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false,
+      "utc": "2026-01-21T02:52:00Z",
+      "neighbour": {
+        "moon": "phobos",
+        "lonDeg": 180,
+        "latDeg": 0,
+        "distanceKm": 60,
+        "mirrored": false
+      }
+    },
+    "bodyChecks": [
+      {
+        "kind": "black",
+        "name": "Phobos eclipsed",
+        "maxLevel": 1
+      }
+    ],
+    "negativeControl": false,
+    "id": "mars-phobos-eclipse",
+    "description": "Phobos in Mars’s shadow on 21 January 2026 at 02:52 UTC, nine minutes after SPICE puts it into the umbra, seen from 60 km on its side away from Mars: it must be black.",
+    "scene": "mars"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Phobos eclipsed: brightest level 0",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "f5a61fb9387577e3ff1568479ba58449fad2050b",
+    "dirty": false
+  }
+}

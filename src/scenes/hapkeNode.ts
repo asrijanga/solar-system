@@ -46,6 +46,7 @@ export function hapkeNode(
   cosGIn: FloatNode,
   p: HapkeNodes,
   thetaBarDeg = HAPKE_ROUGHNESS_DEG,
+  porosityK = 1,
 ): FloatNode {
   // The mean slope is a constant of the world (the Moon's, or Mars's fitted one), not per texel.
   const TAN_T = Math.tan((thetaBarDeg * Math.PI) / 180);
@@ -126,6 +127,18 @@ export function hapkeNode(
   const tanHalfG = sinG.div(max(float(1).add(cosG), TINY));
   const surge = float(1).add(p.bs0.div(float(1).add(tanHalfG.div(max(p.hs, TINY)))));
 
+  // Hapke's porosity factor K (core/hapke.ts). At 1, the Moon's and Mars's, no node is added,
+  // so their shaders are unchanged.
+  if (porosityK !== 1) {
+    const multipleK = hapkeH(mu0e.div(porosityK), p.w)
+      .mul(hapkeH(mue.div(porosityK), p.w))
+      .sub(1);
+    return p.w
+      .mul(porosityK / 4)
+      .mul(mu0e.div(mu0e.add(mue)))
+      .mul(phase.mul(surge).add(multipleK))
+      .mul(s);
+  }
   const multiple = hapkeH(mu0e, p.w).mul(hapkeH(mue, p.w)).sub(1);
   return p.w
     .div(4)

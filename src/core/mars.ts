@@ -8,7 +8,7 @@
 // its rotation is evaluated from pck00011's model, periodic terms included, as SPICE does.
 // Pure TypeScript: no three.js (CLAUDE.md).
 import type { Mat3Rows, Vec3 } from './moon';
-import { poleAndMeridian } from './timeline';
+import { poleAndMeridian } from './timeline.ts';
 
 /** One epoch. Directions are unit vectors in J2000, from Mars's centre, light-time corrected. */
 export interface MarsEpoch {

@@ -14,9 +14,9 @@ import numpy as np
 TINY = 1e-6
 
 
-def hapke_h(x: np.ndarray, w: float) -> np.ndarray:
+def hapke_h(x: np.ndarray, w) -> np.ndarray:
     xs = np.maximum(x, TINY)
-    gamma = math.sqrt(1 - w)
+    gamma = np.sqrt(1 - w)
     r0 = (1 - gamma) / (1 + gamma)
     return 1 / (1 - w * xs * (r0 + ((1 - 2 * r0 * xs) / 2) * np.log((1 + xs) / xs)))
 
@@ -52,7 +52,8 @@ def roughness(mu0, mu, cos_psi, theta_bar_deg: float):
 
 def hapke(mu0, mu, cos_g, p: dict, theta_bar_deg: float) -> np.ndarray:
     """I/F for cosines mu0 and mu and cos g, broadcast; 0 where the Sun is down or the surface
-    faces away. `p` holds w, b, c, bs0 and hs, as core/hapke.ts's HapkeParameters."""
+    faces away. `p` holds w, b, c, bs0 and hs, as core/hapke.ts's HapkeParameters: numbers, or
+    arrays that broadcast with the cosines (one tile's parameters per element)."""
     mu0, mu, cos_g = np.broadcast_arrays(
         np.asarray(mu0, float), np.asarray(mu, float), np.asarray(cos_g, float)
     )
@@ -65,7 +66,7 @@ def hapke(mu0, mu, cos_g, p: dict, theta_bar_deg: float) -> np.ndarray:
     phase = ((1 + c) / 2) * back + ((1 - c) / 2) * forward
     sin_g = np.sqrt(np.maximum(0, 1 - cos_g * cos_g))
     tan_half = sin_g / np.maximum(1 + cos_g, TINY)
-    surge = 1 + p["bs0"] / (1 + tan_half / max(p["hs"], TINY))
+    surge = 1 + p["bs0"] / (1 + tan_half / np.maximum(p["hs"], TINY))
     w = p["w"]
     multiple = hapke_h(mu0e, w) * hapke_h(mue, w) - 1
     out = (w / 4) * (mu0e / (mu0e + mue)) * (phase * surge + multiple) * sh

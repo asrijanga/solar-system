@@ -29,6 +29,7 @@
     "pipeline:ephemeris:mars": "uv run --project pipeline python pipeline/ephemeris_mars.py",
     "pipeline:timeline": "uv run --project pipeline python pipeline/timeline.py",
     "pipeline:timeline:mars": "uv run --project pipeline python pipeline/timeline_mars.py",
+    "pipeline:moons:mars": "uv run --project pipeline python pipeline/moons_mars.py",
     "pipeline:calibrate": "uv run --project pipeline python pipeline/calibrate.py",
     "pipeline:terrain": "uv run --project pipeline python pipeline/terrain.py",
     "pipeline:tiles": "node tools/terrain/build.ts",

@@ -6,6 +6,7 @@ import type {
   Viewpoint,
 } from '../../src/capture/viewpoints.ts';
 import { castMoonRays, runMoonCheck, type EphemerisFile } from './moon.ts';
+import { runNeighbourCheck } from './neighbours.ts';
 
 export interface CheckResult {
   readonly name: string;
@@ -122,8 +123,15 @@ export function judge(
     if (viewpoint.body === null || ephemeris === null) {
       throw new Error(`${viewpoint.id} has Moon checks but no Moon setup or ephemeris`);
     }
-    const pixels = castMoonRays(viewpoint.body, ephemeris, png.width, png.height);
-    for (const check of viewpoint.bodyChecks) moonResults.push(runMoonCheck(png, pixels, check));
+    if (viewpoint.body.neighbour !== null) {
+      // A view of one of Mars's moons (docs/stories/SS-14.md, W8).
+      for (const check of viewpoint.bodyChecks) {
+        moonResults.push(runNeighbourCheck(png, viewpoint.body, check));
+      }
+    } else {
+      const pixels = castMoonRays(viewpoint.body, ephemeris, png.width, png.height);
+      for (const check of viewpoint.bodyChecks) moonResults.push(runMoonCheck(png, pixels, check));
+    }
   }
   const results = [
     ...viewpoint.checks.map((check) => runCheck(png, check)),

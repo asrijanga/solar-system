@@ -13,6 +13,8 @@ import {
 import { bodyFixedToSceneMatrix, j2000ToScene, moonViewPose } from '../core/moon';
 import type { TileRange } from '../core/terrain';
 import { createLabels, loadLabelFont, type Landmark } from '../scenes/labels';
+import { createMarsMoons, loadMoons } from '../scenes/marsMoons';
+import { neighbourPose } from '../core/marsMoons';
 import {
   createMarsMesh,
   createMarsTerrain,
@@ -40,14 +42,14 @@ function epochParam(params: URLSearchParams): MoonEpochId | null {
   return choice === 'full' ? 'full-2026-01' : choice === 'quarter' ? 'first-quarter-2026-01' : null;
 }
 
-/** Mars at the moment the page opened, from its SPICE timeline; null outside its span. */
-async function epochNow(): Promise<MarsEpoch | null> {
+/** Mars at `utcMs`, from its SPICE timeline; null outside its span. */
+async function epochFromTimeline(utcMs: number): Promise<MarsEpoch | null> {
   const [manifest, bin] = await Promise.all([
     loadJson<MarsTimelineManifest>('data/mars/timeline.json'),
     fetch(siteUrl('data/mars/timeline.bin')),
   ]);
   if (!bin.ok) throw new Error(`timeline.bin failed to load: HTTP ${bin.status}`);
-  return marsEpochAt(manifest, new Float32Array(await bin.arrayBuffer()), Date.now());
+  return marsEpochAt(manifest, new Float32Array(await bin.arrayBuffer()), utcMs);
 }
 
 interface TerrainLayer {
@@ -93,9 +95,14 @@ export async function createMarsStage(context: StageContext): Promise<Stage> {
   const radiusKm = radiiKm[0];
   const setup = placedAt(context.viewpoint, params, radiusKm).body ?? listed;
   // Now, unless a fixed instant was asked for; outside the timeline's span, the viewpoint's.
-  const now = captureId === null && fixedEpoch === null ? await epochNow() : null;
+  const now =
+    captureId === null && fixedEpoch === null ? await epochFromTimeline(Date.now()) : null;
+  // A capture at an instant of the timeline (W8), rather than at a fixed epoch.
+  const instant = setup.utc === null ? null : await epochFromTimeline(Date.parse(setup.utc));
+  if (setup.utc !== null && instant === null)
+    throw new Error(`${setup.utc} is outside the timeline`);
   const epoch =
-    now ?? marsEpoch(ephemeris, (captureId === null ? fixedEpoch : null) ?? setup.epoch);
+    instant ?? now ?? marsEpoch(ephemeris, (captureId === null ? fixedEpoch : null) ?? setup.epoch);
   const nowOutOfSpan = captureId === null && fixedEpoch === null && now === null;
 
   const scene = new Scene();
@@ -113,6 +120,23 @@ export async function createMarsStage(context: StageContext): Promise<Stage> {
   scene.add(terrain === null ? createMarsMesh(surface) : terrain.group);
   const starExposure = uniform(0);
   scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
+  // Phobos, Deimos, Earth and the Moon where they are at this instant (W8).
+  const moonsData = await loadMoons(epoch);
+  const pole = epoch.j2000ToBodyFixed[2];
+  const moons =
+    moonsData === null
+      ? null
+      : createMarsMoons(
+          epoch,
+          { radiiKm, poleScene: j2000ToScene(pole) },
+          moonsData,
+          setup.neighbour?.mirrored === true ? setup.neighbour.moon : null,
+        );
+  if (moons !== null) {
+    scene.add(moons.group);
+    // Earth and the Moon are points at infinity, drawn as the stars are, with their exposure.
+    scene.add(createStarMesh(moons.sky, { reversedDepth, exposure: starExposure }));
+  }
   // Landmark labels, hidden until asked for (docs/stories/SS-15.md).
   const bodyToScene = bodyFixedToSceneMatrix(epoch);
   // Labels sit on the tiles' sphere, the ground's mean.
@@ -121,18 +145,37 @@ export async function createMarsStage(context: StageContext): Promise<Stage> {
     bodyToScene,
     MARS_TILE_SPHERE_KM,
     j2000ToScene(epoch.sunDirectionJ2000),
+    moons?.labelled ?? [],
   );
   labels.group.visible = setup.labels;
   if (setup.labels) labels.set(true, null);
   scene.add(labels.group);
 
   // Near 10 m over terrain; 1 km over the ellipsoid, as for the Moon.
-  const camera = new PerspectiveCamera(setup.fovDeg, 1, terrain === null ? 1 : 0.01, 1e8);
-  const pose = moonViewPose(epoch, setup.vantage, setup.distanceKm);
-  camera.position.set(...pose.position);
-  camera.up.set(...pose.up);
-  camera.lookAt(0, 0, 0);
-  camera.rotateX((setup.tiltDeg * Math.PI) / 180);
+  const near = terrain !== null || setup.neighbour !== null ? 0.01 : 1;
+  const camera = new PerspectiveCamera(setup.fovDeg, 1, near, 1e8);
+  if (setup.neighbour !== null && moonsData !== null) {
+    // A close view of one of the moons (captures only, W8).
+    const n = setup.neighbour;
+    const at = moonsData.at;
+    const view = neighbourPose(
+      n.moon === 'phobos' ? at.phobosJ2000Km : at.deimosJ2000Km,
+      n.moon === 'phobos' ? at.j2000ToPhobos : at.j2000ToDeimos,
+      pole,
+      n.lonDeg,
+      n.latDeg,
+      n.distanceKm,
+    );
+    camera.position.set(...j2000ToScene(view.position));
+    camera.up.set(...j2000ToScene(view.up));
+    camera.lookAt(...j2000ToScene(view.target));
+  } else {
+    const pose = moonViewPose(epoch, setup.vantage, setup.distanceKm);
+    camera.position.set(...pose.position);
+    camera.up.set(...pose.up);
+    camera.lookAt(0, 0, 0);
+    camera.rotateX((setup.tiltDeg * Math.PI) / 180);
+  }
 
   const when = epoch.utc.replace('T', ' ').slice(0, 16);
   const caption =
@@ -162,6 +205,7 @@ export async function createMarsStage(context: StageContext): Promise<Stage> {
       earth: null,
     },
     ui: marsUi(caption, fixedEpoch),
+    frame: moons === null ? null : moons.frame,
   };
 }
 
@@ -169,6 +213,8 @@ const ABOUT = [
   'Surface brightness: on scales over a few hundred kilometres, Mars as the Hubble Space Telescope photographed it in green light in 1999 (Bell, 2004), calibrated brightness in a clear season; finer than that, the near-infrared brightness Mars Express\u2019s OMEGA spectrometer measured from 2004 to 2010 (Ody and others, 2012), with Mars Global Surveyor\u2019s TES in its gaps; colour from Mars Express\u2019s HRSC camera (Michael and others, 2025; ESA/DLR/FU Berlin, CC BY-SA 3.0 IGO). Hubble did not see south of about 35\u00b0S then, so there the light and dark are OMEGA\u2019s, a little stronger than Mars shows. It is Mars as it usually looks, clear of dust storms and clouds: not Mars on this date.',
   'How bright: each colour is scaled so the whole planet is exactly as bright as astronomers measure Mars to be in that colour (Mallama and others, 2017). How brightness changes with the Sun’s angle is fitted to Mars’s measured brightness from full to 50° phase (Mallama and Hilton, 2018). Those measurements include Mars’s thin dusty air, so its average effect on brightness is in the light, but the air itself is not drawn yet: no haze at the edge of the disc, no blue sunsets.',
   'Shape: the surface is polygons, every corner on a height measured by Mars Global Surveyor’s laser altimeter (MOLA) or Mars Express’s stereo camera (HRSC), registered to the laser. Vertices are about 1.3 km apart everywhere on this site; `npm run local` streams HRSC’s and HiRISE’s full detail. Heights are true scale: Olympus Mons is 21 km high, Hellas 8 km deep.',
+  'Moons: Phobos and Deimos are where JPL\u2019s ephemeris of Mars\u2019s moons (mar099, through NASA\u2019s SPICE) puts them at this moment, turned as the IAU model turns them. Phobos\u2019s shape is Willner and others\u2019 (2014), from Mars Express\u2019s HRSC stereo images; Deimos\u2019s is Thomas\u2019s (1993), from Viking, with about 400 m uncertainty over part of it. Each is drawn with the light scattering its own measurements give (Fornasier and others, 2024; Wargnier and others, 2025), one brightness all over: no map of their surfaces without baked-in shadows exists yet, so Stickney\u2019s bright rim and Deimos\u2019s bright ridge are not shown. They go dark in Mars\u2019s shadow. Mars\u2019s own light on their night sides, and their shadows on Mars, are not drawn yet. Too small to draw, each is a point of light of its full brightness.',
+  'Earth and the Moon: points of light where they are in Mars\u2019s sky, as bright as they really are: Earth by its measured brightness at its phase (Mallama and Hilton, 2018), the Moon by its own page\u2019s measured map and light scattering, summed over the face Mars sees. Like the stars, they are far too faint to show next to sunlit Mars at a real exposure; Stars ×100,000 shows them. Their colour is not drawn.',
   'Stars: physical is a real exposure. Next to sunlit Mars, stars are far too faint to show. Boosted makes them 100,000 times brighter.',
   'Orbit: flies from wherever you are looking, at the real circular speed for that height around Mars, never below the height the terrain stays sharp from.',
   'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Gale, Jezero and Gusev are the craters Curiosity, Perseverance and Spirit landed in; the Gazetteer itself names no landing sites on Mars, so the labels give the craters’ names only.',

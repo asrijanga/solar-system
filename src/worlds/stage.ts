@@ -52,6 +52,11 @@ export interface Stage {
   readonly bodyToScene: readonly number[] | null;
   /** The world's controls; null for the harness's plain scenes. */
   readonly ui: WorldUi | null;
+  /**
+   * Per frame, before drawing, for what changes with where the camera is (Mars's moons as points
+   * of light, docs/stories/SS-14.md W8). On the frame path: it must allocate nothing.
+   */
+  readonly frame: ((camera: PerspectiveCamera, heightCssPx: number) => void) | null;
 }
 
 /** What building a stage needs from the app. */

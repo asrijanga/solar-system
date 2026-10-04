@@ -480,5 +480,11 @@ export function runMoonCheck(png: PNG, pixels: MoonPixels, check: BodyCheck): Ch
         fraction: pass ? 1 : 0,
       };
     }
+    case 'neighbour-brightness':
+    case 'neighbour-walls':
+    case 'black':
+      throw new Error(
+        `${check.name}: a check on a view of Mars's moons (tools/capture/neighbours.ts)`,
+      );
   }
 }

@@ -58,6 +58,24 @@ export interface BodySetup {
   readonly relief: boolean;
   /** Negative control only: east-west flipped normals. */
   readonly reliefFlipped: boolean;
+  /**
+   * Mars only (docs/stories/SS-14.md, W8): an instant of the timeline, ISO 8601 UTC, in place of
+   * `epoch`, for what the fixed epochs do not show (a lit crater on Phobos, an eclipse).
+   */
+  readonly utc: string | null;
+  /**
+   * Mars only (W8): look at one of its moons instead of at Mars, from `distanceKm` straight over
+   * the point at `lonDeg`, `latDeg` of the moon's own frame, Mars's north up
+   * (core/marsMoons.ts neighbourPose). `mirrored`, in a negative control only, draws the moon's
+   * shape mirrored east-west.
+   */
+  readonly neighbour: {
+    readonly moon: 'phobos' | 'deimos';
+    readonly lonDeg: number;
+    readonly latDeg: number;
+    readonly distanceKm: number;
+    readonly mirrored: boolean;
+  } | null;
 }
 
 /**
@@ -139,6 +157,36 @@ export type BodyCheck =
       readonly diameterKm: number;
       readonly inner: readonly [number, number];
       readonly brighter: 'west' | 'east';
+    }
+  | {
+      /**
+       * Mars's moon in view (W8): its drawn brightness, summed over the image's solid angle,
+       * against its scattering law summed over its shape's facets on the CPU
+       * (core/marsMoons.ts), from the same camera, within `tolerance` (a fraction).
+       */
+      readonly kind: 'neighbour-brightness';
+      readonly name: string;
+      readonly tolerance: number;
+    }
+  | {
+      /**
+       * Mars's moon in view (W8): a crater's sunward inner wall brighter than the opposite one,
+       * at the places the harness's own ray cast onto the moon's shape puts them: the bands
+       * between `inner` fractions of the radius east and west of the Gazetteer centre.
+       */
+      readonly kind: 'neighbour-walls';
+      readonly name: string;
+      readonly lonDeg: number;
+      readonly latDeg: number;
+      readonly diameterKm: number;
+      readonly inner: readonly [number, number];
+      readonly brighter: 'west' | 'east';
+    }
+  | {
+      /** Nothing in the frame brighter than `maxLevel` 8-bit levels (an eclipse). */
+      readonly kind: 'black';
+      readonly name: string;
+      readonly maxLevel: number;
     };
 
 /**
@@ -312,6 +360,8 @@ const MOON_SETUP: BodySetup = {
   earthshine: 'physical',
   relief: true,
   reliefFlipped: false,
+  utc: null,
+  neighbour: null,
 };
 
 /**
@@ -423,6 +473,44 @@ const MARS_DISC: BodySetup = {
   distanceKm: 40 * MARS_RADIUS_KM,
   fovDeg: 3.6,
   relief: false,
+};
+
+/** Phobos over Stickney (Gazetteer 1°N, 49°W) from 60 km: the moon spans about half the frame. */
+const PHOBOS_OVER_STICKNEY = {
+  moon: 'phobos',
+  lonDeg: -49,
+  latDeg: 1,
+  distanceKm: 60,
+  mirrored: false,
+} as const;
+
+/**
+ * A close view of one of Mars's moons (W8) at an instant when the Sun is 24° up over Stickney,
+ * in its west, and both moons are in sunlight (core/marsMoons.ts, scanned 2026-10-04).
+ */
+const PHOBOS_VIEW: BodySetup = {
+  ...MARS_DISC,
+  utc: '2026-01-26T08:00:00Z',
+  fovDeg: 30,
+  neighbour: PHOBOS_OVER_STICKNEY,
+};
+
+/** The owner's 2% (2026-10-04, the W8 spec): the drawn moon against its law. */
+const MOON_BRIGHTNESS: BodyCheck = {
+  kind: 'neighbour-brightness',
+  name: 'Phobos\u2019s summed brightness',
+  tolerance: 0.02,
+};
+
+/** Stickney, from the Phobos Gazetteer (public/data/mars/moons.json), 9 km across. */
+const STICKNEY_WALLS: BodyCheck = {
+  kind: 'neighbour-walls',
+  name: 'Stickney\u2019s sunward wall',
+  lonDeg: -49,
+  latDeg: 1,
+  diameterKm: 9,
+  inner: [0.35, 0.6],
+  brighter: 'east',
 };
 
 /**
@@ -987,6 +1075,65 @@ export const viewpoints: readonly Viewpoint[] = [
       MARS_DISC_MAGNITUDE,
       { kind: 'night', name: 'night side black', minDepthDeg: 1, minFraction: 0.99 },
     ],
+  },
+  {
+    ...SPACE,
+    id: 'mars-phobos',
+    description:
+      'Phobos from 60 km over Stickney (1\u00b0N 49\u00b0W, the Gazetteer) on 26 January 2026 at 08:00 UTC, the Sun 24\u00b0 up in Stickney\u2019s west: Willner et al.\u2019s shape lit by Fornasier et al.\u2019s law. Its summed brightness against the law over its facets, and Stickney\u2019s sunward (east) inner wall the brighter.',
+    scene: 'mars',
+    body: { ...PHOBOS_VIEW },
+    bodyChecks: [MOON_BRIGHTNESS, STICKNEY_WALLS],
+  },
+  {
+    ...SPACE,
+    id: 'mars-phobos-mirrored',
+    description:
+      'Negative control: the same view with Phobos\u2019s shape mirrored east-west. Stickney is then not at the Gazetteer\u2019s place, and the walls check must fail.',
+    scene: 'mars',
+    body: { ...PHOBOS_VIEW, neighbour: { ...PHOBOS_OVER_STICKNEY, mirrored: true } },
+    bodyChecks: [MOON_BRIGHTNESS, STICKNEY_WALLS],
+    negativeControl: true,
+  },
+  {
+    ...SPACE,
+    id: 'mars-deimos',
+    description:
+      'Deimos from 45 km over 0\u00b0N 120\u00b0W of its own frame on 26 January 2026 at 08:00 UTC, about 30\u00b0 from the Sun: Thomas\u2019s shape lit by Wargnier et al.\u2019s law, its summed brightness against the law over its facets.',
+    scene: 'mars',
+    body: {
+      ...PHOBOS_VIEW,
+      neighbour: { moon: 'deimos', lonDeg: -120, latDeg: 0, distanceKm: 45, mirrored: false },
+    },
+    bodyChecks: [{ ...MOON_BRIGHTNESS, name: 'Deimos\u2019s summed brightness' }],
+  },
+  {
+    ...SPACE,
+    id: 'mars-phobos-eclipse',
+    description:
+      'Phobos in Mars\u2019s shadow on 21 January 2026 at 02:52 UTC, nine minutes after SPICE puts it into the umbra, seen from 60 km on its side away from Mars: it must be black.',
+    scene: 'mars',
+    body: {
+      ...PHOBOS_VIEW,
+      utc: '2026-01-21T02:52:00Z',
+      neighbour: { moon: 'phobos', lonDeg: 180, latDeg: 0, distanceKm: 60, mirrored: false },
+    },
+    bodyChecks: [{ kind: 'black', name: 'Phobos eclipsed', maxLevel: 1 }],
+  },
+  {
+    ...SPACE,
+    id: 'mars-moons-from-orbit',
+    description:
+      'Mars, Phobos and Deimos from 60,000 km over 20\u00b0N 10\u00b0E on 26 January 2026, with the labels on. For eyes: each moon where SPICE puts it, a point of light at its true brightness.',
+    scene: 'mars',
+    body: {
+      ...MARS_DISC,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: 10, latDeg: 20 },
+      distanceKm: 60_000,
+      fovDeg: 60,
+      labels: true,
+    },
   },
   {
     ...SPACE,

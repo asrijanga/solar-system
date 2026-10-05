@@ -19,6 +19,7 @@ import {
   MeshBasicNodeMaterial,
   PlaneGeometry,
   Vector3,
+  type UniformNode,
 } from 'three/webgpu';
 import {
   acos,
@@ -71,7 +72,7 @@ import {
   type MoonsManifest,
 } from '../core/marsMoons';
 import { j2000ToScene, type Mat3Rows, type Vec3 } from '../core/moon';
-import { AU_KM, EXPOSURE } from '../core/photometry';
+import { AU_KM, EXPOSURE, physicalStarExposure } from '../core/photometry';
 import { fluxOfMagnitude, type StarField } from '../core/stars';
 import { siteUrl } from '../site';
 import { hapkeNode } from './hapkeNode';
@@ -85,6 +86,8 @@ const QUAD_RADIUS_SIGMAS = 3;
  */
 const POINT_FROM_PX = 3;
 const POINT_FULL_PX = 1;
+/** physicalStarExposure(Ω) · Ω: the stars' physical exposure for a pixel of one steradian. */
+const PHYSICAL_STAR_EXPOSURE_SR = physicalStarExposure(1);
 
 async function fetchOk(path: string): Promise<Response> {
   const response = await fetch(siteUrl(path));
@@ -256,6 +259,11 @@ interface PointSource {
   readonly sceneToBody: Matrix3;
   /** EXPOSURE / r² times the share of the Sun the moon's centre sees. */
   readonly scale: number;
+  /**
+   * The stars' exposure (scenes/stars.ts): its ratio to the physical one for this pixel is the
+   * labelled Stars boost, which the point takes too (owner, 2026-10-04).
+   */
+  readonly starExposure: UniformNode<'float', number>;
 }
 
 /**
@@ -264,7 +272,7 @@ interface PointSource {
  * for it: the moon's summed law for the camera's direction from its table (core/marsMoons.ts,
  * bilinear like lookupDisc, half floats over the table's maximum), divided by the distance
  * squared and a CSS pixel's solid angle, faded in as the drawn shape falls from POINT_FROM_PX to
- * POINT_FULL_PX across. Behind Mars it is hidden by the depth test.
+ * POINT_FULL_PX across, and lifted by the labelled Stars boost when it is on. Behind Mars it is hidden by the depth test.
  */
 function pointMesh(source: PointSource): Mesh {
   const { table } = source;
@@ -312,7 +320,12 @@ function pointMesh(source: PointSource): Mesh {
       0,
       1,
     );
-    integrated.assign(weight.mul(source.scale).mul(sum).div(dist.mul(dist)).div(perPx.mul(perPx)));
+    // The Stars boost: the stars' exposure over the physical one for this pixel's solid angle
+    // (core/photometry.ts physicalStarExposure), 1 unless the labelled boost is on.
+    const boost = source.starExposure.mul(perPx.mul(perPx)).div(PHYSICAL_STAR_EXPOSURE_SR);
+    integrated.assign(
+      weight.mul(source.scale).mul(boost).mul(sum).div(dist.mul(dist)).div(perPx.mul(perPx)),
+    );
     const clip = cameraProjectionMatrix.mul(cameraViewMatrix).mul(vec4(centre, 1));
     const offset = positionGeometry.xy
       .mul(sigma.mul(QUAD_RADIUS_SIGMAS * 2))
@@ -362,6 +375,8 @@ export function createMarsMoons(
   epoch: MarsEpoch,
   mars: MarsShape,
   data: MoonsData,
+  /** The stars' exposure: far moons' points take its labelled boost. */
+  starExposure: UniformNode<'float', number>,
   /** Negative control only: this moon's shape mirrored east-west. */
   mirrored: 'phobos' | 'deimos' | null = null,
 ): MarsMoons {
@@ -405,6 +420,7 @@ export function createMarsMoons(
         table: discTable(facetBins(shape), law, sunBody),
         sceneToBody,
         scale: (EXPOSURE / (r * r)) * lit,
+        starExposure,
       }),
     );
   }

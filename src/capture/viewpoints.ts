@@ -1137,6 +1137,21 @@ export const viewpoints: readonly Viewpoint[] = [
   },
   {
     ...SPACE,
+    id: 'mars-moons-boosted',
+    description:
+      'The same view as mars-moons-from-orbit with Stars \u00d7100,000 and no labels (owner, 2026-10-04: the boost lifts the moons\u2019 points too). For eyes: Phobos and Deimos as points beside Mars, among the boosted stars.',
+    scene: 'mars',
+    body: {
+      ...MARS_DISC,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: 10, latDeg: 20 },
+      distanceKm: 60_000,
+      fovDeg: 60,
+      stars: 'boosted',
+    },
+  },
+  {
+    ...SPACE,
     id: 'app',
     description:
       'What the interactive app shows on load: the first-quarter Moon from Earth, lunar north up, stars at physical exposure (so none show).',

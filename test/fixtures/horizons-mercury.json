@@ -1,0 +1,34 @@
+{
+  "source": "JPL Horizons API (https://ssd.jpl.nasa.gov/api/horizons.api)",
+  "retrieved": "2026-10-07",
+  "subSolarRequest": "COMMAND='199' CENTER='500@399' EPHEM_TYPE=OBSERVER QUANTITIES='15' ANG_FORMAT=DEG TIME_TYPE=UT, one epoch per query",
+  "subSolarFromSunRequest": "COMMAND='199' CENTER='500@10' (the Sun's centre) otherwise the same. Light time 3.3-3.9 min, in which Mercury turns about 0.015 deg: close to Mercury as it is at the instant, which is what the app draws. From Earth it is seen 5-10 min earlier",
+  "subSolarConvention": "Horizons header: 'Target pole/equ : IAU_MERCURY {West-longitude positive}'; 'Latitude is the angle between the equatorial plane and the line perpendicular to the reference ellipsoid of the body. The reference ellipsoid'; 'Target radii : 2440.53, 2440.53, 2438.26 km'",
+  "frameStatedByHorizons": "IAU_MERCURY",
+  "epochs": [
+    {
+      "id": "full-2026-01",
+      "utc": "2026-01-03 10:00",
+      "row": "2026-Jan-03 10:00:00.000     259.596879  -0.022382",
+      "subSolarWestLonDeg": 259.596879,
+      "subSolarPlanetodeticLatDeg": -0.022382,
+      "fromSun": {
+        "row": "2026-Jan-03 10:00:00.000     259.614941  -0.022389",
+        "subSolarWestLonDeg": 259.614941,
+        "subSolarPlanetodeticLatDeg": -0.022389
+      }
+    },
+    {
+      "id": "first-quarter-2026-01",
+      "utc": "2026-01-26 05:00",
+      "row": "2026-Jan-26 05:00:00.000     332.089509  -0.032419",
+      "subSolarWestLonDeg": 332.089509,
+      "subSolarPlanetodeticLatDeg": -0.032419,
+      "fromSun": {
+        "row": "2026-Jan-26 05:00:00.000     332.104461  -0.032415",
+        "subSolarWestLonDeg": 332.104461,
+        "subSolarPlanetodeticLatDeg": -0.032415
+      }
+    }
+  ]
+}

@@ -27,6 +27,7 @@
     "pipeline:test": "cd pipeline && uv run python -m unittest -v",
     "pipeline:ephemeris": "uv run --project pipeline python pipeline/ephemeris.py",
     "pipeline:ephemeris:mars": "uv run --project pipeline python pipeline/ephemeris_mars.py",
+    "pipeline:ephemeris:mercury": "uv run --project pipeline python pipeline/ephemeris_mercury.py",
     "pipeline:timeline": "uv run --project pipeline python pipeline/timeline.py",
     "pipeline:timeline:mars": "uv run --project pipeline python pipeline/timeline_mars.py",
     "pipeline:moons:mars": "uv run --project pipeline python pipeline/moons_mars.py",

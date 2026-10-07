@@ -22,7 +22,7 @@ Five bodies. Everything the terrain pipeline was designed for, and the entire ea
 | Earth | Seen from the Moon only: its real face at 2026-01-26 05:00 UTC (SS-13c); inventory started | Planet | 6,371 | Copernicus, Sentinel, GEBCO; Himawari-9 and GOES-18 for clouds |
 | Moon | Live: website and local mode, orbit mode, labels, Earth in the sky | Moon of Earth | 1,737 | LRO, LOLA, Clementine, Kaguya |
 | Mars | Page built (W1–W5, W7, W8; docs/stories/SS-14.md), W6 deferred | Planet | 3,390 | MOLA, HRSC, CTX, HiRISE |
-| Mercury | Inventory written (W1; docs/stories/SS-16.md, docs/data/mercury.md) | Planet | 2,440 | MESSENGER |
+| Mercury | W1–W2 (inventory, constants and ephemeris; docs/stories/SS-16.md) | Planet | 2,440 | MESSENGER |
 | Venus | Not started | Planet | 6,052 | Magellan radar |
 
 Venus is Tier 1 only by courtesy. Its imagery is excellent and its topography is 60 times coarser, so it needs a rendering approach of its own rather than the standard pipeline.

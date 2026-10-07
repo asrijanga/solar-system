@@ -145,6 +145,7 @@ jobs:
       - run: npm run pipeline:stars
       - run: npm run pipeline:ephemeris
       - run: npm run pipeline:ephemeris:mars
+      - run: npm run pipeline:ephemeris:mercury
       - run: npm run pipeline:timeline
       - run: npm run pipeline:timeline:mars
       # Phobos's and Deimos's shapes, and where they and the Moon are (docs/stories/SS-14.md, W8).
@@ -169,4 +170,4 @@ jobs:
       - run: npm run pipeline:mars:photometry
       # The Moon texture's 4.25 GB source is too large to fetch on every run; it is checked
       # against the IAU Gazetteer by pipeline:test instead, and rebuilt locally by pipeline:moon.
-      - run: git diff --exit-code -- public/data/stars public/data/moon/ephemeris.json public/data/moon/timeline.json public/data/moon/timeline.bin test/fixtures/moon-timeline-truth.json test/fixtures/mars-timeline-truth.json test/fixtures/mars-moons-truth.json public/data/mars public/data/moon/albedo.json public/data/moon/hapke.json public/data/moon/hapke.bin
+      - run: git diff --exit-code -- public/data/stars public/data/moon/ephemeris.json public/data/moon/timeline.json public/data/moon/timeline.bin test/fixtures/moon-timeline-truth.json test/fixtures/mars-timeline-truth.json test/fixtures/mars-moons-truth.json public/data/mars public/data/mercury public/data/moon/albedo.json public/data/moon/hapke.json public/data/moon/hapke.bin

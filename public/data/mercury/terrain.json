@@ -1,0 +1,117 @@
+{
+  "story": "docs/stories/SS-16.md (W4)",
+  "chosen": "owner, 2026-10-08: own data repo, levels 0-7; MLA north of 80 N, USGS DEM south of 70 N offset to MLA, linear blend between",
+  "sources": {
+    "dem": {
+      "url": "https://planetarydata.jpl.nasa.gov/img/data/messenger/MESSDEM_1001/DEM/GLOBAL/IMG/MSGR_DEM_USG_SC_I_V02.IMG",
+      "sha256": "b1bb587a9414ff542a74337866582eb7b1b16e325f90a6367116f9f4cc9cdf30",
+      "note": "USGS global DEM v2 (PDS MESSDEM_1001); publisher MD5 5365bd7c870710214c6a18dac1a28b0f matched at first retrieval"
+    },
+    "mla": {
+      "url": "https://pds-geosciences.wustl.edu/messenger/mess-e_v_h-mla-3_4-cdr_rdr-data-v1/messmla_2001/gdr/img/hdem_64.img",
+      "sha256": "38c9b9471eb6413b1dcc694aed9337441a5a3e8eab0ddb90cfaa6be3d1ecf9e9",
+      "note": "MLA gridded radius, version 2.0 (PDS messmla_2001); no publisher checksum, pinned at first retrieval 2026-10-08"
+    },
+    "counts": {
+      "url": "https://pds-geosciences.wustl.edu/messenger/mess-e_v_h-mla-3_4-cdr_rdr-data-v1/messmla_2001/gdr/img/hdec_64.img",
+      "sha256": "936312db8cdd0a36ff35d1092aa2eee55753dd11e834540b1576b65308931672",
+      "note": "MLA shots per hdem_64 pixel; no publisher checksum, pinned at first retrieval 2026-10-08"
+    }
+  },
+  "conventions": "heights in metres above the 2439.4 km sphere (both labels); planetocentric, east-positive; grid 64 px/deg, column 0 at 0 E, row 0 at 90 N, pixel-registered",
+  "offset": {
+    "model": "composite DEM = USGS DEM - offset; offset = median(DEM - MLA) at pixels holding laser shots, 70-80 N",
+    "offsetM": 34.5,
+    "shotPixels": 4988132
+  },
+  "registration": {
+    "model": "MLA resampled at (row + shift.row, col + shift.col) into the DEM frame (owner, 2026-10-08, \"Shift MLA to DEM frame\")",
+    "fit": "the shift minimising the spread of DEM(r - row, c - col) - MLA(r, c) at shot pixels on slopes over 60 m per pixel, 60-80 N, in quarter pixels to 1.5 px",
+    "pixels": 214540,
+    "shiftPx": {
+      "row": 0.75,
+      "col": -0.25,
+      "stdM": 352.74
+    },
+    "mlaRelativeToDemM": {
+      "north": -498.9,
+      "east": -166.3
+    },
+    "residualAfterShift": {
+      "row": 0.25,
+      "col": 0,
+      "stdM": 353.52
+    }
+  },
+  "blend": {
+    "mlaAloneNorthOfDeg": 80,
+    "demAloneSouthOfDeg": 70,
+    "weight": "linear in latitude"
+  },
+  "compositeAgainstMla": [
+    {
+      "latitudeDeg": "90 to 75",
+      "shotPixels": 6230867,
+      "medianM": -0.5,
+      "rmsM": 29.7
+    },
+    {
+      "latitudeDeg": "75 to 60",
+      "shotPixels": 5994605,
+      "medianM": 13.7,
+      "rmsM": 150.7
+    },
+    {
+      "latitudeDeg": "60 to 45",
+      "shotPixels": 3454402,
+      "medianM": 10.3,
+      "rmsM": 232.7
+    },
+    {
+      "latitudeDeg": "45 to 30",
+      "shotPixels": 1762409,
+      "medianM": -16.4,
+      "rmsM": 275.9
+    },
+    {
+      "latitudeDeg": "30 to 15",
+      "shotPixels": 780050,
+      "medianM": 28.2,
+      "rmsM": 310.3
+    },
+    {
+      "latitudeDeg": "15 to 0",
+      "shotPixels": 243088,
+      "medianM": 40,
+      "rmsM": 290.8
+    },
+    {
+      "latitudeDeg": "0 to -15",
+      "shotPixels": 41447,
+      "medianM": 49,
+      "rmsM": 228.1
+    },
+    {
+      "latitudeDeg": "-15 to -30",
+      "shotPixels": 153,
+      "medianM": 35,
+      "rmsM": 284.8
+    }
+  ],
+  "coverage": {
+    "USGS DEM, offset to MLA": 0.96985,
+    "blend": 0.02256,
+    "MLA": 0.0076,
+    "USGS DEM, MLA missing": 0
+  },
+  "source": {
+    "file": "terrain-source.png",
+    "codes": {
+      "0": "USGS DEM, offset to MLA",
+      "85": "blend",
+      "170": "MLA",
+      "255": "USGS DEM, MLA missing"
+    },
+    "sampling": "every 16th pixel: 4 px/deg, 1440 x 720, column 0 at 0 E"
+  }
+}

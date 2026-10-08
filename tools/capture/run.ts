@@ -198,6 +198,12 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  // In GitHub Actions, also as annotations, which can be read without the job log.
+  if (process.env['GITHUB_ACTIONS'] === 'true') {
+    for (const line of message.split('\n').slice(0, 8))
+      console.log(`::error::${line.slice(0, 400)}`);
+  }
   process.exit(1);
 });

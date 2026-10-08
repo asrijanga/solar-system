@@ -82,8 +82,12 @@ def lagrange(samples: np.ndarray, position: float) -> np.ndarray:
 
 
 def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
-    c = float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
-    return math.degrees(math.acos(max(-1.0, min(1.0, c))))
+    """The angle between two 3-vectors, as atan2(|a x b|, a . b) in float64. acos of their cosine
+    is ill-conditioned for the micro-degree errors measured here: one ulp in the cosine moved a
+    2e-6 deg result by 6% between CI runners (SS-16, main's pipeline job, 2026-10-08)."""
+    a = np.asarray(a, dtype=np.float64)
+    b = np.asarray(b, dtype=np.float64)
+    return math.degrees(math.atan2(float(np.linalg.norm(np.cross(a, b))), float(np.dot(a, b))))
 
 
 def build() -> dict:

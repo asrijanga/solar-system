@@ -1,0 +1,616 @@
+{
+  "story": "docs/stories/SS-16.md (W3)",
+  "chosen": "owner, 2026-10-08: MD3 colour; south of 40 S, MDR cross-calibrated, blended across 38-43 S",
+  "sources": {
+    "md3": {
+      "volume": "MSGRMDS_6001",
+      "product": "MDIS MD3 v2, 128 px/deg, 430/750/1000 nm",
+      "tiles": 45
+    },
+    "mdr": {
+      "volume": "MSGRMDS_5001",
+      "product": "MDIS MDR v4, 64 px/deg, bands 430/750/1000 nm of 8",
+      "tiles": 55
+    },
+    "pins": "pipeline/mercury_sources.json (PDS-published MD5 of every file, checked while streaming)",
+    "normalisation": "reflectance corrected to i = 30, e = 0, g = 30 deg, Kaasalainen-Shkuratov (MDIS_CDR_RDRSIS.PDF 2.4)"
+  },
+  "conventions": "equirectangular, planetocentric, east-positive, 2439.4 km sphere; column 0 = -180 deg, row 0 = +90 deg",
+  "tileGeometry": {
+    "edges": {
+      "worstEdgeOffsetPx": 0.0
+    },
+    "polarOrientation": [
+      {
+        "tile": "MDIS_MD3_128PPD_H01NP2",
+        "chosen": {
+          "orientation": [
+            1,
+            1,
+            false
+          ],
+          "correlation": 0.9459,
+          "pixels": 177278
+        },
+        "all": [
+          {
+            "orientation": [
+              1,
+              1,
+              false
+            ],
+            "correlation": 0.9459,
+            "pixels": 177278
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              false
+            ],
+            "correlation": -0.0822,
+            "pixels": 167296
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              false
+            ],
+            "correlation": 0.0112,
+            "pixels": 167471
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              false
+            ],
+            "correlation": -0.0348,
+            "pixels": 167091
+          },
+          {
+            "orientation": [
+              1,
+              1,
+              true
+            ],
+            "correlation": 0.129,
+            "pixels": 167761
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              true
+            ],
+            "correlation": -0.08,
+            "pixels": 167494
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              true
+            ],
+            "correlation": -0.0769,
+            "pixels": 167574
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              true
+            ],
+            "correlation": -0.0119,
+            "pixels": 167091
+          }
+        ]
+      },
+      {
+        "tile": "MDIS_MDR_064PPD_H01NP4",
+        "chosen": {
+          "orientation": [
+            1,
+            1,
+            false
+          ],
+          "correlation": 0.9409,
+          "pixels": 187397
+        },
+        "all": [
+          {
+            "orientation": [
+              1,
+              1,
+              false
+            ],
+            "correlation": 0.9409,
+            "pixels": 187397
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              false
+            ],
+            "correlation": -0.0394,
+            "pixels": 186981
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              false
+            ],
+            "correlation": 0.0395,
+            "pixels": 186981
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              false
+            ],
+            "correlation": -0.0113,
+            "pixels": 186981
+          },
+          {
+            "orientation": [
+              1,
+              1,
+              true
+            ],
+            "correlation": 0.1235,
+            "pixels": 186987
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              true
+            ],
+            "correlation": -0.0337,
+            "pixels": 186981
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              true
+            ],
+            "correlation": -0.0345,
+            "pixels": 186981
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              true
+            ],
+            "correlation": 0.0363,
+            "pixels": 186981
+          }
+        ]
+      },
+      {
+        "tile": "MDIS_MDR_064PPD_2700_H15SP4",
+        "chosen": {
+          "orientation": [
+            1,
+            1,
+            false
+          ],
+          "correlation": 0.9403,
+          "pixels": 182271
+        },
+        "all": [
+          {
+            "orientation": [
+              1,
+              1,
+              false
+            ],
+            "correlation": 0.9403,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              false
+            ],
+            "correlation": -0.0766,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              false
+            ],
+            "correlation": 0.0796,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              false
+            ],
+            "correlation": 0.0411,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              1,
+              1,
+              true
+            ],
+            "correlation": 0.0492,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              true
+            ],
+            "correlation": -0.1048,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              true
+            ],
+            "correlation": -0.0726,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              true
+            ],
+            "correlation": 0.0346,
+            "pixels": 182271
+          }
+        ]
+      },
+      {
+        "tile": "MDIS_MDR_064PPD_H15SP4",
+        "chosen": {
+          "orientation": [
+            1,
+            1,
+            false
+          ],
+          "correlation": 0.8883,
+          "pixels": 182271
+        },
+        "all": [
+          {
+            "orientation": [
+              1,
+              1,
+              false
+            ],
+            "correlation": 0.8883,
+            "pixels": 182271
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              false
+            ],
+            "correlation": -0.0392,
+            "pixels": 182269
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              false
+            ],
+            "correlation": 0.1051,
+            "pixels": 182269
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              false
+            ],
+            "correlation": 0.0311,
+            "pixels": 182269
+          },
+          {
+            "orientation": [
+              1,
+              1,
+              true
+            ],
+            "correlation": 0.019,
+            "pixels": 182269
+          },
+          {
+            "orientation": [
+              1,
+              -1,
+              true
+            ],
+            "correlation": -0.0874,
+            "pixels": 182269
+          },
+          {
+            "orientation": [
+              -1,
+              1,
+              true
+            ],
+            "correlation": -0.069,
+            "pixels": 182269
+          },
+          {
+            "orientation": [
+              -1,
+              -1,
+              true
+            ],
+            "correlation": 0.001,
+            "pixels": 182269
+          }
+        ]
+      }
+    ]
+  },
+  "pixelsPlaced": {
+    "md3": {
+      "MDIS_MD3_128PPD_H01NP2": 4110406,
+      "MDIS_MD3_128PPD_H02NE2": 443247,
+      "MDIS_MD3_128PPD_H02NW2": 467555,
+      "MDIS_MD3_128PPD_H02SE2": 470725,
+      "MDIS_MD3_128PPD_H02SW2": 491361,
+      "MDIS_MD3_128PPD_H03NE2": 443551,
+      "MDIS_MD3_128PPD_H03NW2": 471288,
+      "MDIS_MD3_128PPD_H03SE2": 493885,
+      "MDIS_MD3_128PPD_H03SW2": 494592,
+      "MDIS_MD3_128PPD_H04NE2": 471835,
+      "MDIS_MD3_128PPD_H04NW2": 425750,
+      "MDIS_MD3_128PPD_H04SE2": 494592,
+      "MDIS_MD3_128PPD_H04SW2": 487169,
+      "MDIS_MD3_128PPD_H05NE2": 471425,
+      "MDIS_MD3_128PPD_H05NW2": 471329,
+      "MDIS_MD3_128PPD_H05SE2": 493982,
+      "MDIS_MD3_128PPD_H05SW2": 494517,
+      "MDIS_MD3_128PPD_H06NE2": 407722,
+      "MDIS_MD3_128PPD_H06NW2": 385338,
+      "MDIS_MD3_128PPD_H06SE2": 413027,
+      "MDIS_MD3_128PPD_H06SW2": 406769,
+      "MDIS_MD3_128PPD_H07NE2": 419008,
+      "MDIS_MD3_128PPD_H07NW2": 419310,
+      "MDIS_MD3_128PPD_H07SE2": 346625,
+      "MDIS_MD3_128PPD_H07SW2": 406302,
+      "MDIS_MD3_128PPD_H08NE2": 419002,
+      "MDIS_MD3_128PPD_H08NW2": 418816,
+      "MDIS_MD3_128PPD_H08SE2": 400637,
+      "MDIS_MD3_128PPD_H08SW2": 306318,
+      "MDIS_MD3_128PPD_H09NE2": 418816,
+      "MDIS_MD3_128PPD_H09NW2": 418673,
+      "MDIS_MD3_128PPD_H09SE2": 418816,
+      "MDIS_MD3_128PPD_H09SW2": 419328,
+      "MDIS_MD3_128PPD_H10NE2": 419328,
+      "MDIS_MD3_128PPD_H10NW2": 419328,
+      "MDIS_MD3_128PPD_H10SE2": 419328,
+      "MDIS_MD3_128PPD_H10SW2": 419328,
+      "MDIS_MD3_128PPD_H11NE2": 389981,
+      "MDIS_MD3_128PPD_H11NW2": 47678,
+      "MDIS_MD3_128PPD_H12NE2": 35603,
+      "MDIS_MD3_128PPD_H12NW2": 174109,
+      "MDIS_MD3_128PPD_H13NE2": 19649,
+      "MDIS_MD3_128PPD_H13NW2": 180905,
+      "MDIS_MD3_128PPD_H14NE2": 169788,
+      "MDIS_MD3_128PPD_H14NW2": 276735
+    },
+    "mdr": {
+      "MDIS_MDR_064PPD_H01NP4": 3766198,
+      "MDIS_MDR_064PPD_H02NE4": 472130,
+      "MDIS_MDR_064PPD_H02NW4": 472133,
+      "MDIS_MDR_064PPD_H02SE4": 494592,
+      "MDIS_MDR_064PPD_H02SW4": 493721,
+      "MDIS_MDR_064PPD_H03NE4": 471275,
+      "MDIS_MDR_064PPD_H03NW4": 471312,
+      "MDIS_MDR_064PPD_H03SE4": 494505,
+      "MDIS_MDR_064PPD_H03SW4": 494592,
+      "MDIS_MDR_064PPD_H04NE4": 472133,
+      "MDIS_MDR_064PPD_H04NW4": 472048,
+      "MDIS_MDR_064PPD_H04SE4": 494366,
+      "MDIS_MDR_064PPD_H04SW4": 494592,
+      "MDIS_MDR_064PPD_H05NE4": 472122,
+      "MDIS_MDR_064PPD_H05NW4": 471684,
+      "MDIS_MDR_064PPD_H05SE4": 494541,
+      "MDIS_MDR_064PPD_H05SW4": 494351,
+      "MDIS_MDR_064PPD_H06NE4": 419285,
+      "MDIS_MDR_064PPD_H06NW4": 419328,
+      "MDIS_MDR_064PPD_H06SE4": 419328,
+      "MDIS_MDR_064PPD_H06SW4": 419328,
+      "MDIS_MDR_064PPD_H07NE4": 419840,
+      "MDIS_MDR_064PPD_H07NW4": 419328,
+      "MDIS_MDR_064PPD_H07SE4": 419840,
+      "MDIS_MDR_064PPD_H07SW4": 419328,
+      "MDIS_MDR_064PPD_H08NE4": 419328,
+      "MDIS_MDR_064PPD_H08NW4": 419328,
+      "MDIS_MDR_064PPD_H08SE4": 419328,
+      "MDIS_MDR_064PPD_H08SW4": 419328,
+      "MDIS_MDR_064PPD_H09NE4": 419328,
+      "MDIS_MDR_064PPD_H09NW4": 419840,
+      "MDIS_MDR_064PPD_H09SE4": 419328,
+      "MDIS_MDR_064PPD_H09SW4": 419840,
+      "MDIS_MDR_064PPD_H10NE4": 419328,
+      "MDIS_MDR_064PPD_H10NW4": 419328,
+      "MDIS_MDR_064PPD_H10SE4": 419328,
+      "MDIS_MDR_064PPD_H10SW4": 419328,
+      "MDIS_MDR_064PPD_H11NE4": 495616,
+      "MDIS_MDR_064PPD_H11NW4": 495616,
+      "MDIS_MDR_064PPD_H11SE4": 494592,
+      "MDIS_MDR_064PPD_H11SW4": 487925,
+      "MDIS_MDR_064PPD_H12NE4": 495616,
+      "MDIS_MDR_064PPD_H12NW4": 495616,
+      "MDIS_MDR_064PPD_H12SE4": 494592,
+      "MDIS_MDR_064PPD_H12SW4": 494592,
+      "MDIS_MDR_064PPD_H13NE4": 495616,
+      "MDIS_MDR_064PPD_H13NW4": 495616,
+      "MDIS_MDR_064PPD_H13SE4": 494592,
+      "MDIS_MDR_064PPD_H13SW4": 494592,
+      "MDIS_MDR_064PPD_H14NE4": 495616,
+      "MDIS_MDR_064PPD_H14NW4": 495616,
+      "MDIS_MDR_064PPD_H14SE4": 494592,
+      "MDIS_MDR_064PPD_H14SW4": 494592,
+      "MDIS_MDR_064PPD_H15SP4": 3568228,
+      "MDIS_MDR_064PPD_2700_H15SP4": 572948
+    }
+  },
+  "usgsAgreement": {
+    "source": "https://planetarymaps.usgs.gov/mosaic/Mercury_MESSENGER_MDIS_Basemap_MD3Color_Mosaic_Global_665m.tif",
+    "sampling": "every 16th USGS row, 16-column means: 4 px/deg, 45 N to 40 S; cells holding a value clipped by USGS's 8-bit stretch (1 or 255) left out",
+    "cellsCompared": 400424,
+    "correlation": 0.9697,
+    "correlationBy15DegreeBand": {
+      "90 to 75": 0.3792,
+      "75 to 60": 0.7799,
+      "60 to 45": 0.9028,
+      "45 to 30": 0.955,
+      "30 to 15": 0.967,
+      "15 to 0": 0.9784,
+      "0 to -15": 0.9788,
+      "-15 to -30": 0.9714,
+      "-30 to -45": 0.955
+    },
+    "mirroredEastWest": 0.0119,
+    "shifted1DegEast": 0.6871
+  },
+  "md3AgainstMdr": {
+    "band": "750 nm, 4 px/deg",
+    "correlationBy15DegreeBand": {
+      "90 to 75": 0.8531,
+      "75 to 60": 0.9576,
+      "60 to 45": 0.9722,
+      "45 to 30": 0.9882,
+      "30 to 15": 0.9832,
+      "15 to 0": 0.9913,
+      "0 to -15": 0.9906,
+      "-15 to -30": 0.9811,
+      "-30 to -45": 0.9795
+    }
+  },
+  "calibration": {
+    "latitudeBandDeg": [
+      -37.0,
+      -20.0
+    ],
+    "model": "MD3 = gain x MDR, least squares through the origin, per band",
+    "bands": [
+      {
+        "nm": 430,
+        "gainMd3OverMdr": 1.0054,
+        "medianRatio": 1.0041,
+        "correlation": 0.9579,
+        "rmsRelativeResidual": 0.0582,
+        "gainBy5DegreeStrip": [
+          1.0043,
+          1.0037,
+          1.0062,
+          1.0078
+        ],
+        "pixels": 1581930
+      },
+      {
+        "nm": 750,
+        "gainMd3OverMdr": 1.0078,
+        "medianRatio": 1.0075,
+        "correlation": 0.9547,
+        "rmsRelativeResidual": 0.0458,
+        "gainBy5DegreeStrip": [
+          1.0052,
+          1.0068,
+          1.0083,
+          1.0107
+        ],
+        "pixels": 1581930
+      },
+      {
+        "nm": 1000,
+        "gainMd3OverMdr": 1.0079,
+        "medianRatio": 1.0078,
+        "correlation": 0.952,
+        "rmsRelativeResidual": 0.0418,
+        "gainBy5DegreeStrip": [
+          1.0046,
+          1.0084,
+          1.0084,
+          1.0085
+        ],
+        "pixels": 1581930
+      }
+    ]
+  },
+  "blend": {
+    "md3AloneNorthOfDeg": -38.0,
+    "mdrAloneSouthOfDeg": -43.0,
+    "weight": "smoothstep in latitude; where only one product measured, that one"
+  },
+  "coverage": {
+    "md3": 0.72305,
+    "mdr": 0.27353,
+    "blend": 0.00128,
+    "gap": 0.00215
+  },
+  "texture": {
+    "file": "albedo.webp",
+    "width": 8192,
+    "height": 4096,
+    "values": "reflectance at 750 nm (i = 30, e = 0, g = 30), byte = 255 sqrt(R / 0.37); 0 = not measured",
+    "encoding": {
+      "curve": "sqrt",
+      "maxReflectance": 0.37
+    },
+    "bytes": 12427236,
+    "sha256": "abd72aabc81331d8e5038f185330af97eab299116157e71cf6499f5ac6dc0c87",
+    "median750": 0.0704
+  },
+  "colour": {
+    "file": "albedo-colour.png",
+    "width": 2048,
+    "height": 1024,
+    "bandsNm": [
+      430,
+      750,
+      1000
+    ],
+    "channels": "red = R(1000)/R(750), green = R(430)/R(750), each byte linear over its range; blue unused",
+    "ranges": {
+      "1000/750": [
+        1.082,
+        1.355
+      ],
+      "430/750": [
+        0.394,
+        0.687
+      ]
+    },
+    "sha256": "dde2aa8271fc10a1b383817c474ebe2c2b6c519c71696d0fe4722643b879c669"
+  },
+  "source": {
+    "file": "albedo-source.png",
+    "codes": {
+      "0": "gap",
+      "85": "MD3",
+      "170": "MDR, calibrated",
+      "255": "blend"
+    },
+    "sha256": "a9abed1bdeb162cd14652432fa8e33cac86ede3000bf40479c9678aaa7406186"
+  }
+}

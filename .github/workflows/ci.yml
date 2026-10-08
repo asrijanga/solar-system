@@ -170,4 +170,12 @@ jobs:
       - run: npm run pipeline:mars:photometry
       # The Moon texture's 4.25 GB source is too large to fetch on every run; it is checked
       # against the IAU Gazetteer by pipeline:test instead, and rebuilt locally by pipeline:moon.
-      - run: git diff --exit-code -- public/data/stars public/data/moon/ephemeris.json public/data/moon/timeline.json public/data/moon/timeline.bin test/fixtures/moon-timeline-truth.json test/fixtures/mars-timeline-truth.json test/fixtures/mars-moons-truth.json public/data/mars public/data/mercury public/data/moon/albedo.json public/data/moon/hapke.json public/data/moon/hapke.bin
+      # Any difference is also reported as annotations (file names, then the first changed lines),
+      # which can be read without the job log.
+      - run: |
+          paths="public/data/stars public/data/moon/ephemeris.json public/data/moon/timeline.json public/data/moon/timeline.bin test/fixtures/moon-timeline-truth.json test/fixtures/mars-timeline-truth.json test/fixtures/mars-moons-truth.json public/data/mars public/data/mercury public/data/moon/albedo.json public/data/moon/hapke.json public/data/moon/hapke.bin"
+          if ! git diff --exit-code -- $paths; then
+            git diff --stat -- $paths | head -5 | while read -r line; do echo "::error::differs: $line"; done
+            git diff --unified=0 --no-color -- $paths | grep -E '^[-+][^-+]' | head -4 | cut -c1-300 | while read -r line; do echo "::error::$line"; done
+            exit 1
+          fi

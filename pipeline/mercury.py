@@ -60,7 +60,9 @@ BANDS_NM = (430, 750, 1000)
 BLEND_NORTH, BLEND_SOUTH = -38.0, -43.0
 # Where MD3 and MDR are both compared for the calibration: MD3's southern tiles, clear of the blend.
 CALIBRATION_BAND = (-37.0, -20.0)
-MAX_BYTES = 6_500_000
+# The albedo file's cap. Lossy WebP smeared the plains into blocks even at q95, as on Mars; lossless
+# at 8192 x 4096 is 12.4 MB (owner, 2026-10-08, "Lossless 8192, 12.4 MB", docs/stories/ss16-albedo-encoding.png).
+MAX_BYTES = 13_000_000
 
 
 def grid() -> tuple[np.ndarray, np.ndarray]:
@@ -146,7 +148,7 @@ def polar_orientation(kind: str, entry: dict, others: list[dict]) -> dict:
     lat, lon = grid()
     meta = tiles.reduce_tile(kind, entry)["meta"]
     north = meta["centerLatitude"] > 0
-    band = (lat > 55) & (lat < 64) if north else (lat < -55) & (lat > -64)
+    band = (lat > 60) & (lat < 66) if north else (lat < -60) & (lat > -66)
     la, lo = np.meshgrid(lat[band], lon, indexing="ij")
     # The neighbours' 750 nm band over the overlap, from the equirectangular tiles only.
     reference = np.full(la.shape, np.nan)
@@ -165,7 +167,7 @@ def polar_orientation(kind: str, entry: dict, others: list[dict]) -> dict:
         scores.append({"orientation": list(o), "correlation": round(r, 4), "pixels": int(ok.sum())})
     best = max(scores, key=lambda s: -1 if math.isnan(s["correlation"]) else s["correlation"])
     others_r = sorted((s["correlation"] for s in scores if s is not best and not math.isnan(s["correlation"])), reverse=True)
-    if best["correlation"] < 0.8 or (others_r and others_r[0] > best["correlation"] - 0.3):
+    if not best["correlation"] >= 0.8 or (others_r and others_r[0] > best["correlation"] - 0.3):
         raise ValueError(f"{entry['path']}: no clear polar orientation: {scores}")
     return {"tile": Path(entry["path"]).name, "chosen": best, "all": scores}
 
@@ -218,6 +220,19 @@ def calibrate(md3: np.ndarray, mdr: np.ndarray) -> dict:
     return {"latitudeBandDeg": list(CALIBRATION_BAND), "model": "MD3 = gain x MDR, least squares through the origin, per band", "bands": fits}
 
 
+def products_agreement(md3: np.ndarray, mdr: np.ndarray) -> dict:
+    """MD3 against MDR at 750 nm, 4 px/deg, by 15-degree band: two independently assembled PDS
+    products, so a region where they disagree would show a problem in either."""
+    a, b = bin_mean(md3[1].astype(np.float64), 720, 1440), bin_mean(mdr[1].astype(np.float64), 720, 1440)
+    lat = 90 - (np.arange(720) + 0.5) / 4
+    out = {}
+    for top in range(90, -45, -15):
+        ok = ((lat <= top) & (lat > top - 15))[:, None] & np.isfinite(a) & np.isfinite(b)
+        if ok.sum() > 100:
+            out[f"{top} to {top - 15}"] = round(float(np.corrcoef(a[ok], b[ok])[0, 1]), 4)
+    return {"band": "750 nm, 4 px/deg", "correlationBy15DegreeBand": out}
+
+
 def combine(md3: np.ndarray, mdr: np.ndarray, fit: dict) -> tuple[np.ndarray, np.ndarray]:
     lat, _ = grid()
     gains = np.array([f["gainMd3OverMdr"] for f in fit["bands"]])[:, None, None]
@@ -240,37 +255,69 @@ def block_mean(a: np.ndarray, k: int) -> np.ndarray:
         return np.nanmean(a[..., : h * k, : w * k].reshape(a.shape[:-2] + (h, k, w, k)), axis=(-3, -1))
 
 
+def bin_mean(a: np.ndarray, rows: int, cols: int) -> np.ndarray:
+    """Mean of every grid pixel whose centre falls in each of rows x cols equal cells (NaN ignored)."""
+    r = (np.arange(a.shape[0]) * rows) // a.shape[0]
+    c = (np.arange(a.shape[1]) * cols) // a.shape[1]
+    ok = np.isfinite(a)
+    total = np.zeros((rows, cols))
+    count = np.zeros((rows, cols))
+    np.add.at(total, (r[:, None], c[None, :]), np.where(ok, a, 0))
+    np.add.at(count, (r[:, None], c[None, :]), ok)
+    with np.errstate(invalid="ignore"):
+        return np.where(count > 0, total / np.maximum(count, 1), np.nan)
+
+
+# North of 45 N USGS's copy disagrees with both PDS products, which agree with each other
+# (SS-16 W3: by 15-degree band, USGS against MD3 0.38 and 0.78 above 60 N, MD3 against MDR 0.85 and
+# 0.96), so the test is applied south of it; every band is still recorded.
+USGS_NORTH_LIMIT = 45.0
 USGS_MD3 = "https://planetarymaps.usgs.gov/mosaic/Mercury_MESSENGER_MDIS_Basemap_MD3Color_Mosaic_Global_665m.tif"
 
 
 def usgs_agreement(r750: np.ndarray) -> dict:
     """Ours against USGS's own mosaic of the same MD3 tiles (an independent assembly: its 8-bit
     stretch of about 0 to 0.2, 64 px/deg, Simple Cylindrical centred on 0). Every 16th row, columns
-    averaged in 16s, so 4 px/deg. Also against ours mirrored east-west and shifted by 1 deg, which
+    averaged in 16s, so 4 px/deg. USGS's stretch clips much of the far north (a third of the pixels
+    at 85 N read 1, and a sixth 255), and it fills MD3's gaps; neither is compared. Also against ours mirrored east-west and shifted by 1 deg, which
     must agree less: the check can see a mirrored or misplaced map."""
     import rasterio
     from rasterio.windows import Window
 
-    rows = []
-    with rasterio.open("/vsicurl/" + USGS_MD3) as d:
-        for r in range(8, d.height, 16):
-            a = d.read(2, window=Window(0, r, d.width, 1)).astype(np.float64)[0]
-            a[a == 0] = np.nan
-            with np.errstate(invalid="ignore"):
-                rows.append(np.nanmean(a.reshape(-1, 16), axis=1))
-    usgs = np.array(rows)  # 720 x 1440, 750 nm band (green)
-    ours = block_mean(r750.astype(np.float64), WIDTH // 1440)[: usgs.shape[0]]
+    cache = tiles.TILE_CACHE / "usgs_md3_750_4ppd_unclipped.npy"
+    if cache.exists():
+        usgs = np.load(cache)
+    else:
+        rows = []
+        with rasterio.open("/vsicurl/" + USGS_MD3) as d:
+            for r in range(8, d.height, 16):
+                raw = d.read(2, window=Window(0, r, d.width, 1))[0]
+                a = raw.astype(np.float64)
+                a[raw == 0] = np.nan
+                with np.errstate(invalid="ignore"):
+                    mean = np.nanmean(a.reshape(-1, 16), axis=1)
+                # A cell holding a value clipped by the 8-bit stretch (1 or 255) is not a measurement.
+                clipped = ((raw == 1) | (raw == 255)).reshape(-1, 16).any(axis=1)
+                rows.append(np.where(clipped, np.nan, mean))
+        usgs = np.array(rows)  # 720 x 1440, 750 nm band (green)
+        np.save(cache, usgs)
+    ours = bin_mean(r750.astype(np.float64), *usgs.shape)
     lat = 90 - (np.arange(usgs.shape[0]) + 0.5) * 180 / usgs.shape[0]
-    region = (lat > -40)[:, None] & np.isfinite(usgs) & np.isfinite(ours)
+    whole = (lat > -40)[:, None] & np.isfinite(usgs) & np.isfinite(ours)
+    region = whole & ((lat > -40) & (lat < USGS_NORTH_LIMIT))[:, None]
 
-    def corr(o: np.ndarray) -> float:
-        ok = region & np.isfinite(o)
+    def corr(o: np.ndarray, rows: np.ndarray | None = None) -> float:
+        ok = (whole if rows is not None else region) & np.isfinite(o)
+        if rows is not None:
+            ok &= rows[:, None]
         return round(float(np.corrcoef(o[ok], usgs[ok])[0, 1]), 4)
 
     result = {
         "source": USGS_MD3,
-        "sampling": "every 16th USGS row, 16-column means: 4 px/deg, north of 40 S (MD3's own area)",
+        "sampling": "every 16th USGS row, 16-column means: 4 px/deg, 45 N to 40 S; cells holding a value clipped by USGS's 8-bit stretch (1 or 255) left out",
+        "cellsCompared": int(region.sum()),
         "correlation": corr(ours),
+        "correlationBy15DegreeBand": {f"{a} to {a - 15}": corr(ours, (lat <= a) & (lat > a - 15)) for a in range(90, -40, -15)},
         "mirroredEastWest": corr(ours[:, ::-1]),
         "shifted1DegEast": corr(np.roll(ours, 4, axis=1)),
     }
@@ -296,10 +343,11 @@ def build() -> dict:
     mdr, mdr_count = place("mdr", src["mdr"], orientations)
     agreement = usgs_agreement(md3[1])
     fit = calibrate(md3, mdr)
+    products = products_agreement(md3, mdr)
     albedo, source = combine(md3, mdr, fit)
     r750 = albedo[1]
     measured = np.isfinite(r750)
-    max_reflectance = float(np.ceil(np.nanpercentile(r750, 99.99) * 100) / 100)
+    max_reflectance = round(float(np.ceil(np.nanpercentile(r750.astype(np.float64), 99.99) * 100) / 100), 2)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     master = np.where(measured, np.clip(np.rint(255 * np.sqrt(np.clip(r750, 0, max_reflectance) / max_reflectance)), 1, 255), 0).astype(np.uint8)
     buf = io.BytesIO()
@@ -340,6 +388,7 @@ def build() -> dict:
         "tileGeometry": {"edges": edges, "polarOrientation": records},
         "pixelsPlaced": {"md3": md3_count, "mdr": mdr_count},
         "usgsAgreement": agreement,
+        "md3AgainstMdr": products,
         "calibration": fit,
         "blend": {"md3AloneNorthOfDeg": BLEND_NORTH, "mdrAloneSouthOfDeg": BLEND_SOUTH, "weight": "smoothstep in latitude; where only one product measured, that one"},
         "coverage": {"md3": share(1), "mdr": share(2), "blend": share(3), "gap": share(0)},
@@ -370,7 +419,7 @@ def build() -> dict:
 
 if __name__ == "__main__":
     m = build()
-    print(json.dumps({k: m[k] for k in ("coverage", "usgsAgreement", "calibration")}, indent=1))
+    print(json.dumps({k: m[k] for k in ("coverage", "usgsAgreement", "md3AgainstMdr", "calibration")}, indent=1))
     for r in m["tileGeometry"]["polarOrientation"]:
         print(r["tile"], r["chosen"])
     print("texture", m["texture"]["bytes"], "bytes; median 750", m["texture"]["median750"])

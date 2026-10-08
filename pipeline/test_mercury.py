@@ -43,11 +43,10 @@ class MercuryAlbedo(unittest.TestCase):
     def test_gaps_are_where_the_source_map_says(self) -> None:
         a = np.array(Image.open(DATA / MANIFEST["texture"]["file"]).convert("L"))
         source = np.array(Image.open(DATA / MANIFEST["source"]["file"]).convert("L"))
-        s = MANIFEST["colour"]["width"] // source.shape[1] or 1
         small_gap = source == 0
         k = a.shape[1] // source.shape[1]
         sampled = a[k // 2 :: k, k // 2 :: k][: source.shape[0], : source.shape[1]] == 0
-        self.assertGreater(float((sampled == small_gap).mean()), 0.99, s)
+        self.assertGreater(float((sampled == small_gap).mean()), 0.99)
 
     def test_the_pipeline_checks_passed(self) -> None:
         u = MANIFEST["usgsAgreement"]

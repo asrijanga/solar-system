@@ -1,0 +1,508 @@
+{
+ "note": "MESSENGER MDIS map tiles used for Mercury's albedo (docs/stories/SS-16.md W3). MD5s as published by PDS Imaging in each volume's <VOLUME>_md5.txt, retrieved 2026-10-08.",
+ "base": "https://pds-imaging.jpl.nasa.gov/data/messenger/",
+ "md3": [
+  {
+   "path": "MSGRMDS_6001/MD3/H01/MDIS_MD3_128PPD_H01NP2",
+   "imgMd5": "cc8fee7af793b6efc28820c2abda58cd",
+   "lblMd5": "f30e41a3819ad7aa01f5b50f02c7d9b2"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H02/MDIS_MD3_128PPD_H02NE2",
+   "imgMd5": "15f46aeabd8831c8f6909b82e6266b56",
+   "lblMd5": "4a77029574e2299427dbcb00a620e713"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H02/MDIS_MD3_128PPD_H02NW2",
+   "imgMd5": "4e64f13c2c0e7567a046bffd6f49b56f",
+   "lblMd5": "3702cecbdc7c7b35e6b0d9a5ba82cb4d"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H02/MDIS_MD3_128PPD_H02SE2",
+   "imgMd5": "8fe18123d4c71da99dcb121c3ed3881a",
+   "lblMd5": "1bda08ac16d90587b6e1a374c63d7fdf"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H02/MDIS_MD3_128PPD_H02SW2",
+   "imgMd5": "6ad88cbcd1d031ea961e387be3ac2e35",
+   "lblMd5": "bc64f0800d892e62530c533ce5556108"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H03/MDIS_MD3_128PPD_H03NE2",
+   "imgMd5": "2fd235cf86ebd03869585eb8584aa3f8",
+   "lblMd5": "0c68c9d272400a3736742a09494c9de3"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H03/MDIS_MD3_128PPD_H03NW2",
+   "imgMd5": "88c7624c3520ab87c49ea595c26a337e",
+   "lblMd5": "67af3bd3e0414b5bf85530a5a20301f8"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H03/MDIS_MD3_128PPD_H03SE2",
+   "imgMd5": "12e3ce0ecfb9aa6a8bee2bd2d606d753",
+   "lblMd5": "2bcab13114f357010a177f34d4b4004a"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H03/MDIS_MD3_128PPD_H03SW2",
+   "imgMd5": "b555c6757f0c9f735b6a4db789ada8aa",
+   "lblMd5": "0d807e5e28cf75ffa981052bb1c2c9ca"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H04/MDIS_MD3_128PPD_H04NE2",
+   "imgMd5": "6accc7e2396a3e15293b4b4115d427e9",
+   "lblMd5": "68773455603bffd3b13b4cbef7b9784d"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H04/MDIS_MD3_128PPD_H04NW2",
+   "imgMd5": "6af3a90ec15cf56f506d837d4e77856a",
+   "lblMd5": "8038bad92fd18914eed1b035f844ed90"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H04/MDIS_MD3_128PPD_H04SE2",
+   "imgMd5": "317cb762610a019467d16fdbfaf47b7d",
+   "lblMd5": "d7ca6c91bf77b483935dc41a16d40b63"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H04/MDIS_MD3_128PPD_H04SW2",
+   "imgMd5": "f663c1f2324ec737bbf24dda90dc563c",
+   "lblMd5": "c55ace6557fcc57fe8f17c90a54cfa26"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H05/MDIS_MD3_128PPD_H05NE2",
+   "imgMd5": "1d0688bd014d4082a496a48de0a9b9fe",
+   "lblMd5": "75412d652ea56ff7d3af97a454047d3f"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H05/MDIS_MD3_128PPD_H05NW2",
+   "imgMd5": "a05f81c2bf2eac31a1d3185f8042df93",
+   "lblMd5": "18439e3f40e32cd89eee758396ddb675"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H05/MDIS_MD3_128PPD_H05SE2",
+   "imgMd5": "119deb339c2b11c8cd795e71e0cabb77",
+   "lblMd5": "e059964cfdafdf25c383b91be4415810"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H05/MDIS_MD3_128PPD_H05SW2",
+   "imgMd5": "7cece64f9427cb120b0e8aa60768c72c",
+   "lblMd5": "0c31ee972827106cc62f9e735ddc8086"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H06/MDIS_MD3_128PPD_H06NE2",
+   "imgMd5": "f9a61024d694af2da6f16f7112800b6c",
+   "lblMd5": "cc7d83c3c3d07c35e106f038d549307e"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H06/MDIS_MD3_128PPD_H06NW2",
+   "imgMd5": "0076494dfd0930903429b1a70fb5973e",
+   "lblMd5": "c57c01a0681362c3e856e3f75e89c621"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H06/MDIS_MD3_128PPD_H06SE2",
+   "imgMd5": "4f980fe1c4a5c4c8aa95d729f20ded62",
+   "lblMd5": "2b69ceb0624cedf4e3f5730689ba2950"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H06/MDIS_MD3_128PPD_H06SW2",
+   "imgMd5": "53e46894e3d8da8fb72cb212c120178f",
+   "lblMd5": "9d25226486bdcf195580b062a56783f4"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H07/MDIS_MD3_128PPD_H07NE2",
+   "imgMd5": "d2e0c45aedd23a01a37654be3e58e445",
+   "lblMd5": "1cae64521201ec080de7d7295bcaf285"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H07/MDIS_MD3_128PPD_H07NW2",
+   "imgMd5": "38d8f99e11f64306f7d6cc8abd63a5df",
+   "lblMd5": "c0cf305084559889404a1da1cdaf508b"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H07/MDIS_MD3_128PPD_H07SE2",
+   "imgMd5": "1e300cff7c4b5da34b535c7e20087e6a",
+   "lblMd5": "120975d8afbff5242f5cfb27b383a687"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H07/MDIS_MD3_128PPD_H07SW2",
+   "imgMd5": "bc2f725916792c9ba684e08ac4ca9616",
+   "lblMd5": "870553910429c085450a110e2bf686cc"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H08/MDIS_MD3_128PPD_H08NE2",
+   "imgMd5": "c9bc42fcd9ca2ba4f1bb7451085714a1",
+   "lblMd5": "ae362709def930453d707d0831e356a6"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H08/MDIS_MD3_128PPD_H08NW2",
+   "imgMd5": "62e3e0254eea3ee1e73eae03c7611336",
+   "lblMd5": "b82ac9f5fe0a11937b7ecc35877b86dc"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H08/MDIS_MD3_128PPD_H08SE2",
+   "imgMd5": "020330f97c4722e66767d30e33c538b4",
+   "lblMd5": "9465a964c5efff91ca773d0a5e18916e"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H08/MDIS_MD3_128PPD_H08SW2",
+   "imgMd5": "e298fd97d7a7722efdc1e3295393ff7f",
+   "lblMd5": "65540a87fab1fea97a22c0225dd6ddcb"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H09/MDIS_MD3_128PPD_H09NE2",
+   "imgMd5": "ff9c4ab9c863114d7244c0b1c30c6f0f",
+   "lblMd5": "e8fb1802fe5a559686becafcea10de02"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H09/MDIS_MD3_128PPD_H09NW2",
+   "imgMd5": "c40a7e62f30e0420edc619c2eed7c8f0",
+   "lblMd5": "69abd08d97dbf353ad0e20f121211e91"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H09/MDIS_MD3_128PPD_H09SE2",
+   "imgMd5": "56fa229b2134b565b8b95882bb22d766",
+   "lblMd5": "3dafcacd64bc87974bd071767efe51cb"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H09/MDIS_MD3_128PPD_H09SW2",
+   "imgMd5": "98b461396054f6548a40e60d006c5988",
+   "lblMd5": "6965ff368f65a3d472433cedd9eeb41c"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H10/MDIS_MD3_128PPD_H10NE2",
+   "imgMd5": "ec7b526985a6603b16a9b893d011f6fd",
+   "lblMd5": "35138c5c2ddc84335758009db2ea4bf9"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H10/MDIS_MD3_128PPD_H10NW2",
+   "imgMd5": "dd3d2d3605c29f58d07c97065609096d",
+   "lblMd5": "9062cee6e8ee18ff8ed1d081558cd6f5"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H10/MDIS_MD3_128PPD_H10SE2",
+   "imgMd5": "47ac2e47468b4831df31827955333249",
+   "lblMd5": "a85b077dbda3c45fd5a084a53c56f43d"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H10/MDIS_MD3_128PPD_H10SW2",
+   "imgMd5": "af2787d2980c883891adc4f14f1520b9",
+   "lblMd5": "b9c274596d80c8873a40dd92eba44321"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H11/MDIS_MD3_128PPD_H11NE2",
+   "imgMd5": "39c13da296fdd9752f66368c01ef08ce",
+   "lblMd5": "5b2085716f6693750e4d79853b57087e"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H11/MDIS_MD3_128PPD_H11NW2",
+   "imgMd5": "b822749a5a668f5d535dd73efb627c14",
+   "lblMd5": "37c6a024a1af1e874d12b2dc7e5d2aa3"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H12/MDIS_MD3_128PPD_H12NE2",
+   "imgMd5": "690ce3c2a6693aad18725dd591b8d13d",
+   "lblMd5": "45fe69b11d296fc00e347a24d843dc4e"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H12/MDIS_MD3_128PPD_H12NW2",
+   "imgMd5": "afe0a7611c01fe234302e5f2d58252f7",
+   "lblMd5": "e57fd2c20a7fd6d59d9f1edf25fa05a9"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H13/MDIS_MD3_128PPD_H13NE2",
+   "imgMd5": "b0994b765559af10cf5d1fe3ee0da085",
+   "lblMd5": "ecb1d1787a46232811b3bde70b95a09a"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H13/MDIS_MD3_128PPD_H13NW2",
+   "imgMd5": "ad0d3cd0727466d2ac28138eff3bb8eb",
+   "lblMd5": "dff3569fe6061bed7a5632f2766cf240"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H14/MDIS_MD3_128PPD_H14NE2",
+   "imgMd5": "b96b0ff9eabeee47a641711c547f801c",
+   "lblMd5": "5d97e6078804e4b78ea4c46adc1a2360"
+  },
+  {
+   "path": "MSGRMDS_6001/MD3/H14/MDIS_MD3_128PPD_H14NW2",
+   "imgMd5": "6acaa50530acf6089fcd10a403c80f3d",
+   "lblMd5": "09bf35ec8018c48ac09cfccbc9b75bf0"
+  }
+ ],
+ "mdr": [
+  {
+   "path": "MSGRMDS_5001/MDR/H01/MDIS_MDR_064PPD_H01NP4",
+   "imgMd5": "2aba6c3f9e55dcce10d3e15acfdac001",
+   "lblMd5": "9e79b7308625eb6d60d77d6514e3a3f6"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H02/MDIS_MDR_064PPD_H02NE4",
+   "imgMd5": "174ab5ea259563ccd8236320ce87eda1",
+   "lblMd5": "8c9e96631b71264836eaac076bea5d5d"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H02/MDIS_MDR_064PPD_H02NW4",
+   "imgMd5": "39c0867c0794556242d0b13862116884",
+   "lblMd5": "501fb1ac74675b810eda7829bf12463a"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H02/MDIS_MDR_064PPD_H02SE4",
+   "imgMd5": "2971567179260c1517bac5dd75dafeb1",
+   "lblMd5": "b1a497d488981bdc49dbbbff2b5486cf"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H02/MDIS_MDR_064PPD_H02SW4",
+   "imgMd5": "e94822e5596bd7ac0d81591dc1427820",
+   "lblMd5": "58eb79214a9d27cc18e3496ff4134ce4"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H03/MDIS_MDR_064PPD_H03NE4",
+   "imgMd5": "9ccc59ca1317d49cf27668f05512053c",
+   "lblMd5": "f512641402eaaeb63f1b55e1c360106a"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H03/MDIS_MDR_064PPD_H03NW4",
+   "imgMd5": "7ae546f988d09f31fb2b27bf1d7b88cc",
+   "lblMd5": "4dc72ad60f236a6d0aa0fcb3465dd438"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H03/MDIS_MDR_064PPD_H03SE4",
+   "imgMd5": "a8d7287cf4ff6b56f28a7781a590b4ae",
+   "lblMd5": "54bdc12dcffc64e4ec1b39b2b4e82120"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H03/MDIS_MDR_064PPD_H03SW4",
+   "imgMd5": "d269a2cf66abb8b79a1fa79db9e34789",
+   "lblMd5": "3277090602b9ccb95749f9dca3206903"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H04/MDIS_MDR_064PPD_H04NE4",
+   "imgMd5": "f17db629252e6fc15ee1d156fa6e5a53",
+   "lblMd5": "ffda7c30deebfc5aeb597f1a6b93d396"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H04/MDIS_MDR_064PPD_H04NW4",
+   "imgMd5": "7754da0dcc00bbc5d30702e98f1bfbd7",
+   "lblMd5": "772a79b2716f1a55e22122182e897b22"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H04/MDIS_MDR_064PPD_H04SE4",
+   "imgMd5": "0173aaec13eb143a9bd8684a0112e948",
+   "lblMd5": "8a065bd864525bb373674693ca0342f6"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H04/MDIS_MDR_064PPD_H04SW4",
+   "imgMd5": "123949f34dd78c9dc95651c86136ef4d",
+   "lblMd5": "d7bf6696029191a20b53f3f094cd37f4"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H05/MDIS_MDR_064PPD_H05NE4",
+   "imgMd5": "f2d9959cd5e6a992f27515eefc3a88c3",
+   "lblMd5": "383690eac6408863fbea4f390a9440dc"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H05/MDIS_MDR_064PPD_H05NW4",
+   "imgMd5": "815a5a7bed6fc47b047e2bba6485791d",
+   "lblMd5": "2e8ae0cefdbe39127237f751dca062ca"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H05/MDIS_MDR_064PPD_H05SE4",
+   "imgMd5": "07448ca213c311cc9e016d5c01c5fb76",
+   "lblMd5": "ef975da21236a12255a7a5fdc4c477b1"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H05/MDIS_MDR_064PPD_H05SW4",
+   "imgMd5": "73a34747c1b3daca436c0ecb1f697fbc",
+   "lblMd5": "27ffc87e72e40e14f23a8828ff85b4d0"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H06/MDIS_MDR_064PPD_H06NE4",
+   "imgMd5": "612b43e8a5b89750257e5e5337e04a8e",
+   "lblMd5": "a9a1b1c45c3caa42848b9432f230ca84"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H06/MDIS_MDR_064PPD_H06NW4",
+   "imgMd5": "873364d021f9d46099846c8ca0f57198",
+   "lblMd5": "e2af65bcbafb3d7dc147e6827cc334c0"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H06/MDIS_MDR_064PPD_H06SE4",
+   "imgMd5": "5c45f0cea63c67bb0b945d256f3a4f4d",
+   "lblMd5": "fd5ade74292c6ffc07323fcb46df5d6d"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H06/MDIS_MDR_064PPD_H06SW4",
+   "imgMd5": "a5d646a193a3da2c2314c00aea529bf1",
+   "lblMd5": "a450e1076383663eff516d44fa8a0aec"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H07/MDIS_MDR_064PPD_H07NE4",
+   "imgMd5": "ecffc781e730ca7335b8c42060f98ead",
+   "lblMd5": "ab9de71e96535a43b7e73df43c326654"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H07/MDIS_MDR_064PPD_H07NW4",
+   "imgMd5": "cbcfb63ee8b8b4681908c41fe9020ef4",
+   "lblMd5": "a6c056ebccb871eb4d78b251793a658e"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H07/MDIS_MDR_064PPD_H07SE4",
+   "imgMd5": "36dca11a5ce61495bd4a571913cb7201",
+   "lblMd5": "2df7bfc749540b0b3df1196989de7feb"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H07/MDIS_MDR_064PPD_H07SW4",
+   "imgMd5": "d0bf3e2aee59ec55bf0031dd479bb022",
+   "lblMd5": "7f85f98899fcd9c2e617eea69a4ebb74"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H08/MDIS_MDR_064PPD_H08NE4",
+   "imgMd5": "2d3752b74c4f6e55c0aef0ab4254ab6a",
+   "lblMd5": "9b41113fccb50a6a47ee9561b9c85371"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H08/MDIS_MDR_064PPD_H08NW4",
+   "imgMd5": "d3211b8e61722e09fc805965d50dcae5",
+   "lblMd5": "ca22e5441c06599aa47b6c80f309aca8"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H08/MDIS_MDR_064PPD_H08SE4",
+   "imgMd5": "8f71046a71320c01e42a4c1e4d92dc2a",
+   "lblMd5": "1b0639fa36330d818e071208f7169d59"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H08/MDIS_MDR_064PPD_H08SW4",
+   "imgMd5": "ada95be7b00fdf06af5972cd2fdd78ec",
+   "lblMd5": "1a14253833712b99e6c8c36210c5d31a"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H09/MDIS_MDR_064PPD_H09NE4",
+   "imgMd5": "fed8fad469019dc6aaf185ebc252f188",
+   "lblMd5": "0b351abcb509c03732a1f1d649609f09"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H09/MDIS_MDR_064PPD_H09NW4",
+   "imgMd5": "2be83e59a7024c047eb787b559e21be9",
+   "lblMd5": "5b4aee92cb5f69fc00f957afcf38c248"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H09/MDIS_MDR_064PPD_H09SE4",
+   "imgMd5": "c910bcad59f2ccd544133b4700f8b8f2",
+   "lblMd5": "44b13a20e248de14c498bacc543b25b0"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H09/MDIS_MDR_064PPD_H09SW4",
+   "imgMd5": "b016d8f6b34b7a59ae4a8529e3c45af2",
+   "lblMd5": "06a40f1714c6f034308fc3d3521701e2"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H10/MDIS_MDR_064PPD_H10NE4",
+   "imgMd5": "8a5b43a1e4fff1c744282b0cd62411fd",
+   "lblMd5": "1d7a4a304e9be71eed028bf8d01453c7"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H10/MDIS_MDR_064PPD_H10NW4",
+   "imgMd5": "182097b37746ac4562b33c5ffd6cc65d",
+   "lblMd5": "eb0f48bae94605225952306441ba2f61"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H10/MDIS_MDR_064PPD_H10SE4",
+   "imgMd5": "d97cf8f6aff24346cc000da028d6c685",
+   "lblMd5": "119451a79778546eae969e9e45fb0c80"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H10/MDIS_MDR_064PPD_H10SW4",
+   "imgMd5": "6a70e74c4fbe014fb71775ab27fd3245",
+   "lblMd5": "1acd4939a415d27b2be1e4df1af9e38d"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H11/MDIS_MDR_064PPD_H11NE4",
+   "imgMd5": "cb1ed6474f32b30265b28a874ec4d0c4",
+   "lblMd5": "0905bea9531ee1e1c4bc1901f27d09d2"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H11/MDIS_MDR_064PPD_H11NW4",
+   "imgMd5": "26f4275930ca2253f8d84a922d35c7e9",
+   "lblMd5": "38110fea6ce1ccfbdf51550d21376d5a"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H11/MDIS_MDR_064PPD_H11SE4",
+   "imgMd5": "9806640f790066fdf302be988e093e86",
+   "lblMd5": "f50410f7c87d6e4862583d302a4d7fab"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H11/MDIS_MDR_064PPD_H11SW4",
+   "imgMd5": "d1f0928e2aeeff5e54cd74d0929970d9",
+   "lblMd5": "e466065b06ea2a8b8927291e639dfd0d"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H12/MDIS_MDR_064PPD_H12NE4",
+   "imgMd5": "86cbb3b3c2aa11afc8a9ed4b2518e86b",
+   "lblMd5": "c26d1cf5872a02ec5114e28bc7990004"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H12/MDIS_MDR_064PPD_H12NW4",
+   "imgMd5": "00a4a7d6b74f780b9734078032444939",
+   "lblMd5": "8651094bb878227a2237c98f250a5d46"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H12/MDIS_MDR_064PPD_H12SE4",
+   "imgMd5": "f674d55698e79fc68a7746cc9e36ca5b",
+   "lblMd5": "0e7edd357833d80309ad5770f26e1b96"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H12/MDIS_MDR_064PPD_H12SW4",
+   "imgMd5": "83e976f95c5d46d895af64c253cd9f1d",
+   "lblMd5": "5f90afa0a24dc062c5ec14af80af85d9"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H13/MDIS_MDR_064PPD_H13NE4",
+   "imgMd5": "dbdf29ea7e10efde1ffdda6f5c7b1516",
+   "lblMd5": "79ba876c16d2d56ccbe68629530d1132"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H13/MDIS_MDR_064PPD_H13NW4",
+   "imgMd5": "43ac5e02be1aae433afec2a243f57141",
+   "lblMd5": "905647e22c5ade83904d096804732b7c"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H13/MDIS_MDR_064PPD_H13SE4",
+   "imgMd5": "539a0411441dee9f20dfd7d8d879e821",
+   "lblMd5": "33bd1c4ccc05a279349f9c3af36e749c"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H13/MDIS_MDR_064PPD_H13SW4",
+   "imgMd5": "af4aac77c25a60d4daed3d411b1884c1",
+   "lblMd5": "1f4ec840a2bd37ae4832a8471f32e506"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H14/MDIS_MDR_064PPD_H14NE4",
+   "imgMd5": "70d95d64e1302db9d5120981160ededd",
+   "lblMd5": "724794cb6d9b18029f1a17ac6b9c9437"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H14/MDIS_MDR_064PPD_H14NW4",
+   "imgMd5": "838b9f27ce6a39c3911f4f12008afcea",
+   "lblMd5": "d64df0b02683dd8ec27771972f9c6242"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H14/MDIS_MDR_064PPD_H14SE4",
+   "imgMd5": "d36dd77047446c40dbe8535cbfee24a2",
+   "lblMd5": "bcc3383767644061b7a8d69ca909376d"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H14/MDIS_MDR_064PPD_H14SW4",
+   "imgMd5": "d329a63ccb20dc02b6a8c65d92d8216f",
+   "lblMd5": "afdbe827c62206f4e9b06fc42d708a83"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H15/MDIS_MDR_064PPD_2700_H15SP4",
+   "imgMd5": "7523d8f5ccd4e72b3b938b4ca64e5c5b",
+   "lblMd5": "cdbbd1596af46b951f67b05c59f72d03"
+  },
+  {
+   "path": "MSGRMDS_5001/MDR/H15/MDIS_MDR_064PPD_H15SP4",
+   "imgMd5": "abe58d1c99852b020b6ecce17a8d4ec5",
+   "lblMd5": "bdc40d7e6f8e11ae85ca8a85b1fe2063"
+  }
+ ]
+}

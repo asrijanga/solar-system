@@ -39,6 +39,7 @@
     "pipeline:earth": "uv run --project pipeline python pipeline/earth.py",
     "pipeline:moon": "uv run --project pipeline python pipeline/moon.py",
     "pipeline:mars": "uv run --project pipeline python pipeline/mars.py",
+    "pipeline:mercury": "uv run --project pipeline python pipeline/mercury.py",
     "pipeline:mars:terrain": "uv run --project pipeline python pipeline/mars_terrain.py",
     "pipeline:mars:tiles": "node tools/terrain/mars.ts",
     "pipeline:mars:photometry": "node tools/data/marsPhotometry.ts",

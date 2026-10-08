@@ -1,0 +1,75 @@
+# Mercury's terrain site (docs/stories/SS-16.md, W4): the data repository's own GitHub Pages,
+# with its own 1 GB, serving the quantized-mesh tiles the app streams. Copied into the data
+# repository as .github/workflows/pages.yml from tools/terrain/mercury-data/ of the app
+# repository.
+#
+# The tiles are built from the app repository at the commit named in SOURCE, so a deploy is
+# reproducible and changes only when SOURCE does. No secret crosses repositories: the app
+# repository is public.
+name: Build and deploy Mercury terrain
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: data
+      - id: source
+        run: echo "ref=$(tr -d '[:space:]' < data/SOURCE)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          repository: asrijanga/solar-system
+          ref: ${{ steps.source.outputs.ref }}
+          path: app
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: app/.nvmrc
+      - run: npm ci
+        working-directory: app
+      # The USGS DEM and MLA's grids, 1.2 GB; the tool re-verifies each file's SHA-256 either way.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            app/pipeline/.cache/mercury-dem-usgs-v2.img
+            app/pipeline/.cache/mercury-mla-hdem_64.img
+            app/pipeline/.cache/mercury-mla-hdec_64.img
+          key: mercury-terrain-sources-${{ hashFiles('app/tools/terrain/mercury.ts') }}
+          restore-keys: mercury-terrain-sources-
+      - run: npm run pipeline:mercury:tiles -- "$GITHUB_WORKSPACE/site/terrain"
+        working-directory: app
+      # The build must reproduce the committed manifest and provenance exactly.
+      - run: git diff --exit-code -- public/data/mercury/terrain.json public/data/mercury/terrain-source.png
+        working-directory: app
+      - run: |
+          cp data/README.md site/
+          cp app/public/data/mercury/terrain.json app/public/data/mercury/terrain-source.png site/terrain/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

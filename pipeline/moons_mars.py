@@ -473,7 +473,9 @@ def build() -> dict:
                     "phobosJ2000Km": position("PHOBOS", t).tolist(),
                     "deimosJ2000Km": position("DEIMOS", t).tolist(),
                     "moonOffsetJ2000Km": moon_offset(t).tolist(),
-                    "moonDiscKm2": moon_from_mars(disc, t),
+                    # 10 significant figures: numpy's vectorised exp/log/pow differ by an ulp
+                    # between CPUs, so the full float64 is not reproducible across CI runners.
+                    "moonDiscKm2": float(f"{moon_from_mars(disc, t):.10g}"),
                     "j2000ToPhobos": [list(r) for r in spice.pxform("J2000", "IAU_PHOBOS", t)],
                     "j2000ToDeimos": [list(r) for r in spice.pxform("J2000", "IAU_DEIMOS", t)],
                 }

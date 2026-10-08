@@ -19,8 +19,8 @@ The owner's rule of 2026-09-25: gather every available dataset first, then build
 
 | Products | Reference sphere | Source |
 | --- | --- | --- |
-| USGS DEM; every MDIS map (BDR, LOI, MDR, MD3) | 2439.4 km | GeoTIFF headers, PDS3 labels |
-| MLA gridded data | 2440.0 km | its label: "OFFSET = 2440000." |
+| USGS DEM; every MDIS map (BDR, LOI, MDR, MD3); MLA `hdem_64` | 2439.4 km | GeoTIFF headers, PDS3 labels (`hdem_64.lbl`: "OFFSET = 2439400"; corrected 2026-10-08, SS-16 W4) |
+| Some MLA gridded products | 2440.0 km | their labels: "OFFSET = 2440000." |
 | pck00011 | 2440.53 × 2438.26 km | `BODY199_RADII` |
 
 - **Longitude:** every product read is planetocentric, east-positive.
@@ -34,9 +34,9 @@ The owner's rule of 2026-09-25: gather every available dataset first, then build
 
 | Dataset | Status | What was established |
 | --- | --- | --- |
-| USGS global DEM v2, 665 m (64 px/°), `Mercury_Messenger_USGS_DEM_Global_665m_v2.tif` (planetarymaps.usgs.gov, 531 MB). The same in PDS `MESSDEM_1001/DEM/GLOBAL/IMG/MSGR_DEM_USG_SC_I_V02.IMG`, MD5 `5365bd7c870710214c6a18dac1a28b0f` (`MESSDEM_1001_md5.txt`) | **to use** (W4): the global base | Reachable. 23,040 × 11,520 int16, metres from the 2439.4 km sphere, no-data −32768 (GeoTIFF header). Equirectangular, planetocentric, east-positive, 0–360°. Stereo from 100,432 NAC and WAC-G images, "12, 596, 336 control points" (USGS page, after Becker et al. 2016, LPSC 47 #2959). Every MDIS map was projected onto it. The USGS page gives no vertical accuracy. Errata: version 1 was a preliminary DEM released by mistake; version 2 applies "a 1-sigma filter applied to the point cloud". USGS-hosted copies publish no checksum; the PDS copy has the MD5 |
+| USGS global DEM v2, 665 m (64 px/°), `Mercury_Messenger_USGS_DEM_Global_665m_v2.tif` (planetarymaps.usgs.gov, 531 MB). The same in PDS `MESSDEM_1001/DEM/GLOBAL/IMG/MSGR_DEM_USG_SC_I_V02.IMG`, MD5 `5365bd7c870710214c6a18dac1a28b0f` (`MESSDEM_1001_md5.txt`) | **used** (W4): the global base south of 70° N, lowered 34.5 m to MLA. The PDS copy stores DN × 0.5 m. Every pixel is interpolated from 12.6 million control points (`MSGR_DEM_SIS.PDF` §4.3.2.5) | Reachable. 23,040 × 11,520 int16, metres from the 2439.4 km sphere, no-data −32768 (GeoTIFF header). Equirectangular, planetocentric, east-positive, 0–360°. Stereo from 100,432 NAC and WAC-G images, "12, 596, 336 control points" (USGS page, after Becker et al. 2016, LPSC 47 #2959). Every MDIS map was projected onto it. The USGS page gives no vertical accuracy. Errata: version 1 was a preliminary DEM released by mistake; version 2 applies "a 1-sigma filter applied to the point cloud". USGS-hosted copies publish no checksum; the PDS copy has the MD5 |
 | USGS polar DEMs v2, `MSGR_DEM_USG_NP_I_V02.IMG` and `_SP_` (PDS `MESSDEM_1001`, MD5s published) | to evaluate (W4) | Reachable. Made "independently … using the same technique as the Version 2 global DEM" (errata) |
-| MLA gridded topography, version 1: `hdem_64` and `hdem_16` (global grids), `hdem_45n_{1000,500,250}m` (north of 45° N), plus counts (`hdec_*`) (PDS Geosciences `mess-e_v_h-mla-3_4-cdr_rdr-data-v1/messmla_2001/gdr/img/`) | to evaluate (W4): the laser reference | Reachable. MLA ranged mostly over the northern hemisphere: MESSENGER's eccentric orbit put its low point in the north. Label: radius = DN × 0.5 m + 2,440,000 m, "POLAR STEREOGRAPHIC", planetocentric, east-positive |
+| MLA gridded topography, version 1: `hdem_64` and `hdem_16` (global grids), `hdem_45n_{1000,500,250}m` (north of 45° N), plus counts (`hdec_*`) (PDS Geosciences `mess-e_v_h-mla-3_4-cdr_rdr-data-v1/messmla_2001/gdr/img/`) | **used** (W4): `hdem_64` north of 80° N and in the 70–80° N blend, resampled 0.75 px north and 0.25 px east into the DEM's frame; the laser reference for the DEM's offset. Version 2.0's label gives 2439.4 km | Reachable. MLA ranged mostly over the northern hemisphere: MESSENGER's eccentric orbit put its low point in the north. Label: radius = DN × 0.5 m + 2,440,000 m, "POLAR STEREOGRAPHIC", planetocentric, east-positive |
 | MLA version 2: `hdem_75n_250m` (`messmla_2101/gdr/img/`) | to evaluate (W4) | Reachable. North of 75° N at 250 m. The only gridded product in version 2 |
 | MESSENGER shape and gravity harmonics, `ggmes_100v08_shb` (PDS `mess-h-rss_mla-5-sdp-v1/messrs_1001/data/shbdr/`) | to evaluate (W4): the geoid, if heights are given above it | Reachable. Degree 100 |
 | Ernst et al. / Preusker et al. regional stereo DEMs (MESSENGER H-quadrangle DTMs) | to evaluate | Not looked for yet |

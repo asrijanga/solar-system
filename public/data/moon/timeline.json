@@ -35,10 +35,10 @@
   "measuredWorstError": {
     "moments": 2000,
     "seed": 2026,
-    "sunDeg": 2.41e-06,
+    "sunDeg": 2.56e-06,
     "earthDeg": 0.000335,
     "earthKm": 0.341,
-    "rotationDeg": 5.98e-06
+    "rotationDeg": 6.03e-06
   },
   "timeScales": {
     "note": "The samples are at whole UTC hours. The app turns its clock (UTC) into TDB by adding the span's constant offset at the first sample; there is no leap second in the span as of naif0012.tls, whose last entry is 37 s from 2017-01-01. Should one be announced, re-run this pipeline with the new leap-second kernel.",

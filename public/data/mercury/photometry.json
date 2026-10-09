@@ -1,0 +1,275 @@
+{
+ "story": "docs/stories/SS-16.md (W7)",
+ "law": {
+  "form": "Hapke (core/hapke.ts): double Henyey-Greenstein with a shadow-hiding opposition surge",
+  "w": 0.26982,
+  "b": 0.24162,
+  "c": 0.55795,
+  "bs0": 2.16265,
+  "hs": 0.05042,
+  "thetaBarDeg": 18.774
+ },
+ "normalisation": {
+  "incidenceDeg": 30,
+  "emissionDeg": 0,
+  "phaseDeg": 30,
+  "why": "MDIS maps are \"reflectance corrected to i = 30º, e = 0º, g = 30º\" (MDIS_CDR_RDRSIS.PDF §2.4): I/F at that geometry"
+ },
+ "fittedTo": {
+  "source": "Mallama & Hilton (2018), \"Computing apparent planetary magnitudes for The Astronomical Almanac\", Astronomy and Computing 25, doi:10.1016/j.ascom.2018.08.002, arXiv:1808.01973, Eq. 2",
+  "formula": "V = 5 log10(r d) - 0.613 + 6.3280E-02 a - 1.6336E-03 a^2 + 3.3644E-05 a^3 - 3.4265E-07 a^4 + 1.6893E-09 a^5 - 3.0334E-12 a^6, 2.1 < a < 169.5 deg",
+  "coefficients": [
+   -0.613,
+   0.06328,
+   -0.0016336,
+   0.000033644,
+   -3.4265e-7,
+   1.6893e-9,
+   -3.0334e-12
+  ],
+  "validFromDeg": 2.1,
+  "validToDeg": 169.5
+ },
+ "albedoAreaMean": 0.07188,
+ "measuredShareOfSurface": 0.99927,
+ "shapeRmsMag": 0.0043,
+ "calibration": [
+  {
+   "nm": 430,
+   "band": "Johnson B",
+   "target": 0.11268,
+   "built": 0.12051,
+   "factor": 0.93505
+  },
+  {
+   "nm": 750,
+   "band": "Sloan i'",
+   "target": 0.21463,
+   "built": 0.1982,
+   "factor": 1.08287
+  },
+  {
+   "nm": 1000,
+   "band": "Sloan z'",
+   "target": 0.25433,
+   "built": 0.23775,
+   "factor": 1.06974
+  }
+ ],
+ "calibrationSource": "Mallama, Krobusek & Pavlov (2017), Icarus 282, 19, arXiv:1609.05048, Table 7: ratios to their V albedo 0.142; level from Eq. 2",
+ "luminance": {
+  "weights": [
+   0.6058,
+   0.3942,
+   0
+  ],
+  "drawnGeometricAlbedo": 0.15287,
+  "table7V": 0.142,
+  "eq2ExtrapolatedTo0Deg": 0.13319,
+  "why": "CIE Y of the drawn colour (Rec. 709 luminance of linear sRGB) matched to Eq. 2's V on average over the fitted phases, where Eq. 2 was observed; Eq. 2 is not used below 2.1 deg"
+ },
+ "curve": [
+  {
+   "alphaDeg": 2.1,
+   "built": -0.5401,
+   "mallamaHilton": -0.487
+  },
+  {
+   "alphaDeg": 10,
+   "built": -0.0991,
+   "mallamaHilton": -0.1132
+  },
+  {
+   "alphaDeg": 20,
+   "built": 0.2146,
+   "mallamaHilton": 0.2187
+  },
+  {
+   "alphaDeg": 30,
+   "built": 0.4791,
+   "mallamaHilton": 0.4848
+  },
+  {
+   "alphaDeg": 40,
+   "built": 0.7431,
+   "mallamaHilton": 0.741
+  },
+  {
+   "alphaDeg": 50,
+   "built": 1.0179,
+   "mallamaHilton": 1.0114
+  },
+  {
+   "alphaDeg": 60,
+   "built": 1.3052,
+   "mallamaHilton": 1.3013
+  },
+  {
+   "alphaDeg": 70,
+   "built": 1.605,
+   "mallamaHilton": 1.6072
+  },
+  {
+   "alphaDeg": 80,
+   "built": 1.9195,
+   "mallamaHilton": 1.9255
+  },
+  {
+   "alphaDeg": 90,
+   "built": 2.2544,
+   "mallamaHilton": 2.2583
+  },
+  {
+   "alphaDeg": 100,
+   "built": 2.6191,
+   "mallamaHilton": 2.6176
+  },
+  {
+   "alphaDeg": 110,
+   "built": 3.0314,
+   "mallamaHilton": 3.0265
+  },
+  {
+   "alphaDeg": 120,
+   "built": 3.5206,
+   "mallamaHilton": 3.5192
+  },
+  {
+   "alphaDeg": 130,
+   "built": 4.1276,
+   "mallamaHilton": 4.138
+  },
+  {
+   "alphaDeg": 140,
+   "built": 4.9149,
+   "mallamaHilton": 4.9289
+  },
+  {
+   "alphaDeg": 150,
+   "built": 5.99,
+   "mallamaHilton": 5.9338
+  },
+  {
+   "alphaDeg": 160,
+   "built": 7.5764,
+   "mallamaHilton": 7.1823
+  },
+  {
+   "alphaDeg": 170,
+   "built": 10.4079,
+   "mallamaHilton": 8.6794
+  },
+  {
+   "alphaDeg": 169.5,
+   "built": 10.2028,
+   "mallamaHilton": 8.5989
+  }
+ ],
+ "epochs": [
+  {
+   "id": "full-2026-01",
+   "alphaDeg": 23.092,
+   "predictedV": 0.2958,
+   "mallamaHilton": 0.3047,
+   "unmeasuredShareOfDisc": 0.0001
+  },
+  {
+   "id": "first-quarter-2026-01",
+   "alphaDeg": 8.942,
+   "predictedV": -0.1519,
+   "mallamaHilton": -0.1558,
+   "unmeasuredShareOfDisc": 0.00009
+  }
+ ],
+ "fitStarts": [
+  {
+   "b": 0.2412,
+   "c": 0.5606,
+   "thetaBarDeg": 18.73,
+   "bs0": 2.163,
+   "hs": 0.0508,
+   "shapeRmsMag": 0.0043
+  },
+  {
+   "b": 0.2666,
+   "c": 0.4037,
+   "thetaBarDeg": 21.3,
+   "bs0": 2.1,
+   "hs": 0.0382,
+   "shapeRmsMag": 0.0049
+  },
+  {
+   "b": 0.2416,
+   "c": 0.5579,
+   "thetaBarDeg": 18.77,
+   "bs0": 2.163,
+   "hs": 0.0504,
+   "shapeRmsMag": 0.0043
+  },
+  {
+   "b": 0.2417,
+   "c": 0.558,
+   "thetaBarDeg": 18.77,
+   "bs0": 2.161,
+   "hs": 0.0504,
+   "shapeRmsMag": 0.0043
+  },
+  {
+   "b": 0.3261,
+   "c": -0.0837,
+   "thetaBarDeg": 30.18,
+   "bs0": 2.096,
+   "hs": 0.0229,
+   "shapeRmsMag": 0.0083
+  },
+  {
+   "b": 0.1188,
+   "c": 0.948,
+   "thetaBarDeg": 13.73,
+   "bs0": 4,
+   "hs": 0.1283,
+   "shapeRmsMag": 0.0099
+  },
+  {
+   "b": 0.1951,
+   "c": 0.7998,
+   "thetaBarDeg": 15.4,
+   "bs0": 2.528,
+   "hs": 0.0733,
+   "shapeRmsMag": 0.0059
+  },
+  {
+   "b": 0.2422,
+   "c": 0.5534,
+   "thetaBarDeg": 18.84,
+   "bs0": 2.159,
+   "hs": 0.0503,
+   "shapeRmsMag": 0.0043
+  }
+ ],
+ "method": {
+  "grid": "albedo.webp in 64 x 64 pixel block means of measured pixels (128 x 64)",
+  "phasesFittedDeg": [
+   5,
+   15,
+   25,
+   35,
+   45,
+   55,
+   65,
+   75,
+   85,
+   95,
+   105,
+   115,
+   125
+  ],
+  "longitudesAveraged": 12,
+  "viewer": "on the equator; the Sun in the equatorial plane",
+  "radiiKm": [
+   2440.53,
+   2438.26
+  ],
+  "sunVMagnitude": -26.74
+ }
+}

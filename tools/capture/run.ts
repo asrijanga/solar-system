@@ -59,6 +59,18 @@ function packageVersion(name: string): string {
   return String(pkg.version);
 }
 
+async function fetchWithRetry(url: string): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (response.status < 500 || attempt === 4) return response;
+    } catch (error) {
+      if (attempt === 4) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+  }
+}
+
 async function render(
   browser: Browser,
   baseUrl: string,
@@ -70,19 +82,18 @@ async function render(
     deviceScaleFactor: 1,
   });
   try {
-    // Behind an HTTPS proxy (a sandbox), Chromium cannot reach Mars's data site (docs/stories/
-    // SS-14.md, W4) itself; Node fetches its files for it, byte for byte. Elsewhere, as in CI,
-    // the browser fetches them directly.
-    if (process.env['HTTPS_PROXY'] !== undefined) {
-      await context.route(`${MARS_TERRAIN_SITE}**`, async (route) => {
-        const response = await fetch(route.request().url());
-        await route.fulfill({
-          status: response.status,
-          headers: Object.fromEntries(response.headers),
-          body: Buffer.from(await response.arrayBuffer()),
-        });
+    // Mars's data site (docs/stories/SS-14.md, W4) is fetched by Node for the browser, byte for
+    // byte: behind an HTTPS proxy (a sandbox) Chromium cannot reach it itself, and GitHub Pages
+    // now and then answers a tile with a server error and no CORS header, which failed captures
+    // and a deploy (2026-10-08). A server error or network failure is retried, four times at most.
+    await context.route(`${MARS_TERRAIN_SITE}**`, async (route) => {
+      const response = await fetchWithRetry(route.request().url());
+      await route.fulfill({
+        status: response.status,
+        headers: Object.fromEntries(response.headers),
+        body: Buffer.from(await response.arrayBuffer()),
       });
-    }
+    });
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));

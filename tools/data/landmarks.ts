@@ -1,5 +1,6 @@
 // npm run pipeline:landmarks          (the Moon)
 // npm run pipeline:landmarks:mars     (Mars, docs/stories/SS-14.md W7)
+// npm run pipeline:landmarks:mercury  (Mercury, docs/stories/SS-16.md W7)
 //
 // A world's popular landmarks for labels (docs/stories/SS-15.md), taken from the IAU Gazetteer
 // of Planetary Nomenclature: names, centres and diameters exactly as the Gazetteer gives them.
@@ -11,6 +12,11 @@
 //   1737400 m, datum "Moon 2000".
 // - Mars: "<lattype>Planetocentric", "<londir>Positive East", 0 to 360; the .prj names
 //   GCS_Mars_2000 on the Mars_2000_IAU_IAG spheroid, 3396190 m.
+// - Mercury: the .prj names GCS_Mercury_2000 on the Mercury_2000_IAU_IAG sphere, 2439700 m. Its
+//   metadata XML says "<lattype>Planetographic" and "<londir>Positive West", but the records are
+//   east-positive, 0 to 360: Hokusai at 16.65, Kuiper at 328.68 and Debussy at 12.54 are bright
+//   rayed craters in the MDIS albedo (W3) at those east longitudes and not at the west ones
+//   (checked 2026-10-09, SS-16 W7). On a sphere planetographic and planetocentric latitude agree.
 // The output converts longitude to -180 to 180, as the textures use.
 //
 // Mars's Gazetteer has no landing-site features, and none of its origin notes names a mission
@@ -171,6 +177,64 @@ const MARS_CHOSEN: Chosen = [
   ['Teisserenc de Bort', 'crater'],
 ];
 
+/**
+ * Mercury. Kinds reuse the label styles: 'mare' for the great plains, 'mountains' for Caloris
+ * Montes, 'valley' for the scarps (rupēs) and fossae.
+ */
+const MERCURY_CHOSEN: Chosen = [
+  // Plains.
+  ['Borealis Planitia', 'mare'],
+  ['Caloris Planitia', 'mare'],
+  ['Stilbon Planitia', 'mare'],
+  ['Sobkou Planitia', 'mare'],
+  ['Budh Planitia', 'mare'],
+  ['Tir Planitia', 'mare'],
+  ['Caloris Montes', 'mountains'],
+  // Scarps and troughs.
+  ['Enterprise Rupes', 'valley'],
+  ['Discovery Rupes', 'valley'],
+  ['Carnegie Rupes', 'valley'],
+  ['Beagle Rupes', 'valley'],
+  ['Victoria Rupes', 'valley'],
+  ['Altair Rupes', 'valley'],
+  ['Pantheon Fossae', 'valley'],
+  // Basins and large craters.
+  ['Rembrandt', 'crater'],
+  ['Beethoven', 'crater'],
+  ['Tolstoj', 'crater'],
+  ['Rachmaninoff', 'crater'],
+  ['Raditladi', 'crater'],
+  ['Mendelssohn', 'crater'],
+  ['Shakespeare', 'crater'],
+  ['Dostoevskij', 'crater'],
+  ['Goethe', 'crater'],
+  ['Homer', 'crater'],
+  ['Vivaldi', 'crater'],
+  ['Bach', 'crater'],
+  ['Mozart', 'crater'],
+  ['Sanai', 'crater'],
+  ['Raphael', 'crater'],
+  ['Haydn', 'crater'],
+  ['Praxiteles', 'crater'],
+  // Bright rayed craters.
+  ['Hokusai', 'crater'],
+  ['Debussy', 'crater'],
+  ['Kuiper', 'crater'],
+  ['Degas', 'crater'],
+  ['Bashō', 'crater'],
+  // Hun Kal: the small crater whose centre defines 20° W, Mercury's longitude reference.
+  ['Hun Kal', 'crater'],
+  // Polar craters with permanently shadowed floors.
+  ['Prokofiev', 'crater'],
+  ['Chao Meng-Fu', 'crater'],
+  // Others often pictured.
+  ['Kandinsky', 'crater'],
+  ['Calvino', 'crater'],
+  ['Eminescu', 'crater'],
+  ['Abedin', 'crater'],
+  ['Xiao Zhao', 'crater'],
+];
+
 /** Where each world's Gazetteer file is, pinned, and what to label. */
 const WORLDS = {
   moon: {
@@ -199,6 +263,20 @@ const WORLDS = {
     source: 'Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MARS_nomenclature_center_pts',
     conventions:
       'planetocentric latitude; longitude east-positive, converted from 0-360 to -180-180; GCS_Mars_2000, Mars_2000_IAU_IAG spheroid, 3396.19 km (the file metadata and .prj). No mission names: the Mars Gazetteer has no landing-site features and its notes name no mission',
+  },
+  mercury: {
+    url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MERCURY_nomenclature_center_pts.zip',
+    // Pinned 2026-10-09. The bucket rebuilds its zips in place (SS-14 W8), so a later run may need
+    // a new pin; landmarks.json keeps every record used.
+    sha256: '78af6ff8e25457ee9c497031fd37e9b21cc2dd3d85c1e27bf9eac1f8c2b2856c',
+    retrieved: '2026-10-09',
+    dbf: 'MERCURY_nomenclature_center_pts.dbf',
+    cacheName: 'mercury-nomenclature-2026-10-09.zip',
+    chosen: MERCURY_CHOSEN,
+    source:
+      'Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MERCURY_nomenclature_center_pts',
+    conventions:
+      'latitude on the 2439.7 km sphere (GCS_Mercury_2000, the .prj); longitude east-positive in the records, 0-360, converted to -180-180, though the metadata XML says positive west: checked against the MDIS albedo (tools/data/landmarks.ts)',
   },
 } as const;
 
@@ -279,6 +357,12 @@ export function choose(
   chosen: Chosen = MOON_CHOSEN,
 ): Landmark[] {
   const byName = new Map(records.map((r) => [r['name'] ?? '', r]));
+  // A name listed twice must be one feature (Mercury's file lists Discovery Rupes twice, with one
+  // Gazetteer link and centres 0.0002° apart): two different features would be ambiguous.
+  for (const [name] of chosen) {
+    const links = new Set(records.filter((r) => r['name'] === name).map((r) => r['link']));
+    if (links.size > 1) throw new Error(`${name} names ${links.size} different Gazetteer features`);
+  }
   return chosen.map(([name, kind, mission]) => {
     const r = byName.get(name);
     if (r === undefined) throw new Error(`${name} is not in the Gazetteer`);
@@ -308,7 +392,8 @@ export function choose(
 
 if (import.meta.main) {
   const name = process.argv[2] ?? 'moon';
-  if (name !== 'moon' && name !== 'mars') throw new Error(`no world ${name}: moon or mars`);
+  if (name !== 'moon' && name !== 'mars' && name !== 'mercury')
+    throw new Error(`no world ${name}: moon, mars or mercury`);
   const world = WORLDS[name];
   const out = join(ROOT, 'public', 'data', name, 'landmarks.json');
   const zip = new Uint8Array(

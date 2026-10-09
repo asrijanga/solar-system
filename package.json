@@ -37,6 +37,7 @@
     "pipeline:tiles": "node tools/terrain/build.ts",
     "pipeline:landmarks": "node tools/data/landmarks.ts",
     "pipeline:landmarks:mars": "node tools/data/landmarks.ts mars",
+    "pipeline:landmarks:mercury": "node tools/data/landmarks.ts mercury",
     "pipeline:earth": "uv run --project pipeline python pipeline/earth.py",
     "pipeline:moon": "uv run --project pipeline python pipeline/moon.py",
     "pipeline:mars": "uv run --project pipeline python pipeline/mars.py",

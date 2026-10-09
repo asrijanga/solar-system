@@ -1,0 +1,406 @@
+{
+ "source": "Gazetteer of Planetary Nomenclature (IAU WGPSN / USGS), MERCURY_nomenclature_center_pts",
+ "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MERCURY_nomenclature_center_pts.zip",
+ "sha256": "78af6ff8e25457ee9c497031fd37e9b21cc2dd3d85c1e27bf9eac1f8c2b2856c",
+ "retrieved": "2026-10-09",
+ "conventions": "latitude on the 2439.7 km sphere (GCS_Mercury_2000, the .prj); longitude east-positive in the records, 0-360, converted to -180-180, though the metadata XML says positive west: checked against the MDIS albedo (tools/data/landmarks.ts)",
+ "script": "tools/data/landmarks.ts",
+ "landmarks": [
+  {
+   "name": "Borealis Planitia",
+   "label": "Borealis Planitia",
+   "kind": "mare",
+   "lonDeg": 32.6,
+   "latDeg": 67.3,
+   "diameterKm": 3450,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/823"
+  },
+  {
+   "name": "Caloris Planitia",
+   "label": "Caloris Planitia",
+   "kind": "mare",
+   "lonDeg": 161.9848,
+   "latDeg": 31.6525,
+   "diameterKm": 1500,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/979"
+  },
+  {
+   "name": "Stilbon Planitia",
+   "label": "Stilbon Planitia",
+   "kind": "mare",
+   "lonDeg": 150.39000000000001,
+   "latDeg": 57.540000000000006,
+   "diameterKm": 1550,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15560"
+  },
+  {
+   "name": "Sobkou Planitia",
+   "label": "Sobkou Planitia",
+   "kind": "mare",
+   "lonDeg": -128.0221,
+   "latDeg": 39.0001,
+   "diameterKm": 1128,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5614"
+  },
+  {
+   "name": "Budh Planitia",
+   "label": "Budh Planitia",
+   "kind": "mare",
+   "lonDeg": -150.46169999999998,
+   "latDeg": 19.5245,
+   "diameterKm": 816,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/909"
+  },
+  {
+   "name": "Tir Planitia",
+   "label": "Tir Planitia",
+   "kind": "mare",
+   "lonDeg": -176.68529999999998,
+   "latDeg": -1.045,
+   "diameterKm": 754,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6025"
+  },
+  {
+   "name": "Caloris Montes",
+   "label": "Caloris Montes",
+   "kind": "mountains",
+   "lonDeg": -174.15269999999998,
+   "latDeg": 31.464100000000002,
+   "diameterKm": 1023,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/978"
+  },
+  {
+   "name": "Enterprise Rupes",
+   "label": "Enterprise Rupes",
+   "kind": "valley",
+   "lonDeg": 76.5353,
+   "latDeg": -36.5405,
+   "diameterKm": 822.392,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15133"
+  },
+  {
+   "name": "Discovery Rupes",
+   "label": "Discovery Rupes",
+   "kind": "valley",
+   "lonDeg": -37.24129999999997,
+   "latDeg": -54.7,
+   "diameterKm": 412,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1548"
+  },
+  {
+   "name": "Carnegie Rupes",
+   "label": "Carnegie Rupes",
+   "kind": "valley",
+   "lonDeg": -53.24629999999996,
+   "latDeg": 58.524300000000004,
+   "diameterKm": 267,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15130"
+  },
+  {
+   "name": "Beagle Rupes",
+   "label": "Beagle Rupes",
+   "kind": "valley",
+   "lonDeg": 100.75720000000001,
+   "latDeg": -3.2243,
+   "diameterKm": 630,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14390"
+  },
+  {
+   "name": "Victoria Rupes",
+   "label": "Victoria Rupes",
+   "kind": "valley",
+   "lonDeg": -34.16089999999997,
+   "latDeg": 52.7087,
+   "diameterKm": 347,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6379"
+  },
+  {
+   "name": "Altair Rupes",
+   "label": "Altair Rupes",
+   "kind": "valley",
+   "lonDeg": 173.5055,
+   "latDeg": -70.4846,
+   "diameterKm": 895.584,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15986"
+  },
+  {
+   "name": "Pantheon Fossae",
+   "label": "Pantheon Fossae",
+   "kind": "valley",
+   "lonDeg": 162.83110000000002,
+   "latDeg": 30.1857,
+   "diameterKm": 311,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14396"
+  },
+  {
+   "name": "Rembrandt",
+   "label": "Rembrandt",
+   "kind": "crater",
+   "lonDeg": 87.8657,
+   "latDeg": -32.891600000000004,
+   "diameterKm": 716,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14563"
+  },
+  {
+   "name": "Beethoven",
+   "label": "Beethoven",
+   "kind": "crater",
+   "lonDeg": -124.21029999999999,
+   "latDeg": -20.8625,
+   "diameterKm": 630,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/660"
+  },
+  {
+   "name": "Tolstoj",
+   "label": "Tolstoj",
+   "kind": "crater",
+   "lonDeg": -164.6371,
+   "latDeg": -16.2329,
+   "diameterKm": 355,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6052"
+  },
+  {
+   "name": "Rachmaninoff",
+   "label": "Rachmaninoff",
+   "kind": "crater",
+   "lonDeg": 57.370200000000004,
+   "latDeg": 27.6609,
+   "diameterKm": 305,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14653"
+  },
+  {
+   "name": "Raditladi",
+   "label": "Raditladi",
+   "kind": "crater",
+   "lonDeg": 119.06330000000001,
+   "latDeg": 27.1533,
+   "diameterKm": 258,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14387"
+  },
+  {
+   "name": "Mendelssohn",
+   "label": "Mendelssohn",
+   "kind": "crater",
+   "lonDeg": 102.3195,
+   "latDeg": 70.3101,
+   "diameterKm": 291,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14966"
+  },
+  {
+   "name": "Shakespeare",
+   "label": "Shakespeare",
+   "kind": "crater",
+   "lonDeg": -152.2541,
+   "latDeg": 48.1009,
+   "diameterKm": 399,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/5456"
+  },
+  {
+   "name": "Dostoevskij",
+   "label": "Dostoevskij",
+   "kind": "crater",
+   "lonDeg": -178.1136,
+   "latDeg": -44.7274,
+   "diameterKm": 430.062,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1626"
+  },
+  {
+   "name": "Goethe",
+   "label": "Goethe",
+   "kind": "crater",
+   "lonDeg": -51.03399999999999,
+   "latDeg": 81.10220000000001,
+   "diameterKm": 317.172,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2204"
+  },
+  {
+   "name": "Homer",
+   "label": "Homer",
+   "kind": "crater",
+   "lonDeg": -36.62489999999997,
+   "latDeg": -1.2998,
+   "diameterKm": 319,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2545"
+  },
+  {
+   "name": "Vivaldi",
+   "label": "Vivaldi",
+   "kind": "crater",
+   "lonDeg": -85.9153,
+   "latDeg": 13.759300000000001,
+   "diameterKm": 213,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/6415"
+  },
+  {
+   "name": "Bach",
+   "label": "Bach",
+   "kind": "crater",
+   "lonDeg": -103.00579999999997,
+   "latDeg": -69.8554,
+   "diameterKm": 214.285,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/537"
+  },
+  {
+   "name": "Mozart",
+   "label": "Mozart",
+   "kind": "crater",
+   "lonDeg": 169.4104,
+   "latDeg": 7.7487,
+   "diameterKm": 241,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4058"
+  },
+  {
+   "name": "Sanai",
+   "label": "Sanai",
+   "kind": "crater",
+   "lonDeg": -6.98599999999999,
+   "latDeg": -13.373800000000001,
+   "diameterKm": 490,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15246"
+  },
+  {
+   "name": "Raphael",
+   "label": "Raphael",
+   "kind": "crater",
+   "lonDeg": -76.35109999999997,
+   "latDeg": -20.416800000000002,
+   "diameterKm": 342,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4949"
+  },
+  {
+   "name": "Haydn",
+   "label": "Haydn",
+   "kind": "crater",
+   "lonDeg": -71.6379,
+   "latDeg": -27.224800000000002,
+   "diameterKm": 251,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2392"
+  },
+  {
+   "name": "Praxiteles",
+   "label": "Praxiteles",
+   "kind": "crater",
+   "lonDeg": -60.281799999999976,
+   "latDeg": 27.1068,
+   "diameterKm": 198,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/4820"
+  },
+  {
+   "name": "Hokusai",
+   "label": "Hokusai",
+   "kind": "crater",
+   "lonDeg": 16.6496,
+   "latDeg": 57.8402,
+   "diameterKm": 114,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14644"
+  },
+  {
+   "name": "Debussy",
+   "label": "Debussy",
+   "kind": "crater",
+   "lonDeg": 12.537700000000001,
+   "latDeg": -33.9513,
+   "diameterKm": 81,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14647"
+  },
+  {
+   "name": "Kuiper",
+   "label": "Kuiper",
+   "kind": "crater",
+   "lonDeg": -31.320299999999975,
+   "latDeg": -11.336300000000001,
+   "diameterKm": 62,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3140"
+  },
+  {
+   "name": "Degas",
+   "label": "Degas",
+   "kind": "crater",
+   "lonDeg": -127.3399,
+   "latDeg": 37.084700000000005,
+   "diameterKm": 54,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1458"
+  },
+  {
+   "name": "Bashō",
+   "label": "Bashō",
+   "kind": "crater",
+   "lonDeg": -170.4526,
+   "latDeg": -32.3923,
+   "diameterKm": 75,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/628"
+  },
+  {
+   "name": "Hun Kal",
+   "label": "Hun Kal",
+   "kind": "crater",
+   "lonDeg": -20.008899999999983,
+   "latDeg": -0.4551,
+   "diameterKm": 1.129,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/2584"
+  },
+  {
+   "name": "Prokofiev",
+   "label": "Prokofiev",
+   "kind": "crater",
+   "lonDeg": 62.921600000000005,
+   "latDeg": 85.7726,
+   "diameterKm": 112,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15024"
+  },
+  {
+   "name": "Chao Meng-Fu",
+   "label": "Chao Meng-Fu",
+   "kind": "crater",
+   "lonDeg": -156.3585,
+   "latDeg": -88.4244,
+   "diameterKm": 140.725,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/1140"
+  },
+  {
+   "name": "Kandinsky",
+   "label": "Kandinsky",
+   "kind": "crater",
+   "lonDeg": 78.78370000000001,
+   "latDeg": 87.8942,
+   "diameterKm": 60,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15022"
+  },
+  {
+   "name": "Calvino",
+   "label": "Calvino",
+   "kind": "crater",
+   "lonDeg": -56.032399999999996,
+   "latDeg": -3.9913,
+   "diameterKm": 67,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14577"
+  },
+  {
+   "name": "Eminescu",
+   "label": "Eminescu",
+   "kind": "crater",
+   "lonDeg": 114.2076,
+   "latDeg": 10.6578,
+   "diameterKm": 129,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14388"
+  },
+  {
+   "name": "Abedin",
+   "label": "Abedin",
+   "kind": "crater",
+   "lonDeg": -10.661099999999976,
+   "latDeg": 61.732000000000006,
+   "diameterKm": 116.234,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14574"
+  },
+  {
+   "name": "Xiao Zhao",
+   "label": "Xiao Zhao",
+   "kind": "crater",
+   "lonDeg": 123.8416,
+   "latDeg": 10.5847,
+   "diameterKm": 24,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14392"
+  }
+ ]
+}

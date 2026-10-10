@@ -579,7 +579,8 @@
     },
     "bytes": 12427236,
     "sha256": "abd72aabc81331d8e5038f185330af97eab299116157e71cf6499f5ac6dc0c87",
-    "median750": 0.0704
+    "median750": 0.0704,
+    "decodedMean": 111.5057
   },
   "colour": {
     "file": "albedo-colour.png",

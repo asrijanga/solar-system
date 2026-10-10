@@ -308,6 +308,8 @@ export interface MoonOptions {
    */
   readonly polarRatio?: number;
   /** The scene object's name. 'moon' unless given. */
+  /** The page's exposure (core/photometry.ts): EXPOSURE unless the world sets its own. */
+  readonly exposure?: number;
   readonly name?: string;
   /**
    * The mapped albedo, or for photometry checks a uniform one: I/F at the map's standard
@@ -406,7 +408,7 @@ function createMoonMaterial(
   const sun = uniform(new Vector3(...sunScene));
   const r = epoch.sunDistanceKm / AU_KM;
   // Linear display value per unit I/F: exposure and the sun's inverse square (core/photometry.ts).
-  const scale = uniform(EXPOSURE / (r * r));
+  const scale = uniform((options.exposure ?? EXPOSURE) / (r * r));
   const earthshineBoost = options.earthshineBoost ?? uniform(1);
   const earthshine = options.earthshine ?? null;
   const earthDirection = earthshine === null ? null : uniform(new Vector3(...earthshine.direction));

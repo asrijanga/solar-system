@@ -31,6 +31,8 @@ export interface Stage {
   readonly highestPointKm: number;
   /** Physical star exposure follows the pixel's solid angle, so it changes on resize. */
   readonly starExposure: UniformNode<'float', number> | null;
+  /** The page's exposure over core/photometry.ts's EXPOSURE (Mercury's, W7); 1 if absent. */
+  readonly exposureScale?: number;
   readonly albedoDecodedMean: number | null;
   /** Streamed terrain, when the view has relief, and which levels exist where. */
   readonly terrain: TilesRenderer | null;

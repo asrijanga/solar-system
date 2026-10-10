@@ -44,6 +44,15 @@ export const MOON_OPPOSITION_DISTANCE_KM = 378_000;
 export const EXPOSURE = 2;
 
 /**
+ * Mercury's page (owner, 2026-10-10, "Per-world, at mean distance"; docs/stories/SS-16.md W7): the
+ * same rule for sunlight at Mercury's mean distance from the Sun, its semi-major axis, 57.909 × 10⁶
+ * km (NASA Mercury Fact Sheet, https://nssdc.gsfc.nasa.gov/planetary/factsheet/mercuryfact.html).
+ * At exposure 2 sunlight 4.5 to 10 times the Moon's would burn the disc to white. One exposure for
+ * everything on that page, stars included.
+ */
+export const MERCURY_EXPOSURE = EXPOSURE * (57.909e6 / AU_KM) ** 2;
+
+/**
  * Lambert radiance factor: I/F = A · μ0. Not used to shade the Moon (core/hapke.ts does). Earth's
  * uniform fallback sphere uses it.
  */

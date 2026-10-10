@@ -10,10 +10,12 @@ import type { PNG } from 'pngjs';
 import type { BodyCheck, BodySetup } from '../../src/capture/viewpoints.ts';
 import { hapke, type HapkeParameters } from '../../src/core/hapke.ts';
 import { mallamaHiltonFullV } from '../../src/core/marsPhotometry.ts';
+import { mercuryV } from '../../src/core/mercuryPhotometry.ts';
 import {
   AU_KM,
   displayValue,
   EXPOSURE,
+  MERCURY_EXPOSURE,
   linearToSrgb,
   SUN_V_MAGNITUDE,
 } from '../../src/core/photometry.ts';
@@ -285,7 +287,15 @@ function median(values: number[]): number {
   return sorted[Math.floor(sorted.length / 2)] ?? Number.NaN;
 }
 
-export function runMoonCheck(png: PNG, pixels: MoonPixels, check: BodyCheck): CheckResult {
+/** Which world a capture shows: its page's exposure and its measured curve (disc-magnitude). */
+export type CheckWorld = 'moon' | 'mars' | 'mercury';
+
+export function runMoonCheck(
+  png: PNG,
+  pixels: MoonPixels,
+  check: BodyCheck,
+  world: CheckWorld = 'moon',
+): CheckResult {
   const n = pixels.width * pixels.height;
   switch (check.kind) {
     case 'photometry': {
@@ -361,21 +371,27 @@ export function runMoonCheck(png: PNG, pixels: MoonPixels, check: BodyCheck): Ch
           0.7152 * linear(channel(png, i, 1)) +
           0.0722 * linear(channel(png, i, 2));
         const w = pixels.solidAngle[i] ?? 0;
-        flux += ((y * r * r) / EXPOSURE) * w;
+        flux += ((y * r * r) / (world === 'mercury' ? MERCURY_EXPOSURE : EXPOSURE)) * w;
         omega += w;
       }
       const pPhi = flux / omega;
       const measured =
         SUN_V_MAGNITUDE -
         2.5 * Math.log10((pPhi * pixels.projectedAreaKm2) / (Math.PI * AU_KM * AU_KM));
-      if (pixels.lsDeg === null) throw new Error(`${check.name}: the epoch has no season (Ls)`);
-      // Eq. 6 with Mallama's longitude and season corrections (core/marsPhotometry.ts).
-      const expected = mallamaHiltonFullV(
-        pixels.phaseAngleDeg,
-        pixels.subObserverLonDeg,
-        pixels.subSolarLonDeg,
-        pixels.lsDeg,
-      );
+      let expected: number;
+      if (world === 'mercury') {
+        // Mercury: Mallama & Hilton Eq. 2 (core/mercuryPhotometry.ts), no longitude term.
+        expected = mercuryV(pixels.phaseAngleDeg);
+      } else {
+        if (pixels.lsDeg === null) throw new Error(`${check.name}: the epoch has no season (Ls)`);
+        // Eq. 6 with Mallama's longitude and season corrections (core/marsPhotometry.ts).
+        expected = mallamaHiltonFullV(
+          pixels.phaseAngleDeg,
+          pixels.subObserverLonDeg,
+          pixels.subSolarLonDeg,
+          pixels.lsDeg,
+        );
+      }
       const off = measured - expected;
       const pass = omega > 0 && Math.abs(off) <= check.toleranceMag;
       return {

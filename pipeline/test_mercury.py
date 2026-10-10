@@ -39,6 +39,8 @@ class MercuryAlbedo(unittest.TestCase):
         self.assertEqual(t["encoding"]["curve"], "sqrt")
         decoded = t["encoding"]["maxReflectance"] * (a[a > 0] / 255.0) ** 2
         self.assertAlmostEqual(float(np.median(decoded)), t["median750"], delta=0.002)
+        # The app checks its own decoding against this (tools/capture/run.ts).
+        self.assertEqual(round(float(a[a > 0].mean()), 4), t["decodedMean"])
 
     def test_gaps_are_where_the_source_map_says(self) -> None:
         a = np.array(Image.open(DATA / MANIFEST["texture"]["file"]).convert("L"))

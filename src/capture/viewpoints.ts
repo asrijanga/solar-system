@@ -4,7 +4,14 @@ import { raDecToScene } from '../core/frames.ts';
 import type { MoonVantage } from '../core/moon.ts';
 
 export type SceneId =
-  'empty' | 'depth-test-10m' | 'depth-test-coplanar' | 'stars' | 'stars-mirrored' | 'moon' | 'mars';
+  | 'empty'
+  | 'depth-test-10m'
+  | 'depth-test-coplanar'
+  | 'stars'
+  | 'stars-mirrored'
+  | 'moon'
+  | 'mars'
+  | 'mercury';
 
 /** Epoch ids in public/data/moon/ephemeris.json, and in Mars's (docs/stories/SS-14.md W2). */
 export type MoonEpochId = 'full-2026-01' | 'first-quarter-2026-01';
@@ -534,6 +541,61 @@ const MARS_GAZETTEER_CHECKS: readonly BodyCheck[] = (
     { name: 'Syrtis Major', lonDeg: 70, latDeg: 9.885, coreKm: 250, expect: 'darker' },
     { name: 'Hellas', lonDeg: 70, latDeg: -39.6672, coreKm: 400, expect: 'brighter' },
     { name: 'Arabia Terra', lonDeg: 5.7185, latDeg: 21.249, coreKm: 500, expect: 'brighter' },
+  ] as const
+).map((f) => ({ kind: 'feature', against: 'disc-median', ...f }));
+
+/** Mercury's equatorial radius from the PCK (public/data/mercury/ephemeris.json). */
+const MERCURY_RADIUS_KM = 2440.53;
+
+/**
+ * Mercury from Earth as a disc, as MARS_DISC, at the first-quarter instant (26 January 2026):
+ * phase 8.9°, sub-Earth point 20.4°E, 4.9°S (SS-16 W2). The smooth ellipsoid.
+ */
+const MERCURY_DISC: BodySetup = {
+  ...MOON_SETUP,
+  epoch: 'first-quarter-2026-01',
+  vantage: { kind: 'earth' },
+  distanceKm: 40 * MERCURY_RADIUS_KM,
+  fovDeg: 3.6,
+  relief: false,
+};
+
+/** The owner's 0.06 mag (2026-10-09, the W7 spec), against Mallama & Hilton (2018) Eq. 2. */
+const MERCURY_DISC_MAGNITUDE: BodyCheck = {
+  kind: 'disc-magnitude',
+  name: 'whole-disc V magnitude',
+  toleranceMag: 0.06,
+};
+
+/**
+ * Gazetteer features Earth sees on 26 January 2026, as public/data/mercury/landmarks.json places
+ * them (a test asserts it), chosen from the W3 map before any capture was read (2026-10-10): mean
+ * over the core against the map's median, Debussy 1.19, Kuiper 1.26 (bright rayed craters),
+ * Rachmaninoff 0.93. Each against the median of the lit disc.
+ */
+const MERCURY_GAZETTEER_CHECKS: readonly BodyCheck[] = (
+  [
+    {
+      name: 'Debussy',
+      lonDeg: 12.537700000000001,
+      latDeg: -33.9513,
+      coreKm: 60,
+      expect: 'brighter',
+    },
+    {
+      name: 'Kuiper',
+      lonDeg: -31.320299999999975,
+      latDeg: -11.336300000000001,
+      coreKm: 60,
+      expect: 'brighter',
+    },
+    {
+      name: 'Rachmaninoff',
+      lonDeg: 57.370200000000004,
+      latDeg: 27.6609,
+      coreKm: 150,
+      expect: 'darker',
+    },
   ] as const
 ).map((f) => ({ kind: 'feature', against: 'disc-median', ...f }));
 
@@ -1165,6 +1227,46 @@ export const viewpoints: readonly Viewpoint[] = [
       'What the Mars page shows on load: Mars from Earth at the first-quarter date, its terrain from Mars\u2019s data site, north up, stars at physical exposure.',
     scene: 'mars',
     body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', distanceKm: 4 * MARS_RADIUS_KM },
+  },
+  {
+    ...SPACE,
+    id: 'mercury-from-earth',
+    description:
+      'Mercury from Earth on 26 January 2026 (phase 8.9°): the smooth ellipsoid with the W3 map, its whole-disc brightness against Mallama & Hilton (2018) Eq. 2, and Gazetteer features Earth sees.',
+    scene: 'mercury',
+    body: MERCURY_DISC,
+    bodyChecks: [MERCURY_DISC_MAGNITUDE, ...MERCURY_GAZETTEER_CHECKS],
+  },
+  {
+    ...SPACE,
+    id: 'mercury-from-earth-mirrored',
+    description:
+      'Negative control: the same view with the map mirrored east–west. The Gazetteer checks must fail, proving mercury-from-earth can see a mirrored Mercury.',
+    scene: 'mercury',
+    body: { ...MERCURY_DISC, mirrored: true },
+    bodyChecks: [MERCURY_DISC_MAGNITUDE, ...MERCURY_GAZETTEER_CHECKS],
+    negativeControl: true,
+  },
+  {
+    ...SPACE,
+    id: 'mercury-from-earth-labels',
+    description:
+      'The same view as mercury-from-earth, closer, with the Gazetteer labels on. For eyes.',
+    scene: 'mercury',
+    body: { ...MERCURY_DISC, distanceKm: 4 * MERCURY_RADIUS_KM, fovDeg: 40, labels: true },
+  },
+  {
+    ...SPACE,
+    id: 'mercury-app',
+    description:
+      'What the Mercury page shows on load: Mercury from Earth at the first-quarter date, the smooth globe, north up, stars at physical exposure.',
+    scene: 'mercury',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      distanceKm: 4 * MERCURY_RADIUS_KM,
+      relief: false,
+    },
   },
 ];
 

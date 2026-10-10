@@ -29,7 +29,7 @@ const SWIFTSHADER_FLAGS = [
 const READY_TIMEOUT_MS = 180_000;
 
 /** Each world's ephemeris and the albedo bytes' mean its pipeline recorded. */
-function worldData(world: 'moon' | 'mars'): {
+function worldData(world: 'moon' | 'mars' | 'mercury'): {
   ephemeris: EphemerisFile;
   albedoDecodedMean: number;
 } {
@@ -45,10 +45,14 @@ function worldData(world: 'moon' | 'mars'): {
     albedoDecodedMean: mean,
   };
 }
-const WORLDS = { moon: worldData('moon'), mars: worldData('mars') };
-/** The page a viewpoint is rendered on: Mars's for Mars, the Moon's for everything else. */
-const worldOf = (viewpoint: Viewpoint): 'moon' | 'mars' =>
-  viewpoint.scene === 'mars' ? 'mars' : 'moon';
+const WORLDS = {
+  moon: worldData('moon'),
+  mars: worldData('mars'),
+  mercury: worldData('mercury'),
+};
+/** The page a viewpoint is rendered on: its world's, the Moon's for everything else. */
+const worldOf = (viewpoint: Viewpoint): 'moon' | 'mars' | 'mercury' =>
+  viewpoint.scene === 'mars' ? 'mars' : viewpoint.scene === 'mercury' ? 'mercury' : 'moon';
 
 function git(...args: string[]): string {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
@@ -154,7 +158,7 @@ async function main(): Promise<void> {
         : compareImages(a, b, { threshold: 0, maxDiffRatio: 0, maxMeanChannelDelta: 0 });
 
       writeFileSync(pngPath(capturesDir, viewpoint.id), first.png);
-      const verdict = judge(a, viewpoint, WORLDS[worldOf(viewpoint)].ephemeris);
+      const verdict = judge(a, viewpoint, WORLDS[worldOf(viewpoint)].ephemeris, worldOf(viewpoint));
       const sidecar = {
         viewpoint,
         environment: {

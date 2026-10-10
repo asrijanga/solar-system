@@ -1,0 +1,126 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "earth"
+      },
+      "distanceKm": 97621.20000000001,
+      "fovDeg": 3.6,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false,
+      "utc": null,
+      "neighbour": null
+    },
+    "bodyChecks": [
+      {
+        "kind": "disc-magnitude",
+        "name": "whole-disc V magnitude",
+        "toleranceMag": 0.06
+      },
+      {
+        "kind": "feature",
+        "against": "disc-median",
+        "name": "Debussy",
+        "lonDeg": 12.537700000000001,
+        "latDeg": -33.9513,
+        "coreKm": 60,
+        "expect": "brighter"
+      },
+      {
+        "kind": "feature",
+        "against": "disc-median",
+        "name": "Kuiper",
+        "lonDeg": -31.320299999999975,
+        "latDeg": -11.336300000000001,
+        "coreKm": 60,
+        "expect": "brighter"
+      },
+      {
+        "kind": "feature",
+        "against": "disc-median",
+        "name": "Rachmaninoff",
+        "lonDeg": 57.370200000000004,
+        "latDeg": 27.6609,
+        "coreKm": 150,
+        "expect": "darker"
+      }
+    ],
+    "negativeControl": false,
+    "id": "mercury-from-earth",
+    "description": "Mercury from Earth on 26 January 2026 (phase 8.9°): the smooth ellipsoid with the W3 map, its whole-disc brightness against Mallama & Hilton (2018) Eq. 2, and Gazetteer features Earth sees.",
+    "scene": "mercury"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "whole-disc V magnitude: V(1, 8.9°) drawn -0.169, Mallama & Hilton -0.156 (-0.013 mag)",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Debussy brighter (282 px): ratio 1.197",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Kuiper brighter (194 px): ratio 1.209",
+        "pass": true,
+        "fraction": 1
+      },
+      {
+        "name": "Rachmaninoff darker (1327 px): ratio 0.954",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "371ca156f9115fa5664c490bb92e17ed1c82ae99",
+    "dirty": true
+  }
+}

@@ -25,6 +25,7 @@ export default defineConfig({
         home: 'index.html',
         moon: 'moon/index.html',
         mars: 'mars/index.html',
+        mercury: 'mercury/index.html',
       },
     },
     // three.js alone exceeds Vite's 500 kB default; the real gate is the brotli budget in `npm run size`.

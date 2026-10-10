@@ -50,10 +50,12 @@ async function framesRendered(page: import('playwright').Page): Promise<number> 
 }
 
 // Extra query parameters for the page, e.g. `npm run alloc -- orbit=7` to measure orbit mode, and
-// `world=mars` for Mars's page (docs/stories/SS-14.md, W7); the Moon's otherwise.
+// `world=mars` for Mars's page (docs/stories/SS-14.md, W7), `world=mercury` for Mercury's (SS-16 W7);
+// the Moon's otherwise.
 const args = process.argv.slice(2);
 const world = args.find((a) => a.startsWith('world='))?.slice('world='.length) ?? 'moon';
-if (world !== 'moon' && world !== 'mars') throw new Error(`no world ${world}: moon or mars`);
+if (world !== 'moon' && world !== 'mars' && world !== 'mercury')
+  throw new Error(`no world ${world}: moon, mars or mercury`);
 const extraQuery = args
   .filter((a) => !a.startsWith('world='))
   .map((p) => `&${p}`)

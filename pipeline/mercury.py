@@ -401,6 +401,8 @@ def build() -> dict:
             "bytes": len(webp),
             "sha256": sha256(OUT_DIR / "albedo.webp"),
             "median750": round(float(np.nanmedian(r750)), 5),
+            # The mean byte over measured pixels, as the app computes it on load (scenes/mercury.ts).
+            "decodedMean": round(float(master[master > 0].mean()), 4),
         },
         "colour": {
             "file": "albedo-colour.png",

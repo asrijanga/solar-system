@@ -13,6 +13,7 @@ public/terrain/
 # Written by pipeline/timeline.py, which CI re-runs and diffs.
 test/fixtures/moon-timeline-truth.json
 test/fixtures/mars-timeline-truth.json
+test/fixtures/mercury-timeline-truth.json
 # Written by pipeline/moons_mars.py, which CI re-runs and diffs.
 test/fixtures/mars-moons-truth.json
 dist-mars/

@@ -5,7 +5,7 @@ import type {
   StarCheck,
   Viewpoint,
 } from '../../src/capture/viewpoints.ts';
-import { castMoonRays, runMoonCheck, type EphemerisFile } from './moon.ts';
+import { castMoonRays, runMoonCheck, type EphemerisFile, type CheckWorld } from './moon.ts';
 import { runNeighbourCheck } from './neighbours.ts';
 
 export interface CheckResult {
@@ -117,6 +117,7 @@ export function judge(
   png: PNG,
   viewpoint: Viewpoint,
   ephemeris: EphemerisFile | null = null,
+  world: CheckWorld = 'moon',
 ): ViewpointVerdict {
   const moonResults: CheckResult[] = [];
   if (viewpoint.bodyChecks.length > 0) {
@@ -130,7 +131,8 @@ export function judge(
       }
     } else {
       const pixels = castMoonRays(viewpoint.body, ephemeris, png.width, png.height);
-      for (const check of viewpoint.bodyChecks) moonResults.push(runMoonCheck(png, pixels, check));
+      for (const check of viewpoint.bodyChecks)
+        moonResults.push(runMoonCheck(png, pixels, check, world));
     }
   }
   const results = [

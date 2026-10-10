@@ -92,10 +92,12 @@ const ORBIT_TIME_FACTORS = [1, 10, 100] as const;
 /** Orbit height change per pixel of wheel scroll, as a power of e: 500 px doubles it. */
 const ORBIT_WHEEL_PER_PIXEL = Math.LN2 / 500;
 /**
- * Which world this page shows: `<html data-world="mars">` on /mars/, the Moon otherwise
+ * Which world this page shows: `<html data-world="mars">` on /mars/, "mercury" on /mercury/, the Moon
+ * otherwise
  * (docs/stories/SS-13.md). Each world's own code is loaded only on its page.
  */
-const world = document.documentElement.dataset['world'] === 'mars' ? 'mars' : 'moon';
+const pageWorld = document.documentElement.dataset['world'];
+const world = pageWorld === 'mars' || pageWorld === 'mercury' ? pageWorld : 'moon';
 
 /**
  * The way back to the world picker (docs/stories/SS-13.md). Interactive only: captures show the
@@ -115,7 +117,7 @@ function withoutReliefIfAsked(viewpoint: Viewpoint | undefined): Viewpoint | und
 }
 
 /** The interactive app shows its world's app viewpoint's scene and pose. */
-const INTERACTIVE = findViewpoint(world === 'mars' ? 'mars-app' : 'app');
+const INTERACTIVE = findViewpoint(world === 'moon' ? 'app' : `${world}-app`);
 
 /** A frame counter the allocation test reads. A number property: incrementing never allocates. */
 const stats = { frames: 0 };
@@ -183,6 +185,8 @@ async function createStage(context: StageContext): Promise<Stage> {
       return (await import('./worlds/moon')).createMoonStage(context);
     case 'mars':
       return (await import('./worlds/mars')).createMarsStage(context);
+    case 'mercury':
+      return (await import('./worlds/mercury')).createMercuryStage(context);
   }
 }
 
@@ -273,7 +277,9 @@ async function start(): Promise<void> {
     stage.labels?.setViewport(height, camera.fov);
     if (starExposure !== null) {
       starExposure.value =
-        physicalStarExposure(pixelSolidAngle(camera.fov, height)) * (starBoost[0] ?? 1);
+        physicalStarExposure(pixelSolidAngle(camera.fov, height)) *
+        (starBoost[0] ?? 1) *
+        (stage.exposureScale ?? 1);
     }
   };
 

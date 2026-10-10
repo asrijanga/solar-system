@@ -96,3 +96,25 @@ describe('Mars viewpoint checks', () => {
     }
   });
 });
+
+describe('Mercury viewpoint checks', () => {
+  const landmarks = (
+    JSON.parse(
+      readFileSync(join(import.meta.dirname, '../public/data/mercury/landmarks.json'), 'utf8'),
+    ) as { landmarks: { name: string; lonDeg: number; latDeg: number }[] }
+  ).landmarks;
+
+  it('take their features where the Gazetteer puts them', () => {
+    const checked = viewpoints
+      .filter((x) => x.scene === 'mercury')
+      .flatMap((v) => v.bodyChecks)
+      .filter((c) => c.kind === 'feature');
+    expect(checked.length).toBeGreaterThan(0);
+    for (const check of checked) {
+      const l = landmarks.find((x) => x.name === check.name);
+      expect(l, check.name).toBeDefined();
+      expect(check.lonDeg).toBeCloseTo(l?.lonDeg ?? NaN, 4);
+      expect(check.latDeg).toBeCloseTo(l?.latDeg ?? NaN, 4);
+    }
+  });
+});

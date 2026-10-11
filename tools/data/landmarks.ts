@@ -233,6 +233,10 @@ const MERCURY_CHOSEN: Chosen = [
   ['Eminescu', 'crater'],
   ['Abedin', 'crater'],
   ['Xiao Zhao', 'crater'],
+  // Near the terminator on 26 January 2026: the relief checks' craters (src/capture/viewpoints.ts),
+  // Gaudí in the MLA blend band, Mistral in the stereo DEM's region.
+  ['Gaudí', 'crater'],
+  ['Mistral', 'crater'],
 ];
 
 /** Where each world's Gazetteer file is, pinned, and what to label. */

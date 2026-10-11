@@ -117,7 +117,10 @@ function withoutReliefIfAsked(viewpoint: Viewpoint | undefined): Viewpoint | und
 }
 
 /** The interactive app shows its world's app viewpoint's scene and pose. */
-const INTERACTIVE = findViewpoint(world === 'moon' ? 'app' : `${world}-app`);
+// Mercury's page shows its terrain since W4 went live: `mercury-app` keeps its baselined smooth globe.
+const INTERACTIVE = findViewpoint(
+  world === 'moon' ? 'app' : world === 'mercury' ? 'mercury-page' : `${world}-app`,
+);
 
 /** A frame counter the allocation test reads. A number property: incrementing never allocates. */
 const stats = { frames: 0 };

@@ -1,0 +1,74 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": 43.8,
+        "latDeg": -9.4
+      },
+      "distanceKm": 61013.25000000001,
+      "fovDeg": 60,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": true,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "boosted",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": false,
+      "reliefFlipped": false,
+      "utc": null,
+      "neighbour": null
+    },
+    "bodyChecks": [],
+    "negativeControl": false,
+    "id": "mercury-neighbours-boosted",
+    "description": "Mercury on 26 January 2026 from 25 radii over its day side, Stars ×100,000 and labels on: Venus (V −7.6, nearly full, 171° from the Sun in Mercury’s sky) beside the lit disc. The camera is 15° east of the line from Venus through Mercury (anti-Venus point 28.8°E, 9.4°S). For eyes; Earth and the Moon are 9° from the Sun then, behind the camera.",
+    "scene": "mercury"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": []
+  },
+  "git": {
+    "sha": "1f7cfb881d41356a152f22f11ce36ca922e47ac2",
+    "dirty": true
+  }
+}

@@ -11,7 +11,7 @@ import {
   type MercuryEpoch,
   type MercuryTimelineManifest,
 } from '../core/mercury';
-import { bodyFixedToSceneMatrix, j2000ToScene, moonViewPose } from '../core/moon';
+import { bodyFixedToSceneMatrix, j2000ToScene, moonViewPose, type Vec3 } from '../core/moon';
 import { EXPOSURE, MERCURY_EXPOSURE } from '../core/photometry';
 import { createLabels, loadLabelFont, type Landmark } from '../scenes/labels';
 import {
@@ -24,6 +24,12 @@ import {
   mercuryHapke,
 } from '../scenes/mercury';
 import { createStarMesh, loadStarField } from '../scenes/stars';
+import {
+  mercuryNeighboursAt,
+  neighbourPoints,
+  type MercuryNeighboursManifest,
+} from '../core/mercuryNeighbours';
+import { fluxOfMagnitude, type StarField } from '../core/stars';
 import type { TileRange } from '../core/terrain';
 import { siteUrl } from '../site';
 import { createDateLinks } from '../ui/toggle';
@@ -61,6 +67,46 @@ async function loadTerrainLayer(): Promise<{
   if (!response.ok) throw new Error(`Mercury's layer.json failed to load: HTTP ${response.status}`);
   const layer = (await response.json()) as { name: string; available: TileRange[][] };
   return { ...layer, base: MERCURY_TERRAIN_SITE };
+}
+
+/**
+ * Venus, Earth and the Moon as Mercury sees them at `epoch` (W8), as points of light: a star field
+ * of three with their V magnitudes, and where to label them. Null outside the 2026-2030 span.
+ */
+async function loadNeighbours(epoch: MercuryEpoch): Promise<{
+  readonly sky: StarField;
+  readonly labelled: readonly { readonly name: string; readonly position: Vec3 }[];
+} | null> {
+  const [manifest, bin] = await Promise.all([
+    loadJson<MercuryNeighboursManifest>('data/mercury/neighbours.json'),
+    fetch(siteUrl('data/mercury/neighbours.bin')),
+  ]);
+  if (!bin.ok) throw new Error(`neighbours.bin failed to load: HTTP ${bin.status}`);
+  const utcMs = Date.parse(epoch.utc.endsWith('Z') ? epoch.utc : `${epoch.utc}Z`);
+  const at = mercuryNeighboursAt(manifest, new Float32Array(await bin.arrayBuffer()), utcMs);
+  if (at === null) return null;
+  const points = neighbourPoints(epoch, at);
+  const scene = points.map((p) => j2000ToScene(p.directionJ2000));
+  // Far enough to sit behind everything near Mercury, near enough for the depth buffer (as Mars).
+  const FAR_LABEL_KM = 5e6;
+  return {
+    sky: {
+      count: points.length,
+      directions: new Float32Array(scene.flat()),
+      flux: new Float32Array(points.map((p) => fluxOfMagnitude(p.v))),
+      // No colour is drawn: white, of unit luminance (as Mars's Earth and Moon).
+      colours: new Float32Array(points.length * 3).fill(1),
+      vmag: new Float32Array(points.map((p) => p.v)),
+      hr: new Float32Array(points.length),
+    },
+    labelled: points.map((p, i) => {
+      const d = scene[i] ?? [0, 0, 0];
+      return {
+        name: p.name,
+        position: [d[0] * FAR_LABEL_KM, d[1] * FAR_LABEL_KM, d[2] * FAR_LABEL_KM] as Vec3,
+      };
+    }),
+  };
 }
 
 export async function createMercuryStage(context: StageContext): Promise<Stage> {
@@ -103,13 +149,18 @@ export async function createMercuryStage(context: StageContext): Promise<Stage> 
   scene.add(terrain === null ? createMercuryMesh(surface) : terrain.group);
   const starExposure = uniform(0);
   scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
+  // Venus, Earth and the Moon where they are at this instant (W8): points with the stars' exposure.
+  const neighbours = await loadNeighbours(epoch);
+  if (neighbours !== null) {
+    scene.add(createStarMesh(neighbours.sky, { reversedDepth, exposure: starExposure }));
+  }
   const bodyToScene = bodyFixedToSceneMatrix(epoch);
   const labels = createLabels(
     landmarkFile.landmarks,
     bodyToScene,
     MERCURY_DATUM_KM,
     j2000ToScene(epoch.sunDirectionJ2000),
-    [],
+    neighbours?.labelled ?? [],
   );
   labels.group.visible = setup.labels;
   if (setup.labels) labels.set(true, null);
@@ -157,6 +208,7 @@ const ABOUT = [
   'How bright: the light scattering is fitted to Mercury’s measured brightness at every phase from 5° to 125° (Mallama and Hilton, 2018), and each colour scaled to Mercury’s measured colours (Mallama and others, 2017). Thinner crescents than that are drawn too faint: no one law matches Mercury’s brightness all the way round.',
   'Exposure: sunlight at Mercury is 4.5 to 10 times as strong as at Earth. This page is exposed for sunlight at Mercury’s average distance, so it is not too bright to see; stars use the same exposure.',
   'Shape: the surface is polygons, every corner on a height measured by MESSENGER: its stereo camera’s global model (USGS), and north of 70°N its laser altimeter (MLA), moved half a kilometre into the camera’s frame to line up with it. Vertices are about 940 m apart. Heights are true scale: Mercury’s relief spans about 10 km.',
+  'Venus, Earth and the Moon: points of light where they are in Mercury\u2019s sky, as bright as they really are: Venus and Earth by their measured brightness at their phase (Mallama and Hilton, 2018), the Moon by its own page\u2019s measured map and light scattering, summed over the face Mercury sees. Venus reaches about magnitude \u22128, the brightest thing in Mercury\u2019s night sky. Like the stars, they are far too faint to show next to sunlit Mercury at a real exposure; Stars \u00d7100,000 shows them. Their colour is not drawn.',
   'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Hun Kal is the small crater that defines Mercury’s longitudes.',
   'Orbit: flies from wherever you are looking, at the real circular speed for that height around Mercury, never below the height the terrain stays sharp from.',
   'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon.',

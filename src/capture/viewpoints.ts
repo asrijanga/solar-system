@@ -1339,6 +1339,21 @@ export const viewpoints: readonly Viewpoint[] = [
       },
     ],
   },
+  {
+    ...SPACE,
+    id: 'mercury-neighbours-boosted',
+    description:
+      'Mercury on 26 January 2026 from 25 radii over its day side, Stars \u00d7100,000 and labels on: Venus (V \u22127.6, nearly full, 171\u00b0 from the Sun in Mercury\u2019s sky) beside the lit disc. The camera is 15\u00b0 east of the line from Venus through Mercury (anti-Venus point 28.8\u00b0E, 9.4\u00b0S). For eyes; Earth and the Moon are 9\u00b0 from the Sun then, behind the camera.',
+    scene: 'mercury',
+    body: {
+      ...MERCURY_DISC,
+      vantage: { kind: 'over', lonDeg: 43.8, latDeg: -9.4 },
+      distanceKm: 25 * MERCURY_RADIUS_KM,
+      fovDeg: 60,
+      stars: 'boosted',
+      labels: true,
+    },
+  },
 ];
 
 export function findViewpoint(id: string): Viewpoint | undefined {

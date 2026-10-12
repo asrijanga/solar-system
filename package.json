@@ -30,6 +30,7 @@
     "pipeline:ephemeris:mercury": "uv run --project pipeline python pipeline/ephemeris_mercury.py",
     "pipeline:timeline": "uv run --project pipeline python pipeline/timeline.py",
     "pipeline:timeline:mars": "uv run --project pipeline python pipeline/timeline_mars.py",
+    "pipeline:neighbours:mercury": "uv run --project pipeline python pipeline/neighbours_mercury.py",
     "pipeline:timeline:mercury": "uv run --project pipeline python pipeline/timeline_mercury.py",
     "pipeline:moons:mars": "uv run --project pipeline python pipeline/moons_mars.py",
     "pipeline:calibrate": "uv run --project pipeline python pipeline/calibrate.py",

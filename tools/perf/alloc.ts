@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import { MARS_TERRAIN_SITE } from '../../src/scenes/marsSite.ts';
+import { MERCURY_TERRAIN_SITE } from '../../src/scenes/mercurySite.ts';
 import {
   attribute,
   mergeAttributions,
@@ -89,17 +90,19 @@ async function main(): Promise<number> {
   const browser = await chromium.launch({ args: SWIFTSHADER_FLAGS });
   try {
     const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
-    // Behind an HTTPS proxy (a sandbox), Node fetches Mars's data site for the page, as the
+    // Behind an HTTPS proxy (a sandbox), Node fetches Mars's and Mercury's data sites for the page, as the
     // capture harness does (tools/capture/run.ts); in CI the browser fetches it directly.
     if (process.env['HTTPS_PROXY'] !== undefined) {
-      await page.route(`${MARS_TERRAIN_SITE}**`, async (route) => {
-        const response = await fetch(route.request().url());
-        await route.fulfill({
-          status: response.status,
-          headers: Object.fromEntries(response.headers),
-          body: Buffer.from(await response.arrayBuffer()),
+      for (const site of [MARS_TERRAIN_SITE, MERCURY_TERRAIN_SITE]) {
+        await page.route(`${site}**`, async (route) => {
+          const response = await fetch(route.request().url());
+          await route.fulfill({
+            status: response.status,
+            headers: Object.fromEntries(response.headers),
+            body: Buffer.from(await response.arrayBuffer()),
+          });
         });
-      });
+      }
     }
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));

@@ -401,6 +401,24 @@
    "latDeg": 10.5847,
    "diameterKm": 24,
    "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/14392"
+  },
+  {
+   "name": "Gaudí",
+   "label": "Gaudí",
+   "kind": "crater",
+   "lonDeg": 69.1576,
+   "latDeg": 76.9025,
+   "diameterKm": 81,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/15021"
+  },
+  {
+   "name": "Mistral",
+   "label": "Mistral",
+   "kind": "crater",
+   "lonDeg": -54.67149999999998,
+   "latDeg": 4.6997,
+   "diameterKm": 102,
+   "gazetteer": "https://planetarynames.wr.usgs.gov/Feature/3929"
   }
  ]
 }

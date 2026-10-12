@@ -599,6 +599,15 @@ const MERCURY_GAZETTEER_CHECKS: readonly BodyCheck[] = (
   ] as const
 ).map((f) => ({ kind: 'feature', against: 'disc-median', ...f }));
 
+/**
+ * Craters near the terminator on 26 January 2026, as public/data/mercury/landmarks.json has them
+ * from the Gazetteer (a test asserts it), chosen before any capture was read (2026-10-11): Gaudí
+ * (81 km, 76.9°N) in the MLA blend band with the Sun 9.8° up in the west, and Mistral (102 km,
+ * 4.7°N) in the stereo DEM's region with the Sun 7.4° up in the east.
+ */
+const GAUDI = { lonDeg: 69.1576, latDeg: 76.9025, diameterKm: 81 } as const;
+const MISTRAL = { lonDeg: -54.6715, latDeg: 4.6997, diameterKm: 102 } as const;
+
 const SPACE = {
   width: 1024,
   height: 1024,
@@ -1267,6 +1276,68 @@ export const viewpoints: readonly Viewpoint[] = [
       distanceKm: 4 * MERCURY_RADIUS_KM,
       relief: false,
     },
+  },
+  {
+    ...SPACE,
+    id: 'mercury-page',
+    description:
+      'What the Mercury page shows on load since its terrain went live: Mercury from Earth at the first-quarter date, its terrain from Mercury\u2019s data site, north up, stars at physical exposure.',
+    scene: 'mercury',
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', distanceKm: 4 * MERCURY_RADIUS_KM },
+  },
+  {
+    ...SPACE,
+    id: 'mercury-orbit',
+    description:
+      'Orbit mode (?orbit=7) at its start, 26 January 2026: a random orbit around Mercury at the lowest height its website terrain stays sharp from for this 1024-pixel view. For eyes.',
+    scene: 'mercury',
+    body: { ...MOON_SETUP, epoch: 'first-quarter-2026-01', orbitSeed: 7 },
+  },
+  {
+    ...SPACE,
+    id: 'mercury-gaudi',
+    description:
+      'Gaudí crater (81 km, 76.9\u00b0N 69.2\u00b0E) on 26 January 2026, the Sun 9.8\u00b0 up in the west: Mercury\u2019s terrain in the MLA blend band, lit by the fitted law. Its eastern inner wall faces the Sun and must be the brighter.',
+    scene: 'mercury',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: GAUDI.lonDeg, latDeg: GAUDI.latDeg },
+      distanceKm: MERCURY_RADIUS_KM + 300,
+      fovDeg: 40,
+    },
+    bodyChecks: [
+      {
+        kind: 'walls',
+        name: 'Gaudí\u2019s sunward wall',
+        ...GAUDI,
+        inner: [0.35, 0.5],
+        brighter: 'east',
+      },
+    ],
+  },
+  {
+    ...SPACE,
+    id: 'mercury-mistral',
+    description:
+      'Mistral crater (102 km, 4.7\u00b0N 54.7\u00b0W) on 26 January 2026, the Sun 7.4\u00b0 up in the east: Mercury\u2019s stereo-DEM terrain, lit by the fitted law. Its western inner wall faces the Sun and must be the brighter.',
+    scene: 'mercury',
+    body: {
+      ...MOON_SETUP,
+      epoch: 'first-quarter-2026-01',
+      vantage: { kind: 'over', lonDeg: MISTRAL.lonDeg, latDeg: MISTRAL.latDeg },
+      distanceKm: MERCURY_RADIUS_KM + 400,
+      fovDeg: 40,
+    },
+    bodyChecks: [
+      {
+        kind: 'walls',
+        name: 'Mistral\u2019s sunward wall',
+        ...MISTRAL,
+        inner: [0.35, 0.5],
+        brighter: 'west',
+      },
+    ],
   },
 ];
 

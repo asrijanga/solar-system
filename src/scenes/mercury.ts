@@ -1,7 +1,7 @@
 // Mercury's surface (docs/stories/SS-16.md, W7): its albedo and colour (W3), drawn with the
 // scattering law fitted to its measured brightness and each band calibrated to its geometric
 // albedo (core/mercuryPhotometry.ts, public/data/mercury/photometry.json), on the smooth
-// ellipsoid. Its terrain (W4) follows once its data site is live (owner, 2026-10-10).
+// ellipsoid or on its terrain tiles from Mercury's own data site (W4).
 //
 // The surface material is the Moon's (scenes/moon.ts), given Mercury's map, bands, law and shape.
 // Mercury has three bands, 430, 750 and 1000 nm, against the material's four: in its column order
@@ -19,6 +19,7 @@ import {
   UnsignedByteType,
   type Mesh,
 } from 'three/webgpu';
+import type { TilesRenderer } from '3d-tiles-renderer';
 import { hapke } from '../core/hapke';
 import { MERCURY_EXPOSURE } from '../core/photometry';
 import { colourWeights } from '../core/moonColour';
@@ -27,6 +28,7 @@ import type { MercuryPhotometry } from '../core/mercuryPhotometry';
 import { decodeChannels } from './decode';
 import {
   createMoonMesh,
+  createMoonTerrain,
   type MoonOptions,
   type MoonShading,
   type MoonTextures,
@@ -172,12 +174,14 @@ export interface MercurySurface {
   readonly mirrored?: boolean;
 }
 
-/** The smooth ellipsoid, pck00011's radii: what the photometry checks are written for. */
-export function createMercuryMesh(surface: MercurySurface): Mesh {
+export { MERCURY_TERRAIN_SITE } from './mercurySite';
+import { MERCURY_TERRAIN_SITE } from './mercurySite';
+
+function options(surface: MercurySurface, radiusKm: number): MoonOptions {
   const [a, , c] = surface.radiiKm;
-  const options: MoonOptions = {
+  return {
     epoch: surface.epoch,
-    radiusKm: a,
+    radiusKm,
     polarRatio: c / a,
     name: 'mercury',
     exposure: MERCURY_EXPOSURE,
@@ -186,5 +190,20 @@ export function createMercuryMesh(surface: MercurySurface): Mesh {
     shading: surface.shading,
     mirrored: surface.mirrored ?? false,
   };
-  return createMoonMesh(options);
+}
+
+/** The smooth ellipsoid, pck00011's radii: what the photometry checks are written for. */
+export function createMercuryMesh(surface: MercurySurface): Mesh {
+  return createMoonMesh(options(surface, surface.radiiKm[0]));
+}
+
+/**
+ * Mercury as streamed polygons from its data site (W4): heights above the 2439.4 km sphere the
+ * USGS DEM and MLA share (tools/terrain/mercury.ts).
+ */
+export function createMercuryTerrain(
+  surface: MercurySurface,
+  base = MERCURY_TERRAIN_SITE,
+): TilesRenderer {
+  return createMoonTerrain(options(surface, MERCURY_DATUM_KM), base);
 }

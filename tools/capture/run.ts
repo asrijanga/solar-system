@@ -11,6 +11,7 @@ import type { CaptureReport } from '../../src/capture/protocol.ts';
 import { findViewpoint, viewpoints, type Viewpoint } from '../../src/capture/viewpoints.ts';
 import { judge } from './checks.ts';
 import { MARS_TERRAIN_SITE } from '../../src/scenes/marsSite.ts';
+import { MERCURY_TERRAIN_SITE } from '../../src/scenes/mercurySite.ts';
 import type { EphemerisFile } from './moon.ts';
 import { compareImages, identicalPixels } from './compare.ts';
 import { capturesDir, distDir, pngPath, root, sidecarPath } from './paths.ts';
@@ -90,14 +91,17 @@ async function render(
     // byte: behind an HTTPS proxy (a sandbox) Chromium cannot reach it itself, and GitHub Pages
     // now and then answers a tile with a server error and no CORS header, which failed captures
     // and a deploy (2026-10-08). A server error or network failure is retried, four times at most.
-    await context.route(`${MARS_TERRAIN_SITE}**`, async (route) => {
-      const response = await fetchWithRetry(route.request().url());
-      await route.fulfill({
-        status: response.status,
-        headers: Object.fromEntries(response.headers),
-        body: Buffer.from(await response.arrayBuffer()),
+    // Mercury's data site (docs/stories/SS-16.md, W4) the same way.
+    for (const site of [MARS_TERRAIN_SITE, MERCURY_TERRAIN_SITE]) {
+      await context.route(`${site}**`, async (route) => {
+        const response = await fetchWithRetry(route.request().url());
+        await route.fulfill({
+          status: response.status,
+          headers: Object.fromEntries(response.headers),
+          body: Buffer.from(await response.arrayBuffer()),
+        });
       });
-    });
+    }
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));

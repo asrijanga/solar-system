@@ -1,6 +1,6 @@
 // Mercury's page (docs/stories/SS-16.md, W7): its scene, from SPICE and MESSENGER's MDIS maps,
-// and its own controls. Loaded only on /mercury/; src/main.ts runs it. The smooth globe first; its
-// terrain (W4) follows once Mercury's data site is live (owner, 2026-10-10).
+// and its own controls. Loaded only on /mercury/; src/main.ts runs it. Its terrain (W4) streams
+// from Mercury's own data site.
 import { PerspectiveCamera, Scene } from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import type { MoonEpochId } from '../capture/viewpoints';
@@ -16,12 +16,15 @@ import { EXPOSURE, MERCURY_EXPOSURE } from '../core/photometry';
 import { createLabels, loadLabelFont, type Landmark } from '../scenes/labels';
 import {
   createMercuryMesh,
+  createMercuryTerrain,
+  MERCURY_TERRAIN_SITE,
   loadMercuryPhotometry,
   loadMercuryTextures,
   MERCURY_DATUM_KM,
   mercuryHapke,
 } from '../scenes/mercury';
 import { createStarMesh, loadStarField } from '../scenes/stars';
+import type { TileRange } from '../core/terrain';
 import { siteUrl } from '../site';
 import { createDateLinks } from '../ui/toggle';
 import { loadJson, placedAt, type Stage, type StageContext, type WorldUi } from './stage';
@@ -48,16 +51,29 @@ async function epochFromTimeline(utcMs: number): Promise<MercuryEpoch | null> {
   return mercuryEpochAt(manifest, new Float32Array(await bin.arrayBuffer()), utcMs);
 }
 
+/** Mercury's website terrain (W4), from its own data site. */
+async function loadTerrainLayer(): Promise<{
+  readonly base: string;
+  readonly name: string;
+  readonly available: TileRange[][];
+}> {
+  const response = await fetch(`${MERCURY_TERRAIN_SITE}layer.json`);
+  if (!response.ok) throw new Error(`Mercury's layer.json failed to load: HTTP ${response.status}`);
+  const layer = (await response.json()) as { name: string; available: TileRange[][] };
+  return { ...layer, base: MERCURY_TERRAIN_SITE };
+}
+
 export async function createMercuryStage(context: StageContext): Promise<Stage> {
   const { reversedDepth, maxAnisotropy, captureId, params } = context;
   const fixedEpoch = epochParam(params);
   const listed = context.viewpoint.body;
   if (listed === null)
     throw new Error(`${context.viewpoint.id} is a Mercury scene without a setup`);
-  const [ephemeris, field, photometry, landmarkFile] = await Promise.all([
+  const [ephemeris, field, photometry, layer, landmarkFile] = await Promise.all([
     loadJson<MercuryEphemeris>('data/mercury/ephemeris.json'),
     loadStarField(),
     loadMercuryPhotometry(),
+    listed.relief ? loadTerrainLayer() : null,
     loadJson<{ landmarks: Landmark[] }>('data/mercury/landmarks.json'),
     loadLabelFont(siteUrl),
   ]);
@@ -73,16 +89,18 @@ export async function createMercuryStage(context: StageContext): Promise<Stage> 
   const nowOutOfSpan = captureId === null && fixedEpoch === null && now === null;
 
   const scene = new Scene();
-  scene.add(
-    createMercuryMesh({
-      epoch,
-      radiiKm,
-      albedo: textures ?? { uniform: setup.albedo === 'map' ? 0 : setup.albedo.uniform },
-      hapke: mercuryHapke(photometry),
-      shading: setup.shading,
-      mirrored: setup.mirrored,
-    }),
-  );
+  const surface = {
+    epoch,
+    radiiKm,
+    albedo: textures ?? { uniform: setup.albedo === 'map' ? 0 : setup.albedo.uniform },
+    hapke: mercuryHapke(photometry),
+    shading: setup.shading,
+    mirrored: setup.mirrored,
+  };
+  // With relief Mercury is its measured shape, streamed as polygons from its data site (W4);
+  // without, the smooth ellipsoid the photometry checks are written for.
+  const terrain = layer === null ? null : createMercuryTerrain(surface, layer.base);
+  scene.add(terrain === null ? createMercuryMesh(surface) : terrain.group);
   const starExposure = uniform(0);
   scene.add(createStarMesh(field, { reversedDepth, exposure: starExposure }));
   const bodyToScene = bodyFixedToSceneMatrix(epoch);
@@ -97,7 +115,8 @@ export async function createMercuryStage(context: StageContext): Promise<Stage> 
   if (setup.labels) labels.set(true, null);
   scene.add(labels.group);
 
-  const camera = new PerspectiveCamera(setup.fovDeg, 1, 1, 1e8);
+  // Near 10 m over terrain; 1 km over the ellipsoid, as for Mars.
+  const camera = new PerspectiveCamera(setup.fovDeg, 1, terrain === null ? 1 : 0.01, 1e8);
   const pose = moonViewPose(epoch, setup.vantage, setup.distanceKm);
   camera.position.set(...pose.position);
   camera.up.set(...pose.up);
@@ -120,8 +139,8 @@ export async function createMercuryStage(context: StageContext): Promise<Stage> 
     landmarks: landmarkFile.landmarks,
     bodyToScene,
     albedoDecodedMean: textures?.decodedMean ?? null,
-    terrain: null,
-    terrainAvailable: null,
+    terrain,
+    terrainAvailable: layer?.available ?? null,
     orbitInputs: {
       gmKm3PerS2: ephemeris.body.gmKm3PerS2,
       sun: j2000ToScene(epoch.sunDirectionJ2000),
@@ -137,9 +156,10 @@ const ABOUT = [
   'Surface brightness and colour: MESSENGER’s MDIS camera, the three-colour map (430, 750 and 1000 nm) made from its lowest-Sun images, averaged over many (USGS / MESSENGER team, PDS MSGRMDS_6001). Where that map has no data, mostly south of 20°S, its eight-colour map (MSGRMDS_5001) fills in, scaled to agree with it to under 1%. The two polar caps neither map measured are shown black. Crater rims near the poles stay bright: the only pictures there were taken with the Sun low.',
   'How bright: the light scattering is fitted to Mercury’s measured brightness at every phase from 5° to 125° (Mallama and Hilton, 2018), and each colour scaled to Mercury’s measured colours (Mallama and others, 2017). Thinner crescents than that are drawn too faint: no one law matches Mercury’s brightness all the way round.',
   'Exposure: sunlight at Mercury is 4.5 to 10 times as strong as at Earth. This page is exposed for sunlight at Mercury’s average distance, so it is not too bright to see; stars use the same exposure.',
-  'Shape: a smooth globe for now. Heights measured by MESSENGER’s stereo camera and laser altimeter come next.',
+  'Shape: the surface is polygons, every corner on a height measured by MESSENGER: its stereo camera’s global model (USGS), and north of 70°N its laser altimeter (MLA), moved half a kilometre into the camera’s frame to line up with it. Vertices are about 940 m apart. Heights are true scale: Mercury’s relief spans about 10 km.',
   'Labels: names and places from the IAU Gazetteer of Planetary Nomenclature. Hun Kal is the small crater that defines Mercury’s longitudes.',
-  'Moving: drag to turn the globe, pinch or scroll to change height.',
+  'Orbit: flies from wherever you are looking, at the real circular speed for that height around Mercury, never below the height the terrain stays sharp from.',
+  'Moving: drag to fly over the surface, pinch or scroll to change height, and drag two fingers up (with a mouse, right-drag or shift-drag) to tilt towards the horizon.',
 ];
 
 function mercuryUi(caption: string, fixedEpoch: MoonEpochId | null): WorldUi {

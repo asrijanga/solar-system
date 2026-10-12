@@ -108,10 +108,10 @@ describe('Mercury viewpoint checks', () => {
     const checked = viewpoints
       .filter((x) => x.scene === 'mercury')
       .flatMap((v) => v.bodyChecks)
-      .filter((c) => c.kind === 'feature');
+      .filter((c) => c.kind === 'feature' || c.kind === 'walls');
     expect(checked.length).toBeGreaterThan(0);
     for (const check of checked) {
-      const l = landmarks.find((x) => x.name === check.name);
+      const l = landmarks.find((x) => x.name === check.name || check.name.startsWith(x.name));
       expect(l, check.name).toBeDefined();
       expect(check.lonDeg).toBeCloseTo(l?.lonDeg ?? NaN, 4);
       expect(check.latDeg).toBeCloseTo(l?.latDeg ?? NaN, 4);

@@ -43,6 +43,7 @@
     "pipeline:moon": "uv run --project pipeline python pipeline/moon.py",
     "pipeline:mars": "uv run --project pipeline python pipeline/mars.py",
     "pipeline:mercury:tiles": "node tools/terrain/mercury.ts",
+    "pipeline:mercury:colour-check": "uv run --project pipeline python pipeline/mercury_colour_check.py",
     "pipeline:mercury": "uv run --project pipeline python pipeline/mercury.py",
     "pipeline:mars:terrain": "uv run --project pipeline python pipeline/mars_terrain.py",
     "pipeline:mars:tiles": "node tools/terrain/mars.ts",

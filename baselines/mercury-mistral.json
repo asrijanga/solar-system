@@ -1,0 +1,93 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": -54.6715,
+        "latDeg": 4.6997
+      },
+      "distanceKm": 2840.53,
+      "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": true,
+      "reliefFlipped": false,
+      "utc": null,
+      "neighbour": null
+    },
+    "bodyChecks": [
+      {
+        "kind": "walls",
+        "name": "Mistral’s sunward wall",
+        "lonDeg": -54.6715,
+        "latDeg": 4.6997,
+        "diameterKm": 102,
+        "inner": [
+          0.35,
+          0.5
+        ],
+        "brighter": "west"
+      }
+    ],
+    "negativeControl": false,
+    "id": "mercury-mistral",
+    "description": "Mistral crater (102 km, 4.7°N 54.7°W) on 26 January 2026, the Sun 7.4° up in the east: Mercury’s stereo-DEM terrain, lit by the fitted law. Its western inner wall faces the Sun and must be the brighter.",
+    "scene": "mercury"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Mistral’s sunward wall: west wall 30.5 vs 9.7 (12849 / 12829 px)",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "bc9df1dcbe9161cd0f454eeae1cd7226f5b47be8",
+    "dirty": true
+  }
+}

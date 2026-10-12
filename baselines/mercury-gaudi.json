@@ -1,0 +1,93 @@
+{
+  "viewpoint": {
+    "width": 1024,
+    "height": 1024,
+    "epoch": null,
+    "camera": null,
+    "reversedDepthBuffer": true,
+    "background": "space",
+    "sky": null,
+    "checks": [],
+    "starChecks": [],
+    "body": {
+      "epoch": "first-quarter-2026-01",
+      "vantage": {
+        "kind": "over",
+        "lonDeg": 69.1576,
+        "latDeg": 76.9025
+      },
+      "distanceKm": 2740.53,
+      "fovDeg": 40,
+      "tiltDeg": 0,
+      "orbitSeed": null,
+      "orbitFrom": null,
+      "labels": false,
+      "lookAtEarth": false,
+      "albedo": "map",
+      "shading": "hapke",
+      "mirrored": false,
+      "seamFix": true,
+      "stars": "physical",
+      "lighting": "sun",
+      "earthshine": "physical",
+      "relief": true,
+      "reliefFlipped": false,
+      "utc": null,
+      "neighbour": null
+    },
+    "bodyChecks": [
+      {
+        "kind": "walls",
+        "name": "Gaudí’s sunward wall",
+        "lonDeg": 69.1576,
+        "latDeg": 76.9025,
+        "diameterKm": 81,
+        "inner": [
+          0.35,
+          0.5
+        ],
+        "brighter": "east"
+      }
+    ],
+    "negativeControl": false,
+    "id": "mercury-gaudi",
+    "description": "Gaudí crater (81 km, 76.9°N 69.2°E) on 26 January 2026, the Sun 9.8° up in the west: Mercury’s terrain in the MLA blend band, lit by the fitted law. Its eastern inner wall faces the Sun and must be the brighter.",
+    "scene": "mercury"
+  },
+  "environment": {
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "three": "184",
+    "backend": "webgpu",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "devicePixelRatio": 1,
+  "determinism": {
+    "renders": 2,
+    "identical": true,
+    "differingPixels": 0
+  },
+  "checks": {
+    "negativeControl": false,
+    "ok": true,
+    "results": [
+      {
+        "name": "Gaudí’s sunward wall: east wall 58.2 vs 14.6 (14206 / 14130 px)",
+        "pass": true,
+        "fraction": 1
+      }
+    ]
+  },
+  "git": {
+    "sha": "bc9df1dcbe9161cd0f454eeae1cd7226f5b47be8",
+    "dirty": true
+  }
+}

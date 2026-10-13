@@ -34,7 +34,13 @@ ATTEMPTS = 4
 
 # Which of a cube's bands are 430, 750 and 1000 nm (0-based), and the block that brings each tile
 # to 32 px/deg, about 3 times finer than the website's 22.76 px/deg texture.
-BANDS = {"md3": (0, 1, 2), "mdr": (0, 4, 7)}
+BANDS = {
+    "md3": (0, 1, 2),
+    "mdr": (0, 4, 7),
+    # MDR's five visible bands, 430, 480, 560, 630 and 750 nm (its label's BAND_NAME: WAC filters
+    # 6, 3, 4, 5, 7), for the colour check of SS-16 W7 (pipeline/mercury_colour_check.py).
+    "mdrvis": (0, 1, 2, 3, 4),
+}
 
 
 def label(path: str) -> dict:
@@ -79,7 +85,8 @@ def reduce_tile(kind: str, entry: dict) -> dict:
     """The tile's three colour bands block-averaged, cached; streams and MD5-checks the file."""
     TILE_CACHE.mkdir(parents=True, exist_ok=True)
     name = Path(entry["path"]).name
-    cached = TILE_CACHE / f"{name}.npz"
+    # md3 and mdr keep their original cache names; other selections are named by kind.
+    cached = TILE_CACHE / (f"{name}.npz" if kind in ("md3", "mdr") else f"{name}.{kind}.npz")
     if cached.exists():
         with np.load(cached, allow_pickle=False) as z:
             if str(z["md5"]) == entry["imgMd5"]:
@@ -89,7 +96,7 @@ def reduce_tile(kind: str, entry: dict) -> dict:
     lines, samples = meta["lines"], meta["samples"]
     rows_out, cols_out = lines // k, samples // k
     wanted = BANDS[kind]
-    out = np.full((3, rows_out, cols_out), np.nan, np.float32)
+    out = np.full((len(wanted), rows_out, cols_out), np.nan, np.float32)
     band_bytes = lines * meta["recordBytes"]
     for attempt in range(1, ATTEMPTS + 1):
         try:

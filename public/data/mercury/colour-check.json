@@ -1,0 +1,438 @@
+{
+ "story": "docs/stories/SS-16.md (W7, the colour check)",
+ "what": "MDR's measured reflectance at 480, 560 and 630 nm over the straight line through its own 430 and 750 nm values, at every pixel (32 px/deg block means) where all five bands were measured",
+ "source": "PDS MSGRMDS_5001 (MDR v4), bands 1-5 (WAC filters 6, 3, 4, 5, 7), every file MD5-checked as it streams (pipeline/mercury_sources.json)",
+ "allPixels": {
+  "480nm": {
+   "median": 1.0541,
+   "p5": 1.0277,
+   "p25": 1.0454,
+   "p75": 1.0622,
+   "p95": 1.0739
+  },
+  "560nm": {
+   "median": 1.0583,
+   "p5": 1.0263,
+   "p25": 1.0472,
+   "p75": 1.067,
+   "p95": 1.0787
+  },
+  "630nm": {
+   "median": 1.049,
+   "p5": 1.0253,
+   "p25": 1.0396,
+   "p75": 1.0574,
+   "p95": 1.0708
+  }
+ },
+ "tileMedians": {
+  "480nm": {
+   "median": 1.0539,
+   "p5": 1.0411,
+   "p25": 1.0475,
+   "p75": 1.0595,
+   "p95": 1.0651
+  },
+  "560nm": {
+   "median": 1.0574,
+   "p5": 1.0392,
+   "p25": 1.0497,
+   "p75": 1.0651,
+   "p95": 1.0692
+  },
+  "630nm": {
+   "median": 1.05,
+   "p5": 1.0357,
+   "p25": 1.0441,
+   "p75": 1.0542,
+   "p95": 1.0608
+  }
+ },
+ "tiles": [
+  {
+   "tile": "MDIS_MDR_064PPD_H01NP4",
+   "pixels": 2114388,
+   "480nm": 1.0513,
+   "560nm": 1.0448,
+   "630nm": 1.051
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H02NE4",
+   "pixels": 707199,
+   "480nm": 1.0494,
+   "560nm": 1.0556,
+   "630nm": 1.0497
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H02NW4",
+   "pixels": 707200,
+   "480nm": 1.0454,
+   "560nm": 1.0513,
+   "630nm": 1.046
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H02SE4",
+   "pixels": 904399,
+   "480nm": 1.0557,
+   "560nm": 1.0655,
+   "630nm": 1.0515
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H02SW4",
+   "pixels": 902813,
+   "480nm": 1.0547,
+   "560nm": 1.0667,
+   "630nm": 1.0507
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H03NE4",
+   "pixels": 705542,
+   "480nm": 1.0481,
+   "560nm": 1.05,
+   "630nm": 1.0519
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H03NW4",
+   "pixels": 706032,
+   "480nm": 1.0551,
+   "560nm": 1.0502,
+   "630nm": 1.0511
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H03SE4",
+   "pixels": 904238,
+   "480nm": 1.0539,
+   "560nm": 1.0602,
+   "630nm": 1.0521
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H03SW4",
+   "pixels": 904400,
+   "480nm": 1.0569,
+   "560nm": 1.0579,
+   "630nm": 1.0532
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H04NE4",
+   "pixels": 707200,
+   "480nm": 1.0574,
+   "560nm": 1.0531,
+   "630nm": 1.0536
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H04NW4",
+   "pixels": 707066,
+   "480nm": 1.0456,
+   "560nm": 1.038,
+   "630nm": 1.0476
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H04SE4",
+   "pixels": 903982,
+   "480nm": 1.0628,
+   "560nm": 1.0638,
+   "630nm": 1.0568
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H04SW4",
+   "pixels": 904400,
+   "480nm": 1.0519,
+   "560nm": 1.0469,
+   "630nm": 1.0515
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H05NE4",
+   "pixels": 707118,
+   "480nm": 1.034,
+   "560nm": 1.0284,
+   "630nm": 1.0388
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H05NW4",
+   "pixels": 706395,
+   "480nm": 1.0434,
+   "560nm": 1.045,
+   "630nm": 1.0341
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H05SE4",
+   "pixels": 904305,
+   "480nm": 1.0343,
+   "560nm": 1.0351,
+   "630nm": 1.035
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H05SW4",
+   "pixels": 903962,
+   "480nm": 1.0433,
+   "560nm": 1.0495,
+   "630nm": 1.0349
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H06NE4",
+   "pixels": 829351,
+   "480nm": 1.0544,
+   "560nm": 1.0652,
+   "630nm": 1.0462
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H06NW4",
+   "pixels": 829440,
+   "480nm": 1.0611,
+   "560nm": 1.0688,
+   "630nm": 1.0508
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H06SE4",
+   "pixels": 829440,
+   "480nm": 1.0573,
+   "560nm": 1.0666,
+   "630nm": 1.0389
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H06SW4",
+   "pixels": 829440,
+   "480nm": 1.0621,
+   "560nm": 1.0646,
+   "630nm": 1.0548
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H07NE4",
+   "pixels": 829440,
+   "480nm": 1.059,
+   "560nm": 1.07,
+   "630nm": 1.055
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H07NW4",
+   "pixels": 829440,
+   "480nm": 1.0631,
+   "560nm": 1.068,
+   "630nm": 1.0618
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H07SE4",
+   "pixels": 829440,
+   "480nm": 1.0614,
+   "560nm": 1.065,
+   "630nm": 1.0571
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H07SW4",
+   "pixels": 829440,
+   "480nm": 1.0599,
+   "560nm": 1.0626,
+   "630nm": 1.0605
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H08NE4",
+   "pixels": 829440,
+   "480nm": 1.0653,
+   "560nm": 1.0639,
+   "630nm": 1.0563
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H08NW4",
+   "pixels": 829440,
+   "480nm": 1.065,
+   "560nm": 1.0662,
+   "630nm": 1.0564
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H08SE4",
+   "pixels": 829440,
+   "480nm": 1.063,
+   "560nm": 1.0626,
+   "630nm": 1.0514
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H08SW4",
+   "pixels": 829440,
+   "480nm": 1.0706,
+   "560nm": 1.0742,
+   "630nm": 1.0563
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H09NE4",
+   "pixels": 829440,
+   "480nm": 1.063,
+   "560nm": 1.0619,
+   "630nm": 1.0571
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H09NW4",
+   "pixels": 829440,
+   "480nm": 1.0458,
+   "560nm": 1.0444,
+   "630nm": 1.0445
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H09SE4",
+   "pixels": 829440,
+   "480nm": 1.069,
+   "560nm": 1.0725,
+   "630nm": 1.0632
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H09SW4",
+   "pixels": 829440,
+   "480nm": 1.0554,
+   "560nm": 1.0552,
+   "630nm": 1.0567
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H10NE4",
+   "pixels": 829440,
+   "480nm": 1.0462,
+   "560nm": 1.0498,
+   "630nm": 1.045
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H10NW4",
+   "pixels": 829440,
+   "480nm": 1.0507,
+   "560nm": 1.0574,
+   "630nm": 1.0391
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H10SE4",
+   "pixels": 829440,
+   "480nm": 1.0509,
+   "560nm": 1.0554,
+   "630nm": 1.0482
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H10SW4",
+   "pixels": 829440,
+   "480nm": 1.0536,
+   "560nm": 1.0656,
+   "630nm": 1.0383
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H11NE4",
+   "pixels": 904400,
+   "480nm": 1.0556,
+   "560nm": 1.0639,
+   "630nm": 1.0408
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H11NW4",
+   "pixels": 904400,
+   "480nm": 1.0532,
+   "560nm": 1.0577,
+   "630nm": 1.05
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H11SE4",
+   "pixels": 707200,
+   "480nm": 1.055,
+   "560nm": 1.0678,
+   "630nm": 1.0384
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H11SW4",
+   "pixels": 697548,
+   "480nm": 1.0498,
+   "560nm": 1.0573,
+   "630nm": 1.036
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H12NE4",
+   "pixels": 904400,
+   "480nm": 1.0485,
+   "560nm": 1.0489,
+   "630nm": 1.0504
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H12NW4",
+   "pixels": 904400,
+   "480nm": 1.0574,
+   "560nm": 1.0597,
+   "630nm": 1.0491
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H12SE4",
+   "pixels": 707200,
+   "480nm": 1.0451,
+   "560nm": 1.046,
+   "630nm": 1.0453
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H12SW4",
+   "pixels": 707200,
+   "480nm": 1.0524,
+   "560nm": 1.0565,
+   "630nm": 1.0443
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H13NE4",
+   "pixels": 904400,
+   "480nm": 1.064,
+   "560nm": 1.0669,
+   "630nm": 1.0554
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H13NW4",
+   "pixels": 904400,
+   "480nm": 1.0548,
+   "560nm": 1.0563,
+   "630nm": 1.0616
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H13SE4",
+   "pixels": 707200,
+   "480nm": 1.0619,
+   "560nm": 1.0668,
+   "630nm": 1.0477
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H13SW4",
+   "pixels": 707200,
+   "480nm": 1.0469,
+   "560nm": 1.0486,
+   "630nm": 1.0455
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H14NE4",
+   "pixels": 904400,
+   "480nm": 1.0456,
+   "560nm": 1.0455,
+   "630nm": 1.0501
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H14NW4",
+   "pixels": 904400,
+   "480nm": 1.05,
+   "560nm": 1.0597,
+   "630nm": 1.0382
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H14SE4",
+   "pixels": 707200,
+   "480nm": 1.0403,
+   "560nm": 1.0397,
+   "630nm": 1.0439
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H14SW4",
+   "pixels": 707200,
+   "480nm": 1.0469,
+   "560nm": 1.0568,
+   "630nm": 1.0371
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_2700_H15SP4",
+   "pixels": 2209934,
+   "480nm": 1.0484,
+   "560nm": 1.0549,
+   "630nm": 1.0385
+  },
+  {
+   "tile": "MDIS_MDR_064PPD_H15SP4",
+   "pixels": 2044836,
+   "480nm": 1.0415,
+   "560nm": 1.0434,
+   "630nm": 1.0443
+  }
+ ]
+}

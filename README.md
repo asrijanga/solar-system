@@ -393,7 +393,7 @@ These are expensive to reverse once there is a codebase. Everything else can be 
 | Depth | Reversed-Z (`reversedDepthBuffer: true`) on `depth32float`, with the scene drawn through a `RenderPipeline` scene pass; proven by captures | Naive depth fails at planetary scale. The option name fails silently, and three r184's default output path quietly uses 24-bit depth even with reversed-Z on (SS-3) |
 | Ephemerides | Offline SpiceyPy to per-world Chebyshev files; a pure-TS evaluator in `core/` | Keeps kernels and CSPICE out of the page, and makes the runtime testable against Horizons |
 | Asset delivery | Your own tile pyramid on object storage, streamed; textures as KTX2 | Source archives are terabytes; nothing usable can be bundled with the app |
-| Data provenance | Source, product ID, version, mission, resolution, and processing steps recorded per asset and per tile | An education tool has to cite itself, and the coverage overlay (SS-16) is impossible to retrofit without it |
+| Data provenance | Source, product ID, version, mission, resolution, and processing steps recorded per asset and per tile | An education tool has to cite itself, and the coverage overlay (SS-18) is impossible to retrofit without it |
 | Memory budget | One world resident at a time, disposed on exit, and proven by GPU memory accounting | Budgeting for a single body rather than a system is what keeps the browser ceiling reachable |
 | Preprocessing | Scripted from the first world, deterministic, checksummed; Python managed by `uv` with a lockfile | It runs for twenty worlds and in cloud sessions. Manual steps make each world cost the same as the first |
 
@@ -577,6 +577,37 @@ Fixed time with flexible scope is what stops a one-month release becoming a one-
 
 Two stories are likely to overrun. SS-2, because headless GPU tooling is fiddly and it has to be solid before anything leans on it. SS-5, because dataset choice and conventions are a research problem wearing a scripting story's clothes. If either takes double, that is normal and not a sign the plan is wrong.
 
+## Paused: one repository, served from the owner's NAS (SS-27)
+
+**Owner, 2026-10-14:** "I will pause this here, I want to move to a single repo and host it via my NAS."
+
+**What changes:**
+- **Today:** three repositories serve three GitHub Pages sites. The app with the Moon's terrain is about 0.75 GB; Mars's and Mercury's terrain have a data repository each, 494 MB and 489 MB.
+- **Why:** together that is past Pages' 1 GB per site, which is why the data repositories exist.
+- **The data repositories hold no tiles,** only a workflow, a README and a `SOURCE` commit. Every tile is rebuilt from pinned sources. So "merging" moves their build into this repository; no data moves.
+
+**The plan:** `docs/stories/SS-27.md`, in this order. Each story's spec is approved before code, as always.
+
+| ID | Story | What it settles |
+| --- | --- | --- |
+| N1 | Decisions | How the site is reached: Tailscale (recommended), a public domain, or the home network only. HTTPS is required in every case: WebGPU refuses to run without it. Also: whether code stays on GitHub (recommended); how the NAS gets builds (a self-hosted Actions runner, recommended); whether Pages stays as a mirror; the NAS's OS and disk budget |
+| N2 | The NAS serves today's site over HTTPS | A copy of what Pages serves now, from one folder behind Caddy. Nothing in the repository changes yet |
+| N3 | Builds go to the NAS | One `npm run build:site` builds the app and every world's tiles into one tree; source caches persist on the NAS; the reproducibility checks come along |
+| N4 | One repository | The data repositories folded in with their history (subtree merge: commands in the story). All terrain moves to one origin (`terrain/moon/`, `terrain/mars/`, `terrain/mercury/`). Captures stop fetching across sites. Per-site budgets become one disk budget the owner sets |
+| N5 | Retire the old sites | Pages off in the data repositories, then archive them; the app's Pages site off or kept as a mirror; links point to the NAS |
+| N6 | Full detail by default (optional) | `npm run local` as a service on the NAS: every world at full measured detail |
+
+**Order:** the repositories cannot become one while GitHub Pages hosts them, because all the tiles together (1.65 GB) do not fit one Pages site. So the NAS comes up first (N2, N3), and the merge follows (N4).
+
+**Where the worlds stood at the pause:**
+- **The Moon:** complete.
+- **Mars (SS-14):** W1–W5, W7 and W8 done; W6, the atmosphere, deferred.
+- **Mercury (SS-16):**
+  - W1–W4, W7 and W8 done, with the colour check (PR #66).
+  - W5, local mode, open.
+  - W6 does not apply (no air).
+- **Next world:** Venus.
+
 ## Later releases
 
 From here every world is built the same way: one round of the eight stories in **`docs/world-recipe.md`**, taken from how the Moon was actually built. Real acceptance criteria get written in each story's spec only when it is next.
@@ -628,8 +659,8 @@ The Moon is live at <https://asrijanga.github.io/solar-system/moon/>:
 
 | ID | World | Round | Notes for this world |
 | --- | --- | --- | --- |
-| SS-14 | Mars | W1–W8 | In progress: W1–W4 done (2026-10-03). Albedo and colour from OMEGA and HRSC; terrain from MOLA with HRSC stereo, on its own data site, `asrijanga/solar-system-mars-data` (docs/stories/SS-14.md) |
-| SS-18 | Mercury | W1–W8 | MESSENGER. Permanently shadowed polar craters, as on the Moon |
+| SS-14 | Mars | W1–W8 | W1–W5, W7 and W8 done; W6 (atmosphere) deferred. Albedo and colour from OMEGA, HRSC and Hubble; terrain from MOLA with HRSC stereo, on its own data site until SS-27; Phobos, Deimos, Earth and the Moon in its sky (docs/stories/SS-14.md) |
+| SS-16 | Mercury | W1–W8 | Planned as SS-18; built as SS-16. W1–W4, W7 and W8 done 2026-10-05 to 10-13; W5 (local mode) open; no W6 (no air). MESSENGER's MD3 and MDR colour, the USGS stereo DEM with MLA in the north on its own data site until SS-27, and Venus, Earth and the Moon in its sky (docs/stories/SS-16.md) |
 | SS-19 | Venus | W1–W8, adapted | Magellan radar is not albedo. W3 becomes radar brightness, labelled as such, over coarse relief |
 | SS-20 | Earth | W1–W8, plus atmosphere | W1 started (`docs/data/earth.md`), and W3 at the Moon's distance is done (SS-13c). The rest: Copernicus, Sentinel, GEBCO. Ocean, clouds and atmosphere are their own stories. Clouds come from the same geostationary satellites at the scene's instant |
 | SS-21 | The major moons | W1–W8 each, lighter | Io, Enceladus and Triton first (the catalogue's priority). Most have imagery but little elevation, so W4 is often a sphere with local relief |
@@ -642,20 +673,20 @@ Each round's W1 inventory comes first and is shown to the owner before any code.
 | ID | Story |
 | --- | --- |
 | SS-15 | As a learner, I want named features labelled, so that I know what I am looking at. Shipped for the Moon (61 Gazetteer landmarks); part of W7 for every later world |
-| SS-16 | As a learner, I want to see where the data is poor and which mission produced it, so that I understand the limits of what we know |
+| SS-18 | As a learner, I want to see where the data is poor and which mission produced it, so that I understand the limits of what we know. Listed as SS-16 until Mercury's round took that number |
 | SS-17 | As a learner, I want worlds shown side by side at true relative size, so that I feel how they compare |
 | SS-23 | As a learner, I want to place a station at a chosen altitude and inclination and watch it orbit, so that I see a world the way astronauts do |
 | SS-24 | As a learner, I want a cinematic mode with no interface and a slow camera, so that I can leave it running |
 | SS-25 | As a learner, I want thrusters that change my orbit, so that I can feel how orbital mechanics actually behaves |
 | SS-26 | As a player, I want to design my own station from parts, so that the thing in orbit is mine (separate project) |
 
-**SS-16** deserves to be a headline feature rather than a footnote. A coverage overlay showing resolution per region, with the mission and year behind it, is the clearest thing this project has that nothing else does. After SS-11c it has a second job: showing where a gap was filled from a coarser instrument, since those places are no longer marked on the surface.
+**SS-18** (the coverage overlay) deserves to be a headline feature rather than a footnote. A coverage overlay showing resolution per region, with the mission and year behind it, is the clearest thing this project has that nothing else does. After SS-11c it has a second job: showing where a gap was filled from a coarser instrument, since those places are no longer marked on the surface.
 
 **SS-23 and SS-24** are mostly built. Orbit mode (SS-11b) already flies a real circular orbit at a height the owner chooses. SS-23 adds inclination and a station to watch. SS-24 hides the interface.
 
 **SS-22** shares only the camera with the rest. It is loaded through a dynamic `import()`, so nobody visiting the Moon downloads it, and it is scheduled as its own project rather than one more world in the queue.
 
-**Storage:** GitHub Pages allows about 1 GB per site, and the Moon uses 671 MB of it. The plan is one data repository per heavy world, each with its own Pages site, loaded cross-site (Pages allows it). The first world that needs one waits on the owner creating it.
+**Storage:** GitHub Pages allows about 1 GB per site, and the Moon uses 671 MB of it. Until SS-27, each heavy world had a data repository with its own Pages site, loaded cross-site: Mars (`asrijanga/solar-system-mars-data`, 494 MB) and Mercury (`asrijanga/solar-system-mercury-data`, 489 MB). SS-27 replaces this with one repository and one served tree on the owner's NAS, within a disk budget the owner sets.
 
 ## What has to be right, and how we know
 
@@ -840,7 +871,7 @@ flowchart LR
 Candidate themes, roughly in the order they pay off:
 
 1. **The next world in the catalogue.** From SS-14 onward this is the default slice, and it is the same shape of work every time: acquire, reproject, tile, verify, ship.
-2. **Coverage honesty.** SS-16's overlay, then extending it as each new world exposes a different kind of gap.
+2. **Coverage honesty.** SS-18's overlay, then extending it as each new world exposes a different kind of gap.
 3. **The orbital view.** SS-23 through SS-25, pulled forward whenever the terrain work gets heavy.
 4. **Comparison.** SS-17, and later anything that puts two worlds beside each other at true relative scale.
 5. **Guided tours.** Camera paths to specific features, which is what turns a tool into something a visitor understands in thirty seconds. Tours double as the scripted perf run.

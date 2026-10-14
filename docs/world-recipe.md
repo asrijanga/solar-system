@@ -101,6 +101,8 @@ Quantized-mesh tiles from the best global elevation model:
 
 When a world's detail outgrows its share of the 1 GB, its tiles move to a data repository of its own. Each repository gets its own Pages site and its own 1 GB, and Pages allows cross-site reads. The owner creates that repository.
 
+**Changing with SS-27 (planned 2026-10-14):** one repository and one served tree on the owner's NAS. After SS-27 N4, a world's tiles go in that tree within the owner's disk budget, and no new data repositories are made (`docs/stories/SS-27.md`).
+
 **Moon:** LOLA `LDEM_64` everywhere to level 7 (670 m), with finer boxes around Albategnius. 46,743 tiles, 671 MB (SS-10, SS-11b part 2).
 
 ### W5 · Local mode: everything measured, on demand
